@@ -1,0 +1,518 @@
+{
+  "hub": [
+    {
+      "id": "hub_npc_dungeon",
+      "name": "Dungeon Delver",
+      "position": {
+        "x": 0,
+        "y": 1,
+        "z": 10
+      },
+      "rotation": 0,
+      "shopItems": []
+    }
+  ],
+  "skybridge": [
+    {
+      "id": "merchant_blue_1",
+      "name": "Tavern Keeper",
+      "position": {
+        "x": -34,
+        "y": 6,
+        "z": 72
+      },
+      "shopItems": [
+        {
+          "type": 456,
+          "price": 2,
+          "currency": 501
+        },
+        {
+          "type": 458,
+          "price": 5,
+          "currency": 501
+        },
+        {
+          "type": 131,
+          "price": 1,
+          "currency": 501,
+          "outputAmount": 2,
+          "action": "sell"
+        },
+        {
+          "type": 130,
+          "price": 1,
+          "currency": 501,
+          "outputAmount": 1,
+          "action": "sell"
+        }
+      ]
+    },
+    {
+      "id": "merchant_blue_2",
+      "name": "Blacksmith",
+      "position": {
+        "x": 29,
+        "y": 6,
+        "z": 71
+      },
+      "shopItems": [
+        {
+          "type": 441,
+          "price": 50,
+          "currency": 501,
+          "metadata": {
+            "rarity": "Common",
+            "stats": {
+              "damage": 10,
+              "strength": 5
+            }
+          }
+        },
+        {
+          "type": 442,
+          "price": 400,
+          "currency": 501,
+          "metadata": {
+            "rarity": "Uncommon",
+            "stats": {
+              "damage": 20,
+              "strength": 10
+            }
+          }
+        },
+        {
+          "type": 443,
+          "price": 5000,
+          "currency": 501,
+          "metadata": {
+            "rarity": "Rare",
+            "stats": {
+              "damage": 30,
+              "strength": 15
+            }
+          }
+        },
+        {
+          "type": 445,
+          "price": 50000,
+          "currency": 501,
+          "metadata": {
+            "rarity": "Epic",
+            "stats": {
+              "damage": 50,
+              "strength": 30
+            }
+          }
+        },
+        {
+          "type": 436,
+          "price": 20,
+          "currency": 501,
+          "metadata": {
+            "rarity": "Common",
+            "durability": 59,
+            "maxDurability": 59,
+            "stats": {
+              "miningSpeed": 10,
+              "damage": 2
+            }
+          }
+        },
+        {
+          "type": 437,
+          "price": 200,
+          "currency": 501,
+          "metadata": {
+            "rarity": "Uncommon",
+            "durability": 131,
+            "maxDurability": 131,
+            "stats": {
+              "miningSpeed": 20,
+              "damage": 4
+            }
+          }
+        },
+        {
+          "type": 438,
+          "price": 3000,
+          "currency": 501,
+          "metadata": {
+            "rarity": "Rare",
+            "durability": 250,
+            "maxDurability": 250,
+            "stats": {
+              "miningSpeed": 30,
+              "damage": 6
+            }
+          }
+        },
+        {
+          "type": 440,
+          "price": 25000,
+          "currency": 501,
+          "metadata": {
+            "rarity": "Epic",
+            "durability": 1561,
+            "maxDurability": 1561,
+            "stats": {
+              "miningSpeed": 50,
+              "damage": 10
+            }
+          }
+        },
+        {
+          "type": 502,
+          "price": 1,
+          "currency": 501,
+          "outputAmount": 20,
+          "action": "sell"
+        },
+        {
+          "type": 503,
+          "price": 1,
+          "currency": 501,
+          "outputAmount": 50,
+          "action": "sell"
+        },
+        {
+          "type": 504,
+          "price": 1,
+          "currency": 501,
+          "outputAmount": 200,
+          "action": "sell"
+        }
+      ]
+    },
+    {
+      "id": "merchant_blue_3",
+      "name": "Farmer",
+      "position": {
+        "x": -34,
+        "y": 6,
+        "z": 98
+      },
+      "shopItems": [
+        {
+          "type": 29,
+          "price": 10,
+          "currency": 501
+        },
+        {
+          "type": 472,
+          "price": 2,
+          "currency": 501
+        },
+        {
+          "type": 29,
+          "price": 1,
+          "currency": 501,
+          "outputAmount": 2,
+          "action": "sell"
+        },
+        {
+          "type": 472,
+          "price": 1,
+          "currency": 501,
+          "outputAmount": 1,
+          "action": "sell"
+        }
+      ]
+    },
+    {
+      "id": "merchant_blue_4",
+      "name": "Guard",
+      "position": {
+        "x": 34,
+        "y": 18,
+        "z": 99
+      },
+      "shopItems": [
+        {
+          "type": 461,
+          "price": 200,
+          "currency": 501
+        },
+        {
+          "type": 462,
+          "price": 5,
+          "currency": 501
+        },
+        {
+          "type": 467,
+          "price": 1,
+          "currency": 501,
+          "outputAmount": 2,
+          "action": "sell"
+        },
+        {
+          "type": 468,
+          "price": 1,
+          "currency": 501,
+          "outputAmount": 5,
+          "action": "sell"
+        }
+      ]
+    },
+    {
+      "id": "merchant_blue_8",
+      "name": "Market Vendor",
+      "position": {
+        "x": 9,
+        "y": 6,
+        "z": 93
+      },
+      "shopItems": [
+        {
+          "type": 1,
+          "price": 1,
+          "currency": 501,
+          "outputAmount": 2,
+          "action": "sell"
+        },
+        {
+          "type": 3,
+          "price": 1,
+          "currency": 501,
+          "outputAmount": 2,
+          "action": "sell"
+        },
+        {
+          "type": 4,
+          "price": 1,
+          "currency": 501,
+          "outputAmount": 5,
+          "action": "sell"
+        }
+      ]
+    },
+    {
+      "id": "merchant_blue_9",
+      "name": "Wizard",
+      "position": {
+        "x": 40,
+        "y": 6,
+        "z": 79
+      },
+      "shopItems": [
+        {
+          "type": 466,
+          "price": 500,
+          "currency": 501
+        },
+        {
+          "type": 53,
+          "price": 200,
+          "currency": 501
+        }
+      ]
+    },
+    {
+      "id": "bren_blue",
+      "name": "Bren",
+      "position": {
+        "x": 0,
+        "y": 6,
+        "z": 80
+      },
+      "shopItems": []
+    }
+  ],
+  "skycastles": [
+    {
+      "id": "jerry_weapons_red",
+      "name": "Jerry",
+      "position": {
+        "x": 7,
+        "y": 65,
+        "z": -189
+      },
+      "shopItems": [
+        {
+          "type": 461,
+          "price": 900,
+          "currency": 501,
+          "metadata": {
+            "rarity": "Uncommon",
+            "stats": {
+              "damage": 50
+            }
+          }
+        },
+        {
+          "type": 92,
+          "price": 200,
+          "currency": 501,
+          "outputAmount": 64
+        },
+        {
+          "type": 442,
+          "price": 700,
+          "currency": 501,
+          "metadata": {
+            "rarity": "Common",
+            "stats": {
+              "damage": 20,
+              "strength": 10
+            }
+          }
+        },
+        {
+          "type": 437,
+          "price": 350,
+          "currency": 501,
+          "metadata": {
+            "rarity": "Uncommon",
+            "durability": 131,
+            "maxDurability": 131,
+            "stats": {
+              "miningSpeed": 4,
+              "miningStamina": 1,
+              "miningTier": 2
+            }
+          }
+        },
+        {
+          "type": 514,
+          "price": 450,
+          "currency": 501,
+          "metadata": {
+            "rarity": "Rare"
+          }
+        },
+        {
+          "type": 443,
+          "price": 1000,
+          "currency": 501,
+          "metadata": {
+            "rarity": "Rare",
+            "stats": {
+              "damage": 30,
+              "strength": 15
+            }
+          }
+        },
+        {
+          "type": 445,
+          "price": 1300,
+          "currency": 501,
+          "metadata": {
+            "rarity": "Epic",
+            "stats": {
+              "damage": 50,
+              "strength": 30
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "jerry_weapons_blue",
+      "name": "Jerry",
+      "position": {
+        "x": 7,
+        "y": 65,
+        "z": 189.5
+      },
+      "rotation": 3.14159,
+      "shopItems": [
+        {
+          "type": 461,
+          "price": 900,
+          "currency": 501,
+          "metadata": {
+            "rarity": "Uncommon",
+            "stats": {
+              "damage": 50
+            }
+          }
+        },
+        {
+          "type": 89,
+          "price": 200,
+          "currency": 501,
+          "outputAmount": 64
+        },
+        {
+          "type": 442,
+          "price": 700,
+          "currency": 501,
+          "metadata": {
+            "rarity": "Common",
+            "stats": {
+              "damage": 20,
+              "strength": 10
+            }
+          }
+        },
+        {
+          "type": 437,
+          "price": 350,
+          "currency": 501,
+          "metadata": {
+            "rarity": "Uncommon",
+            "durability": 131,
+            "maxDurability": 131,
+            "stats": {
+              "miningSpeed": 4,
+              "miningStamina": 1,
+              "miningTier": 2
+            }
+          }
+        },
+        {
+          "type": 514,
+          "price": 450,
+          "currency": 501,
+          "metadata": {
+            "rarity": "Rare"
+          }
+        },
+        {
+          "type": 443,
+          "price": 1000,
+          "currency": 501,
+          "metadata": {
+            "rarity": "Rare",
+            "stats": {
+              "damage": 30,
+              "strength": 15
+            }
+          }
+        },
+        {
+          "type": 445,
+          "price": 1300,
+          "currency": 501,
+          "metadata": {
+            "rarity": "Epic",
+            "stats": {
+              "damage": 50,
+              "strength": 30
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "battleroyale": [],
+  "skyisland": [
+    {
+      "id": "island_guide",
+      "name": "Island Guide",
+      "position": {
+        "x": 0,
+        "y": 66,
+        "z": -10
+      },
+      "rotation": 0,
+      "shopItems": [
+        {
+          "type": 461,
+          "price": 200,
+          "currency": 501
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1456 @@
+import * as THREE from 'three';
+import { Player } from './Player';
+import { generateSkin, applySkinUVs } from './SkinManager';
+import { createTextureAtlas, createBreakingTexture, getBlockUVs, ATLAS_TILES, isPlant, isFlatItem, isLightEmitting, BLOCK } from './TextureAtlas';
+import { createVoidtrailTextureAtlas } from './VoidTrailTextureAtlas';
+import { ItemType } from './Inventory';
+import { createItemModel } from './ItemModels';
+import { settingsManager } from './Settings';
+import { audioManager } from './AudioManager';
+import { useGameStore } from '../store/gameStore';
+import { applyMilestoneColor } from './MilestoneColor';
+import { networkManager } from './NetworkManager';
+
+export class PlayerRenderer {
+  player: Player;
+  modelGroup: THREE.Group;
+  fpArmGroup: THREE.Group;
+  fpOffHandArmGroup: THREE.Group;
+  
+  armorMeshes: THREE.Mesh[] = [];
+
+  headMesh: THREE.Mesh | null = null;
+  neckMesh: THREE.Mesh | null = null;
+  bodyMesh: THREE.Mesh | null = null;
+  leftLegMesh: THREE.Mesh | null = null;
+  rightLegMesh: THREE.Mesh | null = null;
+  leftArmMesh: THREE.Mesh | null = null;
+  rightArmMesh: THREE.Mesh | null = null;
+  capeMesh: THREE.Mesh | null = null;
+  
+  fpArmMesh: THREE.Mesh | null = null;
+  fpOffHandArmMesh: THREE.Mesh | null = null;
+  fpBlockMesh: THREE.Mesh | null = null;
+  fpOffHandBlockMesh: THREE.Mesh | null = null;
+  fpHeldItemModel: THREE.Group | null = null;
+  fpOffHandHeldItemModel: THREE.Group | null = null;
+  breakingMesh: THREE.Mesh | null = null;
+  gliderGroup: THREE.Group | null = null;
+  gliderLeftWing: THREE.Mesh | null = null;
+  gliderRightWing: THREE.Mesh | null = null;
+  gliderOpenAmount: number = 0;
+  
+  heldItemMesh: THREE.Mesh | null = null;
+  heldItemModel: THREE.Group | null = null;
+  offHandItemMesh: THREE.Mesh | null = null;
+  offHandItemModel: THREE.Group | null = null;
+  heldItemType: number = 0;
+  offHandItemType: number = 0;
+  currentModelType: number | null = null;
+  currentOffHandModelType: number | null = null;
+  currentFpModelType: number | null = null;
+  currentFpOffHandModelType: number | null = null;
+  isHandVisible: boolean = true;
+  torchLight: THREE.PointLight | null = null;
+
+  constructor(player: Player) {
+    this.player = player;
+    this.modelGroup = new THREE.Group();
+    this.fpArmGroup = new THREE.Group();
+    this.fpOffHandArmGroup = new THREE.Group();
+
+    this.createPlayerModel();
+    this.createFirstPersonArm();
+    this.createFirstPersonOffHandArm();
+
+    this.torchLight = new THREE.PointLight(0xffbd5c, 0, 35); 
+    this.torchLight.visible = true;
+    this.player.camera.add(this.torchLight);
+    this.player.camera.add(this.fpOffHandArmGroup);
+
+    // Setup breaking mesh
+    const breakGeo = new THREE.BoxGeometry(1.01, 1.01, 1.01);
+    const breakTex = createBreakingTexture();
+    const breakMat = new THREE.MeshBasicMaterial({ 
+      map: breakTex,
+      transparent: true, 
+      opacity: 0.0, 
+      depthWrite: false,
+      depthTest: true
+    });
+    this.breakingMesh = new THREE.Mesh(breakGeo, breakMat);
+    this.breakingMesh.visible = false;
+  }
+
+  public setHandVisible(visible: boolean) {
+    this.isHandVisible = visible;
+    if (this.fpArmGroup) {
+      this.fpArmGroup.visible = visible;
+    }
+    if (this.fpOffHandArmGroup) {
+      this.fpOffHandArmGroup.visible = visible;
+    }
+  }
+
+  public updateTeam(team?: string) {
+    if (this.capeMesh && this.capeMesh.material) {
+      const capeColor = team === 'blue' ? 0x3366cc : (team === 'red' ? 0xcc3333 : 0xcc3333);
+      const mat = this.capeMesh.material as any;
+      if (mat.color) {
+        mat.color.setHex(capeColor);
+      }
+      if (this.capeMesh.userData.originalMaterial) {
+        const origMat = this.capeMesh.userData.originalMaterial as any;
+        if (origMat.color) origMat.color.setHex(capeColor);
+      }
+    }
+    
+    if (team === 'red' || team === 'blue') {
+      const teamColor = team === 'blue' ? 0x3366cc : 0xcc3333;
+      this.armorMeshes.forEach(mesh => {
+        mesh.visible = true;
+        (mesh.material as any).color.setHex(teamColor);
+      });
+    } else {
+      this.armorMeshes.forEach(mesh => {
+        mesh.visible = false;
+      });
+    }
+    
+    // Update glider materials if they exist
+    if (this.gliderLeftWing && this.gliderRightWing) {
+      const baseColor = 0x1f1f2e;
+      let emissiveColor = 0x2a1b4d;
+      let accentColor = 0x8a2be2;
+      let accentEmissive = 0x9b59b6;
+      
+      if (team === 'red') {
+        emissiveColor = 0x4d1b1b;
+        accentColor = 0xe22b2b;
+        accentEmissive = 0xb65959;
+      } else if (team === 'blue') {
+        emissiveColor = 0x1b1b4d;
+        accentColor = 0x2b2be2;
+        accentEmissive = 0x5959b6;
+      }
+      
+      const updateWingMat = (child: THREE.Object3D) => {
+        if (child instanceof THREE.Mesh && child.material) {
+          const mat = child.material as any;
+          if (child.scale.x === 12) { // It's an accent
+             if (mat.color) mat.color.setHex(accentColor);
+             if (mat.emissive) mat.emissive.setHex(accentEmissive);
+          } else {
+             if (mat.color) mat.color.setHex(baseColor);
+             if (mat.emissive) mat.emissive.setHex(emissiveColor);
+          }
+          if (child.userData.originalMaterial) {
+            const origMat = child.userData.originalMaterial as any;
+            if (child.scale.x === 12) { // It's an accent
+               if (origMat.color) origMat.color.setHex(accentColor);
+               if (origMat.emissive) origMat.emissive.setHex(accentEmissive);
+            } else {
+               if (origMat.color) origMat.color.setHex(baseColor);
+               if (origMat.emissive) origMat.emissive.setHex(emissiveColor);
+            }
+          }
+        }
+      };
+
+      this.gliderLeftWing.children.forEach(updateWingMat);
+      this.gliderRightWing.children.forEach(updateWingMat);
+    }
+  }
+
+  public updateSkin(skinSeed: string) {
+    const skinTexture = generateSkin(skinSeed);
+    const isPerformance = settingsManager.getSettings().performanceMode;
+    const skinMaterial = isPerformance ?
+      new THREE.MeshBasicMaterial({ map: skinTexture }) :
+      new THREE.MeshStandardMaterial({ 
+        map: skinTexture,
+        roughness: 0.8,
+        metalness: 0.1
+      });
+    const outerMaterial = isPerformance ?
+      new THREE.MeshBasicMaterial({ 
+        map: skinTexture, 
+        transparent: true, 
+        alphaTest: 0.1, 
+        side: THREE.DoubleSide 
+      }) :
+      new THREE.MeshStandardMaterial({ 
+        map: skinTexture, 
+        transparent: true, 
+        alphaTest: 0.1, 
+        side: THREE.DoubleSide,
+        roughness: 0.8,
+        metalness: 0.1
+      });
+
+    if (this.headMesh) {
+      this.headMesh.material = skinMaterial;
+      (this.headMesh.children[0] as THREE.Mesh).material = outerMaterial;
+    }
+    if (this.neckMesh) {
+      this.neckMesh.material = skinMaterial;
+    }
+    if (this.bodyMesh) {
+      this.bodyMesh.material = skinMaterial;
+      (this.bodyMesh.children[0] as THREE.Mesh).material = outerMaterial;
+    }
+    if (this.leftLegMesh) {
+      this.leftLegMesh.material = skinMaterial;
+      (this.leftLegMesh.children[0] as THREE.Mesh).material = outerMaterial;
+    }
+    if (this.rightLegMesh) {
+      this.rightLegMesh.material = skinMaterial;
+      (this.rightLegMesh.children[0] as THREE.Mesh).material = outerMaterial;
+    }
+    if (this.leftArmMesh) {
+      this.leftArmMesh.material = skinMaterial;
+      (this.leftArmMesh.children[0] as THREE.Mesh).material = outerMaterial;
+    }
+    if (this.rightArmMesh) {
+      this.rightArmMesh.material = skinMaterial;
+      (this.rightArmMesh.children[0] as THREE.Mesh).material = outerMaterial;
+    }
+    if (this.fpArmMesh) {
+      this.fpArmMesh.material = skinMaterial;
+    }
+    if (this.fpOffHandArmMesh) {
+      this.fpOffHandArmMesh.material = skinMaterial;
+    }
+  }
+
+  private createPlayerModel() {
+    const skinTexture = generateSkin('player_seed_1');
+    const isPerformance = settingsManager.getSettings().performanceMode;
+    const skinMaterial = isPerformance ?
+      new THREE.MeshBasicMaterial({ map: skinTexture }) :
+      new THREE.MeshStandardMaterial({ 
+        map: skinTexture,
+        roughness: 0.8,
+        metalness: 0.1
+      });
+    const outerMaterial = isPerformance ?
+      new THREE.MeshBasicMaterial({ 
+        map: skinTexture, 
+        transparent: true, 
+        alphaTest: 0.1, 
+        side: THREE.DoubleSide 
+      }) :
+      new THREE.MeshStandardMaterial({ 
+        map: skinTexture, 
+        transparent: true, 
+        alphaTest: 0.1, 
+        side: THREE.DoubleSide,
+        roughness: 0.8,
+        metalness: 0.1
+      });
+
+    // Body
+    const bodyGeo = new THREE.BoxGeometry(0.4, 0.6, 0.2); 
+    applySkinUVs(bodyGeo, 'body');
+    this.bodyMesh = new THREE.Mesh(bodyGeo, skinMaterial);
+    this.bodyMesh.position.y = 0.9;
+    this.bodyMesh.castShadow = true;
+    this.bodyMesh.receiveShadow = true;
+    this.modelGroup.add(this.bodyMesh);
+
+    const bodyOuterGeo = new THREE.BoxGeometry(0.42, 0.62, 0.22);
+    applySkinUVs(bodyOuterGeo, 'body', true);
+    const bodyOuter = new THREE.Mesh(bodyOuterGeo, outerMaterial);
+    this.bodyMesh.add(bodyOuter);
+    
+    // Backpack
+    const packGeo = new THREE.BoxGeometry(0.3, 0.4, 0.15);
+    const packMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.9 }); 
+    const backpack = new THREE.Mesh(packGeo, packMat);
+    backpack.position.set(0, 0, 0.18);
+    backpack.castShadow = true;
+    this.bodyMesh.add(backpack);
+
+    // Neck
+    const neckGeo = new THREE.BoxGeometry(0.25, 0.2, 0.15);
+    applySkinUVs(neckGeo, 'head', false, 'neck');
+    this.neckMesh = new THREE.Mesh(neckGeo, skinMaterial);
+    this.neckMesh.position.y = 0.4;
+    this.neckMesh.castShadow = true;
+    this.bodyMesh.add(this.neckMesh);
+
+    // Head
+    const headGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+    applySkinUVs(headGeo, 'head');
+    this.headMesh = new THREE.Mesh(headGeo, skinMaterial);
+    this.headMesh.position.y = 0.5;
+    this.headMesh.castShadow = true;
+    this.headMesh.receiveShadow = true;
+    this.bodyMesh.add(this.headMesh);
+    
+    const headOuterGeo = new THREE.BoxGeometry(0.42, 0.42, 0.42);
+    applySkinUVs(headOuterGeo, 'head', true);
+    const headOuter = new THREE.Mesh(headOuterGeo, outerMaterial);
+    this.headMesh.add(headOuter);
+
+    // Arms
+    const armGeoL = new THREE.BoxGeometry(0.2, 0.6, 0.2);
+    applySkinUVs(armGeoL, 'armL');
+    this.leftArmMesh = new THREE.Mesh(armGeoL, skinMaterial);
+    this.leftArmMesh.position.set(-0.3, 0.3, 0);
+    this.leftArmMesh.geometry.translate(0, -0.3, 0);
+    this.leftArmMesh.castShadow = true;
+    this.leftArmMesh.receiveShadow = true;
+    this.bodyMesh.add(this.leftArmMesh);
+
+    const armOuterGeoL = new THREE.BoxGeometry(0.22, 0.62, 0.22);
+    applySkinUVs(armOuterGeoL, 'armL', true);
+    const armOuterL = new THREE.Mesh(armOuterGeoL, outerMaterial);
+    armOuterL.position.y = -0.3;
+    this.leftArmMesh.add(armOuterL);
+
+    const armGeoR = new THREE.BoxGeometry(0.2, 0.6, 0.2);
+    applySkinUVs(armGeoR, 'armR');
+    this.rightArmMesh = new THREE.Mesh(armGeoR, skinMaterial);
+    this.rightArmMesh.position.set(0.3, 0.3, 0);
+    this.rightArmMesh.geometry.translate(0, -0.3, 0);
+    this.rightArmMesh.castShadow = true;
+    this.rightArmMesh.receiveShadow = true;
+    this.bodyMesh.add(this.rightArmMesh);
+
+    const armOuterGeoR = new THREE.BoxGeometry(0.22, 0.62, 0.22);
+    applySkinUVs(armOuterGeoR, 'armR', true);
+    const armOuterR = new THREE.Mesh(armOuterGeoR, outerMaterial);
+    armOuterR.position.y = -0.3;
+    this.rightArmMesh.add(armOuterR);
+
+    // Legs
+    const legGeoL = new THREE.BoxGeometry(0.2, 0.6, 0.2);
+    applySkinUVs(legGeoL, 'legL');
+    this.leftLegMesh = new THREE.Mesh(legGeoL, skinMaterial);
+    this.leftLegMesh.position.set(-0.1, 0.6, 0);
+    this.leftLegMesh.geometry.translate(0, -0.3, 0);
+    this.leftLegMesh.castShadow = true;
+    this.leftLegMesh.receiveShadow = true;
+    this.modelGroup.add(this.leftLegMesh);
+    
+    const legOuterGeoL = new THREE.BoxGeometry(0.22, 0.62, 0.22);
+    applySkinUVs(legOuterGeoL, 'legL', true);
+    const legOuterL = new THREE.Mesh(legOuterGeoL, outerMaterial);
+    legOuterL.position.y = -0.3;
+    this.leftLegMesh.add(legOuterL);
+
+    const legGeoR = new THREE.BoxGeometry(0.2, 0.6, 0.2);
+    applySkinUVs(legGeoR, 'legR');
+    this.rightLegMesh = new THREE.Mesh(legGeoR, skinMaterial);
+    this.rightLegMesh.position.set(0.1, 0.6, 0);
+    this.rightLegMesh.geometry.translate(0, -0.3, 0);
+    this.rightLegMesh.castShadow = true;
+    this.rightLegMesh.receiveShadow = true;
+    this.modelGroup.add(this.rightLegMesh);
+
+    const legOuterGeoR = new THREE.BoxGeometry(0.22, 0.62, 0.22);
+    applySkinUVs(legOuterGeoR, 'legR', true);
+    const legOuterR = new THREE.Mesh(legOuterGeoR, outerMaterial);
+    legOuterR.position.y = -0.3;
+    this.rightLegMesh.add(legOuterR);
+
+    // Cape
+    const capeGeo = new THREE.BoxGeometry(0.4, 1.0, 0.05);
+    const capeMat = new THREE.MeshStandardMaterial({ color: 0xcc3333, roughness: 0.7 });
+    this.capeMesh = new THREE.Mesh(capeGeo, capeMat);
+    this.capeMesh.position.set(0, 0.3, 0.1); 
+    this.capeMesh.geometry.translate(0, -0.5, 0);
+    this.capeMesh.castShadow = true;
+    this.capeMesh.receiveShadow = true;
+    this.bodyMesh.add(this.capeMesh);
+
+    // Glider
+    this.createGlider();
+    
+    // Armor
+    this.createArmor();
+
+    // Held Item (3rd Person)
+    const itemGeo = new THREE.BoxGeometry(0.25, 0.25, 0.25);
+    const itemMat = new THREE.MeshStandardMaterial({ 
+      transparent: true, 
+      alphaTest: 0.5,
+      roughness: 0.8
+    });
+    this.heldItemMesh = new THREE.Mesh(itemGeo, itemMat);
+    this.heldItemMesh.position.set(0, -0.45, -0.15);
+    this.heldItemMesh.visible = false;
+    this.heldItemModel = new THREE.Group();
+    if (this.rightArmMesh) {
+      this.rightArmMesh.add(this.heldItemModel);
+      this.rightArmMesh.add(this.heldItemMesh);
+    }
+
+    // Off-hand Item (3rd Person)
+    this.offHandItemMesh = new THREE.Mesh(itemGeo.clone(), itemMat.clone());
+    this.offHandItemMesh.position.set(0, -0.45, -0.15);
+    this.offHandItemMesh.visible = false;
+    this.offHandItemModel = new THREE.Group();
+    if (this.leftArmMesh) {
+      this.leftArmMesh.add(this.offHandItemModel);
+      this.leftArmMesh.add(this.offHandItemMesh);
+    }
+  }
+
+  private createGlider() {
+    this.gliderGroup = new THREE.Group();
+    // Positioned at the upper back
+    this.gliderGroup.position.set(0, 0.55, 0.25);
+    this.bodyMesh?.add(this.gliderGroup);
+
+    // Modern "Cyber Elytra" Shape
+    const wingShape = new THREE.Shape();
+    wingShape.moveTo(0, 0); // Root
+    wingShape.lineTo(0.6, 0.2); // Top edge sweeps out
+    wingShape.lineTo(2.0, -0.4); // Outer wingtip
+    wingShape.lineTo(1.6, -1.2); // Lower trailing edge
+    wingShape.lineTo(0.7, -2.0); // Bottom wingtip
+    wingShape.lineTo(0.3, -1.0); // Inner trailing edge
+    wingShape.lineTo(0, -0.4); // Back to root
+    wingShape.lineTo(0, 0);
+
+    const extrudeSettings = { 
+      depth: 0.04, 
+      bevelEnabled: true, 
+      bevelSegments: 2, 
+      steps: 1, 
+      bevelSize: 0.015, 
+      bevelThickness: 0.015 
+    };
+    
+    const wingGeo = new THREE.ExtrudeGeometry(wingShape, extrudeSettings);
+    // Center it on Z
+    wingGeo.translate(0, 0, -0.02);
+
+    // Sleek dark grey with a purple sheen
+    const wingMat = new THREE.MeshStandardMaterial({ 
+      color: 0x1f1f2e, 
+      roughness: 0.3,
+      metalness: 0.8,
+      emissive: 0x2a1b4d, // subtle purple/indigo glow
+      emissiveIntensity: 0.6
+    });
+
+    // Glowing accent lines
+    const accentGeo = new THREE.BoxGeometry(0.04, 0.04, 0.06);
+    const accentMat = new THREE.MeshStandardMaterial({
+      color: 0x8a2be2, // Blue-violet
+      emissive: 0x9b59b6,
+      emissiveIntensity: 2.5,
+      roughness: 0.2
+    });
+
+    const createWing = () => {
+      const g = new THREE.Group() as any;
+      const canvas = new THREE.Mesh(wingGeo, wingMat);
+      g.add(canvas);
+
+      // Add accents
+      const a1 = new THREE.Mesh(accentGeo, accentMat);
+      a1.position.set(0.5, 0.1, 0);
+      a1.rotation.z = Math.PI / 8;
+      a1.scale.set(12, 1, 1);
+      g.add(a1);
+
+      const a2 = new THREE.Mesh(accentGeo, accentMat);
+      a2.position.set(1.2, -0.2, 0);
+      a2.rotation.z = -Math.PI / 10;
+      a2.scale.set(18, 1, 1);
+      g.add(a2);
+
+      const a3 = new THREE.Mesh(accentGeo, accentMat);
+      a3.position.set(0.6, -1.0, 0);
+      a3.rotation.z = -Math.PI / 3;
+      a3.scale.set(22, 1, 1);
+      g.add(a3);
+
+      const a4 = new THREE.Mesh(accentGeo, accentMat);
+      a4.position.set(1.1, -0.85, 0);
+      a4.rotation.z = Math.PI / 3;
+      a4.scale.set(10, 1, 1);
+      g.add(a4);
+
+      return g;
+    };
+
+    this.gliderLeftWing = createWing();
+    this.gliderLeftWing!.rotation.y = Math.PI; // Flip horizontally
+    this.gliderGroup.add(this.gliderLeftWing!);
+
+    this.gliderRightWing = createWing();
+    this.gliderGroup.add(this.gliderRightWing!);
+
+    this.gliderGroup.visible = false;
+  }
+
+  private createArmor() {
+    // Hidden by default, updated on team change
+    const armorMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, side: THREE.DoubleSide });
+
+    const createArmorMesh = (w: number, h: number, d: number) => {
+      const geo = new THREE.BoxGeometry(w, h, d);
+      const mesh = new THREE.Mesh(geo, armorMat);
+      mesh.visible = false;
+      this.armorMeshes.push(mesh);
+      return mesh;
+    };
+
+    if (this.bodyMesh) {
+      // T-shirt body part (slightly shorter than full torso)
+      const bodyArmor = createArmorMesh(0.44, 0.54, 0.24);
+      bodyArmor.position.y = -0.27;
+      this.bodyMesh.add(bodyArmor);
+    }
+    if (this.headMesh) {
+      // Helmet covering the top half of the head
+      const headArmor = createArmorMesh(0.44, 0.24, 0.44);
+      headArmor.position.y = 0.11;
+      this.headMesh.add(headArmor);
+    }
+    // Shoulders (arm armor) intentionally hidden for 3rd person and remote players
+    if (this.leftLegMesh) {
+      // Trousers
+      const leftLegArmor = createArmorMesh(0.24, 0.44, 0.24);
+      leftLegArmor.position.y = -0.22;
+      this.leftLegMesh.add(leftLegArmor);
+    }
+    if (this.rightLegMesh) {
+      // Trousers
+      const rightLegArmor = createArmorMesh(0.24, 0.44, 0.24);
+      rightLegArmor.position.y = -0.22;
+      this.rightLegMesh.add(rightLegArmor);
+    }
+  }
+
+  public update(delta: number, isGliding: boolean) {
+    if (!this.gliderGroup || !this.gliderLeftWing || !this.gliderRightWing) return;
+
+    const targetOpen = isGliding ? 1 : 0;
+    this.gliderOpenAmount = THREE.MathUtils.lerp(
+      this.gliderOpenAmount,
+      targetOpen,
+      delta * (isGliding ? 8 : 4) // Open faster than close
+    );
+
+    if (this.gliderOpenAmount > 0.01) {
+      this.gliderGroup.visible = true;
+      
+      // Aerodynamic pitch
+      this.gliderGroup.rotation.x = THREE.MathUtils.lerp(0.5, 0.2, this.gliderOpenAmount);
+
+      const openAngle = 0.15; // Swept back slightly when flying
+      const closedAngle = 1.6; // Folded straight back when not flying
+      const angle = THREE.MathUtils.lerp(closedAngle, openAngle, this.gliderOpenAmount);
+
+      this.gliderRightWing.rotation.y = angle;
+      this.gliderLeftWing.rotation.y = Math.PI - angle;
+
+      // Animation: Gentle flap and tilt
+      if (isGliding) {
+        const time = performance.now() * 0.005;
+        const flap = Math.sin(time) * 0.05;
+        this.gliderRightWing.rotation.z = flap;
+        this.gliderLeftWing.rotation.z = -flap;
+        
+        // Slight sway
+        this.gliderGroup.rotation.z = Math.sin(time * 0.5) * 0.03;
+      } else {
+        this.gliderRightWing.rotation.z = 0;
+        this.gliderLeftWing.rotation.z = 0;
+        this.gliderGroup.rotation.z = 0;
+      }
+      
+      const scale = this.gliderOpenAmount;
+      this.gliderGroup.scale.set(scale, scale, scale);
+    } else {
+      this.gliderGroup.visible = false;
+    }
+
+    if (this.player.isSpectator) {
+      this.modelGroup.traverse((child) => {
+        if ((child as THREE.Mesh).isMesh) {
+          const mesh = child as THREE.Mesh;
+          if (!mesh.userData.originalMaterial) {
+            mesh.userData.originalMaterial = mesh.material;
+            const newMat = Array.isArray(mesh.material) ? mesh.material.map(m => m.clone()) : (mesh.material as THREE.Material).clone();
+            if (Array.isArray(newMat)) {
+              newMat.forEach(m => { m.transparent = true; m.opacity = 0.3; m.alphaTest = 0.01; });
+            } else {
+              newMat.transparent = true; newMat.opacity = 0.3; newMat.alphaTest = 0.01;
+            }
+            mesh.material = newMat;
+          }
+        }
+      });
+      // Optionally hide first person arms if spectator
+      this.fpArmGroup.visible = false;
+      this.fpOffHandArmGroup.visible = false;
+    } else {
+      this.modelGroup.traverse((child) => {
+        if ((child as THREE.Mesh).isMesh && child.userData.originalMaterial) {
+          const mesh = child as THREE.Mesh;
+          if (Array.isArray(mesh.material)) {
+            mesh.material.forEach(m => m.dispose());
+          } else {
+            mesh.material.dispose();
+          }
+          mesh.material = mesh.userData.originalMaterial;
+          delete mesh.userData.originalMaterial;
+        }
+      });
+      this.fpArmGroup.visible = this.isHandVisible && this.player.perspective === 0;
+      
+      const isChargingBow = this.player.inventory.slots[this.player.hotbarIndex]?.type === ItemType.BOW && this.player.inputController.bowChargeStart > 0;
+      this.fpOffHandArmGroup.visible = this.isHandVisible && this.player.perspective === 0 && !isChargingBow;
+      
+      // Also hide torch light and 3rd person off-hand if charging bow
+      if (this.torchLight) {
+        const hasTorch = this.player.inventory.slots[36]?.type === ItemType.TORCH || this.player.inventory.slots[this.player.hotbarIndex]?.type === ItemType.TORCH;
+        this.torchLight.intensity = (hasTorch && !isChargingBow) ? 160.0 : 0.0;
+      }
+      
+
+    }
+  }
+
+  private createFirstPersonArm() {
+    const skinTexture = generateSkin('player_seed_1');
+    const isPerformance = settingsManager.getSettings().performanceMode;
+    const isVoidtrail = this.player.world.isVoidtrail;
+    const skinMaterial = isPerformance ?
+      new THREE.MeshBasicMaterial({ map: skinTexture }) :
+      new THREE.MeshStandardMaterial({ 
+        map: skinTexture,
+        roughness: 0.8,
+        metalness: 0.1
+      });
+    
+    const armGeo = new THREE.BoxGeometry(0.24, 0.24, 0.7); // Robust arm
+    applySkinUVs(armGeo, 'armR', false, 'bottom');
+    this.fpArmMesh = new THREE.Mesh(armGeo, skinMaterial);
+    this.fpArmMesh.castShadow = !isPerformance;
+    this.fpArmMesh.receiveShadow = !isPerformance; // Disabled in performance mode
+    
+    // Position arm in the lower right corner, angled in
+    this.fpArmMesh.position.set(0.6, -0.6, -0.5);
+    this.fpArmMesh.rotation.set(0.4, -0.2, 0.1);
+    
+    const blockGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+    const texture = this.player.world.isVoidtrail ? createVoidtrailTextureAtlas() : createTextureAtlas();
+    const blockMat = isPerformance ?
+      new THREE.MeshBasicMaterial({ map: texture, transparent: true, alphaTest: 0.5 }) :
+      new THREE.MeshStandardMaterial({ map: texture, transparent: true, alphaTest: 0.5, roughness: 1.0, metalness: 0.0 });
+    this.fpBlockMesh = new THREE.Mesh(blockGeo, blockMat);
+    this.fpBlockMesh.castShadow = !isPerformance;
+    this.fpBlockMesh.receiveShadow = !isPerformance; // Disabled in performance mode
+    this.fpBlockMesh.position.set(0.3, -0.15, -0.8);
+    this.fpBlockMesh.rotation.set(0, -Math.PI / 4, 0);
+    
+    this.fpHeldItemModel = new THREE.Group();
+    this.fpArmGroup.add(this.fpHeldItemModel);
+    this.fpArmGroup.add(this.fpArmMesh);
+    this.fpArmGroup.add(this.fpBlockMesh);
+  }
+
+  private createFirstPersonOffHandArm() {
+    const skinTexture = generateSkin('player_seed_1');
+    const isPerformance = settingsManager.getSettings().performanceMode;
+    const isVoidtrail = this.player.world.isVoidtrail;
+    const skinMaterial = isPerformance ?
+      new THREE.MeshBasicMaterial({ map: skinTexture }) :
+      new THREE.MeshStandardMaterial({ 
+        map: skinTexture,
+        roughness: 0.8,
+        metalness: 0.1
+      });
+    
+    // Position arm in the lower left corner
+    const armGeo = new THREE.BoxGeometry(0.24, 0.24, 0.7);
+    applySkinUVs(armGeo, 'armL', false, 'bottom');
+    this.fpOffHandArmMesh = new THREE.Mesh(armGeo, skinMaterial);
+    this.fpOffHandArmMesh.castShadow = !isPerformance;
+    this.fpOffHandArmMesh.receiveShadow = !isPerformance; // Disabled in performance mode
+    this.fpOffHandArmMesh.position.set(-0.6, -0.6, -0.5);
+    this.fpOffHandArmMesh.rotation.set(0.4, 0.2, -0.1);
+    
+    const blockGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+    const texture = this.player.world.isVoidtrail ? createVoidtrailTextureAtlas() : createTextureAtlas();
+    const blockMat = isPerformance ?
+      new THREE.MeshBasicMaterial({ map: texture, transparent: true, alphaTest: 0.5 }) :
+      new THREE.MeshStandardMaterial({ map: texture, transparent: true, alphaTest: 0.5, roughness: 1.0, metalness: 0.0 });
+    this.fpOffHandBlockMesh = new THREE.Mesh(blockGeo, blockMat);
+    this.fpOffHandBlockMesh.castShadow = !isPerformance;
+    this.fpOffHandBlockMesh.receiveShadow = !isPerformance; // Disabled in performance mode
+    this.fpOffHandBlockMesh.position.set(-0.3, -0.15, -0.8);
+    this.fpOffHandBlockMesh.rotation.set(0, Math.PI / 4, 0);
+    this.fpOffHandBlockMesh.visible = false;
+    
+    this.fpOffHandHeldItemModel = new THREE.Group();
+    this.fpOffHandArmGroup.add(this.fpOffHandHeldItemModel);
+    this.fpOffHandArmGroup.add(this.fpOffHandArmMesh);
+    this.fpOffHandArmGroup.add(this.fpOffHandBlockMesh);
+  }
+
+  setHeldItem(type: number, offHandType: number = 0) {
+    let renderOffHandType = offHandType;
+    if (type === ItemType.BOW) {
+      renderOffHandType = ItemType.ARROW;
+    }
+
+    this.updateItemHand(type, false);
+    this.updateItemHand(renderOffHandType, true);
+
+    const isPerformance = settingsManager.getSettings().performanceMode;
+    const isTorch = type === ItemType.TORCH || offHandType === ItemType.TORCH;
+    if (this.torchLight) {
+      this.torchLight.intensity = isTorch ? 160.0 : 0.0;
+      if (isTorch) {
+        if (offHandType === ItemType.TORCH) {
+          this.torchLight.position.set(-0.3, 1.2, 0); 
+        } else {
+          this.torchLight.position.set(0.3, 1.2, 0);
+        }
+      }
+    }
+  }
+
+  private updateItemHand(type: number, isOffHand: boolean) {
+    if (isOffHand && this.offHandItemType === type) return;
+    if (!isOffHand && this.heldItemType === type) return;
+    
+    if (isOffHand) this.offHandItemType = type;
+    else this.heldItemType = type;
+    
+    const mesh = isOffHand ? this.offHandItemMesh : this.heldItemMesh;
+    const model = isOffHand ? this.offHandItemModel : this.heldItemModel;
+    const blockMesh = isOffHand ? this.fpOffHandBlockMesh : this.fpBlockMesh;
+    const fpModelGrp = isOffHand ? this.fpOffHandHeldItemModel : this.fpHeldItemModel;
+    const currentModelType = isOffHand ? this.currentOffHandModelType : this.currentModelType;
+    const currentFpModelType = isOffHand ? this.currentFpOffHandModelType : this.currentFpModelType;
+    
+    if (!mesh || !model || !blockMesh || !fpModelGrp) return;
+
+    if (type === 0) {
+      mesh.visible = false;
+      model.visible = false;
+      fpModelGrp.visible = false;
+      blockMesh.visible = false; 
+      return;
+    }
+
+    const isPickaxe = type >= ItemType.WOODEN_PICKAXE && type <= ItemType.DIAMOND_PICKAXE;
+    const isSword = type >= ItemType.WOODEN_SWORD && type <= ItemType.DIAMOND_SWORD;
+    const isShovel = type >= ItemType.WOODEN_SHOVEL && type <= ItemType.DIAMOND_SHOVEL;
+    const isAxe = type >= ItemType.WOODEN_AXE && type <= ItemType.DIAMOND_AXE;
+    const isTorch = type === ItemType.TORCH;
+    const isTool = isPickaxe || isSword || isShovel || isAxe || (type >= 460 && type <= 472) || type === 54 || type === ItemType.FLUID_CHOCOLATE_HOSE;
+    const isFood = (type >= 456 && type <= 459);
+    const isMaterial = type === 13 || (type >= 500 && type <= 509) || type === 29 || type === 303 || type === 300 || type === 319 || type === 321 || type === 43 || type === 44 || isTorch || type === ItemType.CHEST || type === ItemType.ENDER_CHEST || type === ItemType.FLUID_CHOCOLATE_HOSE;
+    const use3DModel = isTool || isFood || isMaterial;
+
+    if (use3DModel) {
+      mesh.visible = false;
+      model.visible = true;
+      blockMesh.visible = false;
+      fpModelGrp.visible = true;
+
+      if (currentModelType !== type) {
+        model.clear();
+        const itemModel = createItemModel(type as ItemType);
+        model.add(itemModel);
+        if (isOffHand) this.currentOffHandModelType = type;
+        else this.currentModelType = type;
+      }
+
+      if (currentFpModelType !== type) {
+        fpModelGrp.clear();
+        const fpHeldModel = createItemModel(type as ItemType);
+        const isPerformance = settingsManager.getSettings().performanceMode;
+        // Enable receiveShadow for all first-person sub-models
+        fpHeldModel.traverse(child => {
+          if (child instanceof THREE.Mesh) {
+             child.castShadow = !isPerformance;
+             child.receiveShadow = !isPerformance;
+             if (isPerformance) {
+                const oldMat = child.material as THREE.MeshStandardMaterial;
+                child.material = new THREE.MeshBasicMaterial({
+                  color: oldMat.color,
+                  map: oldMat.map,
+                  transparent: oldMat.transparent,
+                  alphaTest: oldMat.alphaTest,
+                  side: oldMat.side
+                });
+             }
+          }
+        });
+        fpModelGrp.add(fpHeldModel);
+        if (isOffHand) this.currentFpOffHandModelType = type;
+        else this.currentFpModelType = type;
+      }
+
+      const side = isOffHand ? -1 : 1;
+
+      if (isFood) {
+        model.position.set(0, -0.42, 0);
+        model.scale.set(0.8, 0.8, 0.8);
+        model.rotation.set(0, 0, 0);
+
+        fpModelGrp.position.set(0.3 * side, -0.2, -0.5);
+        fpModelGrp.scale.set(0.8, 0.8, 0.8);
+        fpModelGrp.rotation.set(0.3, -Math.PI / 4 * side, 0);
+      } else if (isTorch) {
+        model.position.set(0, -0.3, -0.1);
+        model.scale.set(1.2, 1.2, 1.2);
+        model.rotation.set(0, 0, 0);
+
+        fpModelGrp.position.set(0.55 * side, -0.5, -0.7);
+        fpModelGrp.scale.set(1.2, 1.2, 1.2);
+        fpModelGrp.rotation.set(0, -Math.PI / 8 * side, 0);
+      } else if (isMaterial && !isTool) {
+        model.position.set(0, -0.45, -0.05);
+        model.scale.set(0.9, 0.9, 0.9);
+        model.rotation.set(Math.PI / 8, 0, Math.PI / 16 * side);
+
+        fpModelGrp.position.set(0.35 * side, -0.25, -0.6);
+        fpModelGrp.scale.set(0.9, 0.9, 0.9);
+        fpModelGrp.rotation.set(0.2, -Math.PI / 4 * side, 0);
+      } else if (type === ItemType.ARROW) {
+        model.position.set(0, -0.4, -0.1);
+        model.scale.set(1.1, 1.1, 1.1);
+        // The arrow should point down (-Y) so it aligns with the hand, and then tilt slightly.
+        model.rotation.set(Math.PI - Math.PI / 4, Math.PI / 8 * side, Math.PI / 16 * side);
+
+        fpModelGrp.position.set(0.45 * side, -0.35, -0.7);
+        fpModelGrp.scale.set(1.3, 1.3, 1.3);
+        fpModelGrp.rotation.set(0.8, -Math.PI / 4 * side, -0.2 * side);
+      } else if (type === ItemType.FLUID_CHOCOLATE_HOSE) {
+        model.position.set(0, -0.45, -0.1);
+        model.scale.set(1.1, 1.1, 1.1);
+        model.rotation.set(-Math.PI/2 - 0.2, Math.PI / 8 * side, 0);
+
+        // adjust 1st person model to be clearly visible in front of camera
+        fpModelGrp.position.set(0.55 * side, -0.35, -0.65);
+        fpModelGrp.scale.set(0.9, 0.9, 0.9);
+        fpModelGrp.rotation.set(-Math.PI / 2 + 0.2, 0, 0.2 * side);
+      } else {
+        model.position.set(0, -0.4, -0.1);
+        model.scale.set(1.1, 1.1, 1.1);
+        model.rotation.set(-Math.PI / 4, Math.PI / 8 * side, Math.PI / 16 * side);
+
+        fpModelGrp.position.set(0.45 * side, -0.35, -0.7);
+        fpModelGrp.scale.set(1.3, 1.3, 1.3);
+        fpModelGrp.rotation.set(0.8, -Math.PI / 4 * side, -0.2 * side);
+      }
+    } else {
+      model.visible = false;
+      mesh.visible = true;
+      fpModelGrp.visible = false;
+      blockMesh.visible = !isOffHand;
+      
+      const side = isOffHand ? -1 : 1;
+      const uvs = getBlockUVs(type);
+      if (uvs) {
+        const isFlat = isFlatItem(type);
+        const plant = isPlant(type);
+
+        if (isFlat) {
+          mesh.scale.set(1.4, 1.4, 0.05);
+          mesh.position.set(0, -0.4, -0.1);
+          mesh.rotation.set(Math.PI / 8, Math.PI / 4 * side, 0); 
+          (mesh.material as THREE.MeshStandardMaterial).side = THREE.DoubleSide;
+        } else if (plant) {
+          mesh.scale.set(1, 1, 0.05);
+          mesh.position.set(0, -0.45, -0.15);
+          mesh.rotation.set(0, 0, 0);
+          (mesh.material as THREE.MeshStandardMaterial).side = THREE.DoubleSide;
+        } else {
+          mesh.scale.set(1, 1, 1);
+          mesh.position.set(0, -0.45, -0.15);
+          mesh.rotation.set(0, 0, 0);
+          (mesh.material as THREE.MeshStandardMaterial).side = THREE.FrontSide;
+        }
+
+        const uvAttribute = mesh.geometry.getAttribute('uv') as THREE.BufferAttribute;
+        const atlasSize = ATLAS_TILES;
+        const step = 1 / atlasSize;
+        
+        for (let i = 0; i < 6; i++) {
+          const faceUVs = uvs[i];
+          const u = faceUVs[0] * step;
+          const v = 1.0 - (faceUVs[1] + 1) * step;
+          
+          const startIdx = i * 4;
+          uvAttribute.setXY(startIdx, u, v + step);
+          uvAttribute.setXY(startIdx + 1, u + step, v + step);
+          uvAttribute.setXY(startIdx + 2, u, v);
+          uvAttribute.setXY(startIdx + 3, u + step, v);
+        }
+        uvAttribute.needsUpdate = true;
+        
+        if (!(mesh.material as THREE.MeshStandardMaterial).map) {
+          (mesh.material as THREE.MeshStandardMaterial).map = this.player.world.isVoidtrail ? createVoidtrailTextureAtlas() : createTextureAtlas();
+        }
+      } else {
+        mesh.visible = false;
+      }
+    }
+  }
+
+  animate(delta: number) {
+    const horizontalVelocity = new THREE.Vector2(
+      this.player.velocity.x,
+      this.player.velocity.z,
+    ).length();
+    const isMoving = horizontalVelocity > 0.1;
+
+    this.player.idleTime += delta;
+
+    if (isMoving && this.player.canJump && !this.player.isFlying) {
+      const cycleSpeed = this.player.inputController.isSprinting ? 15 : 10;
+      const oldWalkCycle = this.player.walkCycle;
+      this.player.walkCycle += delta * cycleSpeed;
+
+      // Play footstep sound at the peak of the walk cycle
+      if (Math.sin(this.player.walkCycle) < 0 && Math.sin(oldWalkCycle) >= 0) {
+        const blockBelow = this.player.world.getBlock(
+          Math.floor(this.player.worldPosition.x),
+          Math.floor(this.player.worldPosition.y - this.player.playerHeight - 0.1),
+          Math.floor(this.player.worldPosition.z),
+        );
+        let surface = "grass";
+        if (
+          blockBelow === BLOCK.STONE ||
+          blockBelow === BLOCK.BLUE_STONE ||
+          blockBelow === BLOCK.RED_STONE ||
+          blockBelow === BLOCK.BRICK
+        )
+          surface = "stone";
+        else if (blockBelow === BLOCK.SAND) surface = "sand";
+        else if (blockBelow === BLOCK.WOOD || blockBelow === BLOCK.PLANKS)
+          surface = "wood";
+
+        audioManager.playStep(surface);
+      }
+    } else {
+      this.player.walkCycle = THREE.MathUtils.lerp(this.player.walkCycle, 0, 0.1);
+    }
+
+    if (this.player.isSwinging) {
+      this.player.swingSpeed = 18; // Default snappy swing
+
+      this.player.swingTimer += delta * this.player.swingSpeed;
+      if (this.player.swingTimer > Math.PI) {
+        this.player.isSwinging = false;
+        this.player.swingTimer = 0;
+      }
+    }
+
+    // Update animation transitions
+    this.player.crouchTransition = THREE.MathUtils.lerp(
+      this.player.crouchTransition,
+      this.player.inputController.isCrouching ? 1 : 0,
+      delta * 10,
+    );
+    this.player.swimTransition = THREE.MathUtils.lerp(
+      this.player.swimTransition,
+      this.player.isSwimming ? 1 : 0,
+      delta * 8,
+    );
+    this.player.flyTransition = THREE.MathUtils.lerp(
+      this.player.flyTransition,
+      this.player.isFlying && !this.player.isSwimming ? 1 : 0,
+      delta * 8,
+    );
+    this.player.blockTransition = THREE.MathUtils.lerp(
+      this.player.blockTransition,
+      this.player.isBlocking ? 1 : 0,
+      delta * 12,
+    );
+
+    // Climb transition: active when moving up steps/slopes
+    const verticalMovement =
+      (this.player.worldPosition.y -
+        (this.player.lastWorldPosition?.y || this.player.worldPosition.y)) /
+      delta;
+    const isClimbing = isMoving && verticalMovement > 0.5 && this.player.canJump;
+    this.player.climbTransition = THREE.MathUtils.lerp(
+      this.player.climbTransition,
+      isClimbing ? 1 : 0,
+      delta * 10,
+    );
+    if (!this.player.lastWorldPosition) this.player.lastWorldPosition = new THREE.Vector3();
+    this.player.lastWorldPosition.copy(this.player.worldPosition);
+
+    if (this.player.landingTimer > 0) {
+      this.player.landingTimer -= delta * 5;
+    }
+
+    const swingAngle = Math.sin(this.player.walkCycle) * 0.5;
+    const armSwingAngle = Math.sin(this.player.swingTimer) * 1.5;
+
+    if (
+      this.player.leftLegMesh &&
+      this.player.rightLegMesh &&
+      this.player.leftArmMesh &&
+      this.player.rightArmMesh &&
+      this.player.bodyMesh &&
+      this.player.headMesh &&
+      this.player.capeMesh
+    ) {
+      // Reset rotations
+      this.player.leftLegMesh.rotation.set(0, 0, 0);
+      this.player.rightLegMesh.rotation.set(0, 0, 0);
+      this.player.leftArmMesh.rotation.set(0, 0, 0);
+      this.player.rightArmMesh.rotation.set(0, 0, 0);
+      this.player.bodyMesh.rotation.set(0, 0, 0);
+
+      // Apply camera pitch to head for shadow/third-person
+      this.player.headMesh.rotation.x = this.player.cameraPitch;
+
+      this.player.capeMesh.rotation.x = -0.1; // Default hang
+
+      // Reset positions (relative to parents)
+      this.player.bodyMesh.position.set(0, 0.9, 0);
+      this.player.headMesh.position.set(0, 0.5, 0);
+      if (this.player.neckMesh) this.player.neckMesh.position.set(0, 0.4, 0);
+      this.player.leftArmMesh.position.set(-0.3, 0.3, 0);
+      this.player.rightArmMesh.position.set(0.3, 0.3, 0);
+      this.player.leftLegMesh.position.set(-0.1, 0.6, 0);
+      this.player.rightLegMesh.position.set(0.1, 0.6, 0);
+      this.player.capeMesh.position.set(0, 0.3, 0.1);
+      this.player.bodyMesh.scale.set(1, 1, 1);
+      this.player.headMesh.scale.set(1, 1, 1);
+      if (this.player.neckMesh) this.player.neckMesh.scale.set(1, 1, 1);
+      this.player.leftArmMesh.scale.set(1, 1, 1);
+      this.player.rightArmMesh.scale.set(1, 1, 1);
+
+      // Apply landing squash effect
+      if (this.player.landingTimer > 0) {
+        const squash = Math.sin(this.player.landingTimer * Math.PI) * 0.2;
+        this.player.bodyMesh.scale.y -= squash;
+        this.player.bodyMesh.scale.x += squash * 0.5;
+        this.player.bodyMesh.scale.z += squash * 0.5;
+        this.player.bodyMesh.position.y -= squash * 0.3;
+      }
+
+      // Calculate target cape angle based on state
+      let targetCapeAngle = -0.1;
+      if (this.player.isFlying) {
+        targetCapeAngle = -1.2 - Math.sin(this.player.idleTime * 10) * 0.05; // Flutter in wind
+      } else if (!this.player.canJump) {
+        targetCapeAngle = this.player.velocity.y < 0 ? -0.8 : -0.2; // Fall vs Jump
+      } else if (isMoving) {
+        targetCapeAngle =
+          -0.2 -
+          (horizontalVelocity / this.player.sprintSpeed) * 0.8 -
+          Math.sin(this.player.walkCycle * 2) * 0.1;
+      } else {
+        const breath = Math.sin(this.player.idleTime * 2) * 0.02;
+        targetCapeAngle = -0.1 - breath * 0.5;
+      }
+
+      // Smooth cape physics (spring-like)
+      const capeDiff = targetCapeAngle - this.player.capeAngle;
+      this.player.capeVelocity += capeDiff * 0.1;
+      this.player.capeVelocity *= 0.8; // Dampening
+      this.player.capeAngle += this.player.capeVelocity;
+      this.player.capeMesh.rotation.x = this.player.capeAngle;
+
+      // Cape sway when turning
+      this.player.capeMesh.rotation.z = THREE.MathUtils.lerp(
+        this.player.capeMesh.rotation.z,
+        -this.player.mouseDeltaX * 0.005,
+        0.1,
+      );
+
+      if (this.player.isFlying) {
+        // Flying pose: legs trailing, arms slightly out
+        this.player.leftLegMesh.rotation.x = 0.5;
+        this.player.rightLegMesh.rotation.x = 0.5;
+        this.player.leftArmMesh.rotation.x = -0.2;
+        this.player.rightArmMesh.rotation.x = -0.2;
+      } else if (this.player.swimTransition > 0.01) {
+        const t = this.player.swimTransition;
+        // Swimming pose: flatter body to feel like swimming (Face-down)
+        this.player.bodyMesh.rotation.x = THREE.MathUtils.lerp(0, -1.3, t);
+        this.player.headMesh.rotation.x += 0.6 * t;
+        this.player.bodyMesh.position.y = THREE.MathUtils.lerp(0.9, 0.4, t);
+
+        // Breaststroke / flutter kick animation
+        const swimSpeed = this.player.inputController.isSprinting ? 1.5 : 1.0;
+        const paddleAngle = Math.sin(this.player.walkCycle * swimSpeed) * 0.5;
+
+        // Arms extending forward and sweeping
+        this.player.leftArmMesh.rotation.x = THREE.MathUtils.lerp(0, -1.5, t);
+        this.player.leftArmMesh.rotation.y = THREE.MathUtils.lerp(
+          0,
+          -0.4 + paddleAngle,
+          t,
+        );
+        this.player.rightArmMesh.rotation.x = THREE.MathUtils.lerp(0, -1.5, t);
+        this.player.rightArmMesh.rotation.y = THREE.MathUtils.lerp(
+          0,
+          0.4 - paddleAngle,
+          t,
+        );
+
+        // Legs fluttering behind
+        const kickAngle = Math.cos(this.player.walkCycle * swimSpeed * 1.5) * 0.4;
+        this.player.leftLegMesh.rotation.x = THREE.MathUtils.lerp(0, kickAngle, t);
+        this.player.rightLegMesh.rotation.x = THREE.MathUtils.lerp(0, -kickAngle, t);
+      } else if (!this.player.canJump) {
+        // Minecraft-style Jumping/Falling pose (Split limbs)
+        const jumpProgress = THREE.MathUtils.clamp(this.player.velocity.y / 15, -1, 1);
+
+        // Subtle body tilt
+        this.player.bodyMesh.rotation.x = 0.15 * jumpProgress;
+
+        if (jumpProgress > 0) {
+          // Ascending: Pronounced split
+          // Left arm forward/up, right arm back/up | Left leg back, right leg forward
+          const swing = 0.8 * jumpProgress;
+          this.player.leftArmMesh.rotation.x = -swing - 0.2;
+          this.player.rightArmMesh.rotation.x = swing - 0.2;
+          this.player.leftLegMesh.rotation.x = swing;
+          this.player.rightLegMesh.rotation.x = -swing;
+
+          // Arms spread out for balance
+          this.player.leftArmMesh.rotation.z = 0.3 * jumpProgress;
+          this.player.rightArmMesh.rotation.z = -0.3 * jumpProgress;
+        } else {
+          // Descending: Wide flail
+          const fallFactor = Math.abs(jumpProgress);
+          const swing = 0.5 * fallFactor;
+          this.player.leftArmMesh.rotation.x = swing;
+          this.player.rightArmMesh.rotation.x = -swing;
+          this.player.leftLegMesh.rotation.x = -swing;
+          this.player.rightLegMesh.rotation.x = swing;
+
+          // Arms flail out wide when falling
+          this.player.leftArmMesh.rotation.z = 0.6 * fallFactor;
+          this.player.rightArmMesh.rotation.z = -0.6 * fallFactor;
+
+          // Head looks down to spot the landing
+          this.player.headMesh.rotation.x += 0.3 * fallFactor;
+        }
+      } else if (isMoving) {
+        // Walking/Sprinting animation
+        this.player.leftLegMesh.rotation.x = swingAngle;
+        this.player.rightLegMesh.rotation.x = -swingAngle;
+        this.player.leftArmMesh.rotation.x = -swingAngle;
+        this.player.rightArmMesh.rotation.x = swingAngle;
+
+        if (this.player.climbTransition > 0.01) {
+          const t = this.player.climbTransition;
+          // High-knee step when climbing
+          const stepLift = Math.max(0, Math.sin(this.player.walkCycle)) * 0.5 * t;
+          const stepLiftAlt =
+            Math.max(0, Math.sin(this.player.walkCycle + Math.PI)) * 0.5 * t;
+          this.player.leftLegMesh.rotation.x += stepLift;
+          this.player.rightLegMesh.rotation.x += stepLiftAlt;
+
+          // Lean forward into the climb
+          this.player.bodyMesh.rotation.x = THREE.MathUtils.lerp(
+            this.player.bodyMesh.rotation.x,
+            0.4,
+            t,
+          );
+        }
+
+        if (this.player.inputController.isSprinting) {
+          this.player.bodyMesh.rotation.x = 0.3;
+          this.player.headMesh.rotation.x = -0.2;
+          this.player.leftArmMesh.rotation.x = -swingAngle * 1.5;
+          this.player.rightArmMesh.rotation.x = swingAngle * 1.5;
+          this.player.leftLegMesh.rotation.x = swingAngle * 1.2;
+          this.player.rightLegMesh.rotation.x = -swingAngle * 1.2;
+        }
+      } else {
+        // Idle animation (breathing)
+        const breath = Math.sin(this.player.idleTime * 2) * 0.02;
+        this.player.bodyMesh.scale.y = 1.0 + breath;
+        this.player.headMesh.position.y += breath * 0.8;
+        this.player.leftArmMesh.position.y += breath * 0.8;
+        this.player.rightArmMesh.position.y += breath * 0.8;
+      }
+
+      if (this.player.crouchTransition > 0.01) {
+        const t = this.player.crouchTransition;
+
+        // Lower the body mesh specifically to simulate the crouch
+        const crouchDrop = 0.15 * t; // Reduced to elevate torso
+        this.player.bodyMesh.position.y -= crouchDrop;
+        this.player.bodyMesh.position.z -= 0.1 * t; // Move torso forward
+
+        // Squash torso to look shorter
+        const bodyScaleY = 1.0 - 0.2 * t;
+        this.player.bodyMesh.scale.y = bodyScaleY;
+        // Inverse scale children to keep them uniform
+        this.player.headMesh.scale.y = 1.0 / bodyScaleY;
+        if (this.player.neckMesh) this.player.neckMesh.scale.y = 1.0 / bodyScaleY;
+        this.player.leftArmMesh.scale.y = 1.0 / bodyScaleY;
+        this.player.rightArmMesh.scale.y = 1.0 / bodyScaleY;
+
+        // Elevate head and arms slightly on the torso
+        this.player.headMesh.position.y += 0.05 * t;
+        if (this.player.neckMesh) this.player.neckMesh.position.y += 0.05 * t;
+        this.player.leftArmMesh.position.y += 0.05 * t;
+        this.player.rightArmMesh.position.y += 0.05 * t;
+
+        // Lean body forward (head and arms follow because they are children)
+        this.player.bodyMesh.rotation.x = THREE.MathUtils.lerp(
+          this.player.bodyMesh.rotation.x,
+          -0.5,
+          t,
+        );
+        // Counter-rotate head to look forward
+        this.player.headMesh.rotation.x += 0.4 * t;
+
+        // Bend legs (simulated by rotating them forward and shifting up)
+        this.player.leftLegMesh.rotation.x = THREE.MathUtils.lerp(
+          this.player.leftLegMesh.rotation.x,
+          0.3,
+          t,
+        );
+        this.player.rightLegMesh.rotation.x = THREE.MathUtils.lerp(
+          this.player.rightLegMesh.rotation.x,
+          0.3,
+          t,
+        );
+        this.player.leftLegMesh.position.y += 0.0 * t;
+        this.player.rightLegMesh.position.y += 0.0 * t;
+
+        if (isMoving) {
+          // Tactical sneak walk
+          const sneakStride = this.player.walkCycle * 0.8;
+          const sneakSwing = Math.sin(sneakStride) * 0.4 * t;
+
+          this.player.leftLegMesh.rotation.x += sneakSwing;
+          this.player.rightLegMesh.rotation.x -= sneakSwing;
+
+          // Arms held in a ready/tactical position (Minecraft-style sneak arms)
+          // Arms are held slightly back and out
+          const baseArmX = -0.4 * t;
+          const baseArmZ = 0.15 * t;
+
+          this.player.leftArmMesh.rotation.x = THREE.MathUtils.lerp(
+            this.player.leftArmMesh.rotation.x,
+            baseArmX - sneakSwing * 0.3,
+            t,
+          );
+          this.player.rightArmMesh.rotation.x = THREE.MathUtils.lerp(
+            this.player.rightArmMesh.rotation.x,
+            baseArmX + sneakSwing * 0.3,
+            t,
+          );
+          this.player.leftArmMesh.rotation.z = THREE.MathUtils.lerp(
+            this.player.leftArmMesh.rotation.z,
+            baseArmZ,
+            t,
+          );
+          this.player.rightArmMesh.rotation.z = THREE.MathUtils.lerp(
+            this.player.rightArmMesh.rotation.z,
+            -baseArmZ,
+            t,
+          );
+        } else {
+          // Idle crouch pose - subtle breathing sway
+          const sway = Math.sin(this.player.idleTime * 2) * 0.05 * t;
+          this.player.leftArmMesh.rotation.x = THREE.MathUtils.lerp(
+            this.player.leftArmMesh.rotation.x,
+            0.2 + sway,
+            t,
+          );
+          this.player.rightArmMesh.rotation.x = THREE.MathUtils.lerp(
+            this.player.rightArmMesh.rotation.x,
+            0.2 + sway,
+            t,
+          );
+          this.player.leftArmMesh.rotation.z = THREE.MathUtils.lerp(
+            this.player.leftArmMesh.rotation.z,
+            0.15,
+            t,
+          );
+          this.player.rightArmMesh.rotation.z = THREE.MathUtils.lerp(
+            this.player.rightArmMesh.rotation.z,
+            -0.15,
+            t,
+          );
+        }
+      }
+
+      if (this.player.blockTransition > 0.01 && this.heldItemModel) {
+        const t = this.player.blockTransition;
+        if (this.heldItemType === ItemType.BOW) {
+          // 3rd Person Bow Charge Animation
+          // Both arms extend forward, right arm holds bow slightly more inward
+          this.player.rightArmMesh.rotation.x = THREE.MathUtils.lerp(
+            this.player.rightArmMesh.rotation.x,
+            Math.PI / 2,
+            t,
+          );
+          this.player.rightArmMesh.rotation.y = THREE.MathUtils.lerp(
+            this.player.rightArmMesh.rotation.y,
+            -0.3,
+            t,
+          );
+          // Left arm draws back the string
+          this.player.leftArmMesh.rotation.x = THREE.MathUtils.lerp(
+            this.player.leftArmMesh.rotation.x,
+            Math.PI / 2 - 0.5,
+            t,
+          );
+          this.player.leftArmMesh.rotation.y = THREE.MathUtils.lerp(
+            this.player.leftArmMesh.rotation.y,
+            0.5,
+            t,
+          );
+          this.player.leftArmMesh.rotation.z = THREE.MathUtils.lerp(
+            this.player.leftArmMesh.rotation.z,
+            0.9,
+            t,
+          );
+          
+          if (this.heldItemModel) {
+            // Rotate bow vertically
+            this.heldItemModel.rotation.set(
+              THREE.MathUtils.lerp(-Math.PI / 4, Math.PI / 2, t),
+              THREE.MathUtils.lerp(Math.PI / 8, -Math.PI / 2, t),
+              THREE.MathUtils.lerp(Math.PI / 16, 0, t)
+            );
+
+            const arrowMesh = this.heldItemModel.getObjectByName('bow_arrow');
+            const stringMesh = this.heldItemModel.getObjectByName('bow_string');
+            if (arrowMesh && stringMesh) {
+               arrowMesh.visible = true;
+               arrowMesh.rotation.z = -Math.PI / 2;
+               arrowMesh.position.set(0.1 - (t * 0.25), 0, 0);
+               // stringMesh.position.set(0.24 + (t * 0.21), 0, 0);
+            }
+          }
+        } else {
+          // 3rd Person Sword Block Animation
+          this.player.rightArmMesh.rotation.x = THREE.MathUtils.lerp(
+            this.player.rightArmMesh.rotation.x,
+            -0.5,
+            t,
+          );
+          this.player.rightArmMesh.rotation.y = THREE.MathUtils.lerp(
+            this.player.rightArmMesh.rotation.y,
+            -0.3,
+            t,
+          );
+          this.player.rightArmMesh.rotation.z = THREE.MathUtils.lerp(
+            this.player.rightArmMesh.rotation.z,
+            0.5,
+            t,
+          );
+
+          if (this.player.isSwinging) {
+            this.player.rightArmMesh.rotation.x += Math.sin(this.player.swingTimer) * 0.5 * t;
+          }
+        }
+      } else {
+        if (this.heldItemType === ItemType.BOW && this.heldItemModel) {
+           this.heldItemModel.rotation.set(-Math.PI / 4, Math.PI / 8, Math.PI / 16);
+           const arrowMesh = this.heldItemModel.getObjectByName('bow_arrow');
+           const stringMesh = this.heldItemModel.getObjectByName('bow_string');
+           if (arrowMesh && stringMesh) {
+              arrowMesh.visible = false;
+              stringMesh.position.set(0.24, 0, 0);
+           }
+        }
+      }
+
+      // Apply arm swing (overrides walk/crouch swing for right arm)
+      // Moved to the end to prevent being overridden by crouch logic
+      if (this.player.isSwinging && this.player.blockTransition < 0.5) {
+        const t = this.player.swingTimer / Math.PI;
+        // Use a power curve for more "snap" at the start of the swing
+        const swingProgress = Math.sin(Math.pow(t, 0.4) * Math.PI);
+
+        const equippedItem = this.player.inventory.slots[this.player.hotbarIndex];
+        const isSword =
+          equippedItem &&
+          ((equippedItem.type >= ItemType.WOODEN_SWORD &&
+            equippedItem.type <= ItemType.DIAMOND_SWORD) ||
+            equippedItem.type === ItemType.ASPECT_OF_THE_END);
+
+        if (isSword) {
+          // Upside down swipe (Underhand/Upward slash)
+          // Starts from behind/down and swipes upwards
+          this.player.rightArmMesh.rotation.x = THREE.MathUtils.lerp(
+            this.player.rightArmMesh.rotation.x,
+            0.4 - swingProgress * 2.0,
+            0.8,
+          );
+          this.player.rightArmMesh.rotation.y = THREE.MathUtils.lerp(
+            this.player.rightArmMesh.rotation.y,
+            swingProgress * 0.8,
+            0.5,
+          );
+          this.player.rightArmMesh.rotation.z = THREE.MathUtils.lerp(
+            this.player.rightArmMesh.rotation.z,
+            swingProgress * 0.4,
+            0.5,
+          );
+        } else {
+          // Diagonal slash motion for tools
+          this.player.rightArmMesh.rotation.x = THREE.MathUtils.lerp(
+            this.player.rightArmMesh.rotation.x,
+            swingProgress * 1.5 - 0.2,
+            0.8,
+          );
+          this.player.rightArmMesh.rotation.y = THREE.MathUtils.lerp(
+            this.player.rightArmMesh.rotation.y,
+            -swingProgress * 0.8,
+            0.5,
+          );
+          this.player.rightArmMesh.rotation.z = THREE.MathUtils.lerp(
+            this.player.rightArmMesh.rotation.z,
+            -swingProgress * 0.4,
+            0.5,
+          );
+        }
+
+        // If crouching, make the swing slightly more forward-leaning
+        if (this.player.inputController.isCrouching) {
+          this.player.rightArmMesh.rotation.x -= 0.2;
+        }
+      }
+
+      // Final clamp for head rotation to prevent extreme angles from animations
+      const limitUp = Math.PI * 0.35;
+      const limitDown = Math.PI * 0.2; // ~86 degrees
+
+      // Apply the head rotation offset after clamp so crouch still looks right
+      const headPitchOffset =
+        this.player.crouchTransition > 0.01 ? -(this.player.crouchTransition * 0.4) : 0;
+      this.player.headMesh.rotation.x =
+        Math.max(-limitDown, Math.min(limitUp, this.player.headMesh.rotation.x)) +
+        headPitchOffset;
+    }
+
+    const activeTool = this.player.inventory.slots[this.player.hotbarIndex];
+    if (activeTool && activeTool.type >= ItemType.WOODEN_SWORD && activeTool.type <= ItemType.DIAMOND_SWORD) {
+        let kills = 0;
+        if (networkManager.id) {
+           const leaderboardObj = useGameStore.getState().leaderboard[networkManager.id];
+           if (leaderboardObj) kills = leaderboardObj.kills || 0;
+        }
+        if (this.currentModelType === activeTool.type && this.heldItemModel) {
+           applyMilestoneColor(kills, this.heldItemModel);
+        }
+        if (this.currentFpModelType === activeTool.type && this.fpHeldItemModel) {
+           applyMilestoneColor(kills, this.fpHeldItemModel);
+        }
+    }
+  }
+}
+

@@ -1,0 +1,999 @@
+import { useGameStore } from '../store/gameStore';
+import * as THREE from 'three';
+import { Player } from './Player';
+import { BLOCK, isPlant, ATLAS_TILES, isFlatItem, isSolidBlock, isAnyTorch } from './TextureAtlas';
+import { ItemType, Inventory } from './Inventory';
+import { audioManager } from './AudioManager';
+import { networkManager } from './NetworkManager';
+import { skyBridgeManager, SkillType, Rarity } from './SkyBridgeManager';
+import { settingsManager } from './Settings';
+import { ITEM_NAMES } from './Constants';
+import { getMiningStats } from './MiningStats';
+
+const _dirAux = new THREE.Vector3();
+const _lookDirAux = new THREE.Vector3();
+const _targetDirAux = new THREE.Vector3();
+
+export class PlayerInputController {
+  player: Player;
+  private _lastStarterChestPeriod?: number;
+  
+  moveForward = false;
+  moveBackward = false;
+  moveLeft = false;
+  moveRight = false;
+  moveUp = false;
+  moveDown = false;
+  isCrouching = false;
+  isSprinting = false;
+  isBlocking = false;
+  isRightMouseDown = false;
+  lastAttackTime = 0;
+  bowChargeStart = 0;
+  
+  constructor(player: Player) {
+    this.player = player;
+  }
+
+  bindEvents() {
+    document.addEventListener('keydown', this.onKeyDown);
+    document.addEventListener('keyup', this.onKeyUp);
+    document.addEventListener('mousedown', this.onMouseDown);
+    document.addEventListener('mouseup', this.onMouseUp);
+    document.addEventListener('mousemove', this.onMouseMove);
+    
+    // Add listeners to reset input when focus is lost or cursor is unlocked
+    window.addEventListener('blur', this.resetInput);
+    document.addEventListener('pointerlockchange', this.onPointerLockChange);
+
+    window.addEventListener('playerTakeDamage', this.onPlayerTakeDamage as EventListener);
+  }
+
+  onPointerLockChange = () => {
+    if (document.pointerLockElement !== this.player.controls.domElement) {
+      this.resetInput();
+    }
+  };
+
+  onPlayerTakeDamage = (e: CustomEvent) => {
+    this.player.takeDamage(e.detail.damage, e.detail.knockbackDir);
+  };
+
+  resetInput = () => {
+    this.moveForward = false;
+    this.moveBackward = false;
+    this.moveLeft = false;
+    this.moveRight = false;
+    this.moveUp = false;
+    this.moveDown = false;
+    this.isCrouching = false;
+    this.isSprinting = false;
+    this.player.isLeftMouseDown = false;
+    this.isRightMouseDown = false;
+    this.player.isMining = false;
+    this.resetItemState();
+    this.player.velocity.set(0, this.player.velocity.y, 0); // Stop horizontal movement but keep falling
+  };
+
+  update() {
+    this.checkStarterChestReset();
+    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+      if (window.mobileInputs) {
+        // Evaluate joystick
+        const jX = window.mobileInputs.joystickX;
+        const jY = window.mobileInputs.joystickY;
+        
+        this.moveForward = jY < -0.2;
+        this.moveBackward = jY > 0.2;
+        this.moveLeft = jX < -0.2;
+        this.moveRight = jX > 0.2;
+        this.isSprinting = window.mobileInputs.isSprinting;
+        
+        const wasMovingUp = this.moveUp;
+        this.moveUp = window.mobileInputs.isJumping;
+        if (this.moveUp && !wasMovingUp) {
+          if (!this.player.isFlying && !this.player.isSwimming && this.player.canJump) {
+            this.player.velocity.y += this.player.jumpForce;
+            if (this.isSprinting && (this.moveForward || this.moveBackward || this.moveLeft || this.moveRight)) {
+              this.player.velocity.x += this.player.direction.x * this.player.sprintSpeed * 0.15;
+              this.player.velocity.z += this.player.direction.z * this.player.sprintSpeed * 0.15;
+            }
+            const blockBelow = this.player.world.getBlock(Math.floor(this.player.worldPosition.x), Math.floor(this.player.worldPosition.y - 0.5), Math.floor(this.player.worldPosition.z));
+            let surface = 'stone';
+            if (blockBelow === BLOCK.GRASS) surface = 'grass';
+            else if (blockBelow === BLOCK.DIRT) surface = 'dirt';
+            else if (blockBelow === BLOCK.SAND) surface = 'sand';
+            else if (blockBelow === BLOCK.WOOD || blockBelow === BLOCK.PLANKS) surface = 'wood';
+            audioManager.playStep(surface);
+          }
+        }
+        
+        this.player.isZooming = window.mobileInputs.isZooming;
+        
+        if (window.mobileInputs.triggerDrop) {
+          if (!this.player.world.isHub && !this.player.isSpectator && !this.player.isDead) this.dropItem(true);
+          window.mobileInputs.triggerDrop = false;
+        }
+
+        if (window.mobileInputs.triggerTap) {
+          window.mobileInputs.triggerTap = false;
+          
+          let hitPlayer = false;
+          const entities = [
+            ...Array.from(this.player.entityManager.mobs.values()),
+            ...Array.from(this.player.entityManager.remotePlayers.values())
+          ];
+          const nearest = entities
+            .filter((e: any) => e !== this.player)
+            .sort((a: any, b: any) => this.player.worldPosition.distanceTo(a.position || (a.group && a.group.position)) - this.player.worldPosition.distanceTo(b.position || (b.group && b.group.position)))[0];
+          
+          if (nearest) {
+            const near: any = nearest;
+            const nearPos = near.position || (near.group && near.group.position);
+            if (nearPos && this.player.worldPosition.distanceTo(nearPos) < 5) {
+              const targetHeadPos = nearPos.clone().add(new THREE.Vector3(0, 1.0, 0));
+              const dirToNearest = targetHeadPos.clone().sub(this.player.worldPosition).normalize();
+              const lookDir = _dirAux.set(
+                -Math.sin(this.player.cameraYaw) * Math.cos(this.player.cameraPitch),
+                Math.sin(this.player.cameraPitch),
+                -Math.cos(this.player.cameraYaw) * Math.cos(this.player.cameraPitch)
+              ).normalize();
+              const angle = lookDir.angleTo(dirToNearest);
+              if (angle < Math.PI / 4) {
+                hitPlayer = true;
+                
+                // Snap to target immediately
+                const dirToTarget = _targetDirAux.subVectors(nearPos, this.player.worldPosition);
+                this.player.cameraYaw = Math.atan2(dirToTarget.x, dirToTarget.z) + Math.PI;
+                this.player.cameraPitch = Math.atan2(dirToTarget.y + 1.0, Math.sqrt(dirToTarget.x * dirToTarget.x + dirToTarget.z * dirToTarget.z));
+                
+                this.onMouseDown({ button: 0 } as MouseEvent); // Synthesize Left Click to attack
+              }
+            }
+          }
+          
+          if (!hitPlayer) {
+            this.onMouseDown({ button: 2 } as MouseEvent); // Synthesize Right Click to interact/place
+            setTimeout(() => this.onMouseUp({ button: 2 } as MouseEvent), 50);
+          } else {
+            setTimeout(() => this.onMouseUp({ button: 0 } as MouseEvent), 50);
+          }
+        }
+        
+        if (window.mobileInputs.triggerPerspective) {
+          this.player.perspective = (this.player.perspective + 1) % 3;
+          window.mobileInputs.triggerPerspective = false;
+        }
+        
+        const wasCrouching = this.isCrouching;
+        this.isCrouching = window.mobileInputs.isCrouching;
+        this.moveDown = window.mobileInputs.isCrouching;
+
+        const wasLeftMouseDown = this.player.isLeftMouseDown;
+        if (window.mobileInputs.isAttacking && !wasLeftMouseDown) {
+          // Trigger mouse down manually for attack/mine
+          this.onMouseDown({ button: 0 } as MouseEvent);
+        } else if (!window.mobileInputs.isAttacking && wasLeftMouseDown) {
+          this.onMouseUp({ button: 0 } as MouseEvent);
+        }
+
+        const wasRightMouseDown = this.isRightMouseDown;
+        if (window.mobileInputs.isInteracting && !wasRightMouseDown) {
+           this.onMouseDown({ button: 2 } as MouseEvent);
+        } else if (!window.mobileInputs.isInteracting && wasRightMouseDown) {
+           this.onMouseUp({ button: 2 } as MouseEvent);
+        }
+
+        // Camera Look
+        if (Math.abs(window.mobileInputs.lookDeltaX) > 0 || Math.abs(window.mobileInputs.lookDeltaY) > 0) {
+           this.player.mouseDeltaX += window.mobileInputs.lookDeltaX;
+           this.player.mouseDeltaY += window.mobileInputs.lookDeltaY;
+           window.mobileInputs.lookDeltaX = 0;
+           window.mobileInputs.lookDeltaY = 0;
+        }
+
+        // Zoom Joystick Look
+        if (Math.abs(window.mobileInputs.zoomJoystickX) > 0 || Math.abs(window.mobileInputs.zoomJoystickY) > 0) {
+           const scale = 25; // Continuous rotation speed
+           this.player.mouseDeltaX += window.mobileInputs.zoomJoystickX * scale;
+           this.player.mouseDeltaY += window.mobileInputs.zoomJoystickY * scale;
+        }
+        
+        this.updateAimAssist();
+      }
+    }
+  }
+
+  updateAimAssist() {
+    // Only aim assist if attacking or specifically requested
+    if (!window.mobileInputs.isAttacking) return;
+
+    let closestTarget = null;
+    let minAngleDist = Infinity;
+    const assistRange = 8;
+    const maxAssistAngle = Math.PI / 6; // 30 degrees
+
+    const checkEntities = (entities: Iterable<any>) => {
+      for (const entity of entities) {
+        if (!entity || entity.isDead || entity.health <= 0) continue;
+        if (entity === this.player) continue;
+
+        const targetPos = entity.position || (entity.group && entity.group.position);
+        if (!targetPos) continue;
+
+        const dist = this.player.worldPosition.distanceTo(targetPos);
+        if (dist > assistRange) continue;
+
+        // Calculate direction to entity
+        const dirToEntity = _dirAux.subVectors(targetPos, this.player.worldPosition).normalize();
+        
+        // Get current look direction
+        const lookDir = _lookDirAux.set(0, 0, -1);
+        lookDir.applyEuler(new THREE.Euler(this.player.cameraPitch, this.player.cameraYaw, 0, 'YXZ'));
+
+        // Calculate angle diff
+        const angle = lookDir.angleTo(dirToEntity);
+        if (angle < maxAssistAngle && angle < minAngleDist) {
+          minAngleDist = angle;
+          closestTarget = entity;
+        }
+      }
+    };
+
+    checkEntities(this.player.entityManager.mobs.values());
+    checkEntities(this.player.entityManager.remotePlayers.values());
+
+    if (closestTarget) {
+      const targetPos = closestTarget.position || (closestTarget.group && closestTarget.group.position);
+      // Calculate desired yaw and pitch
+      const dirToTarget = _targetDirAux.subVectors(targetPos, this.player.worldPosition);
+      const targetYaw = Math.atan2(dirToTarget.x, dirToTarget.z) + Math.PI;
+      const targetPitch = Math.atan2(dirToTarget.y + 1.0, Math.sqrt(dirToTarget.x * dirToTarget.x + dirToTarget.z * dirToTarget.z));
+
+      // Ease towards target
+      let yawDiff = targetYaw - this.player.cameraYaw;
+      while (yawDiff > Math.PI) yawDiff -= Math.PI * 2;
+      while (yawDiff < -Math.PI) yawDiff += Math.PI * 2;
+
+      let pitchDiff = targetPitch - this.player.cameraPitch;
+
+      // Convert delta to mouse Delta format so Player.ts update handles it
+      // player.mouseDeltaX reduces cameraYaw by 0.002 * mouseDeltaX
+      // so mouseDeltaX = -yawDiff / 0.002
+      const invertFactor = settingsManager.getSettings().invertMouse ? -1 : 1;
+      this.player.mouseDeltaX += -(yawDiff * 0.1) / 0.002;
+      this.player.mouseDeltaY += -(pitchDiff * 0.1) / (0.002 * invertFactor);
+    }
+  }
+
+  isInputFocused() {
+    return document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement;
+  }
+
+  resetItemState() {
+    this.bowChargeStart = 0;
+    this.isBlocking = false;
+    this.player.isBlocking = false;
+  }
+
+  onKeyDown = (event: KeyboardEvent) => {
+    if (!this.player.controls.isLocked) return;
+    if (this.isInputFocused()) return;
+    const { keybinds } = settingsManager.getSettings();
+    
+    switch (event.code) {
+      case keybinds.forward: this.moveForward = true; break;
+      case keybinds.left: this.moveLeft = true; break;
+      case keybinds.backward: this.moveBackward = true; break;
+      case keybinds.right: this.moveRight = true; break;
+      case keybinds.sprint: this.isSprinting = true; break;
+      case keybinds.drop: if (!this.player.world.isHub && !this.player.isSpectator && !this.player.isDead) this.dropItem(event.ctrlKey); break;
+      case keybinds.zoom: this.player.isZooming = true; break;
+      case keybinds.perspective: 
+        this.player.perspective = (this.player.perspective + 1) % 3;
+        break;
+      case keybinds.slot1: if (!this.player.world.isHub) { this.player.hotbarIndex = 0; this.resetItemState(); } break;
+      case keybinds.slot2: if (!this.player.world.isHub) { this.player.hotbarIndex = 1; this.resetItemState(); } break;
+      case keybinds.slot3: if (!this.player.world.isHub) { this.player.hotbarIndex = 2; this.resetItemState(); } break;
+      case keybinds.slot4: if (!this.player.world.isHub) { this.player.hotbarIndex = 3; this.resetItemState(); } break;
+      case keybinds.slot5: if (!this.player.world.isHub) { this.player.hotbarIndex = 4; this.resetItemState(); } break;
+      case keybinds.slot6: if (!this.player.world.isHub) { this.player.hotbarIndex = 5; this.resetItemState(); } break;
+      case keybinds.slot7: if (!this.player.world.isHub) { this.player.hotbarIndex = 6; this.resetItemState(); } break;
+      case keybinds.slot8: if (!this.player.world.isHub) { this.player.hotbarIndex = 7; this.resetItemState(); } break;
+      case keybinds.slot9: if (!this.player.world.isHub) { this.player.hotbarIndex = 8; this.resetItemState(); } break;
+//       case keybinds.fly: 
+//        /*
+//           this.player.isFlying = !this.player.isFlying;
+//           this.player.velocity.set(0, 0, 0);
+//        */
+//         break;
+      case keybinds.jump: 
+        this.moveUp = true;
+        if (!this.player.isFlying && !this.player.isSwimming && this.player.canJump) {
+          this.player.velocity.y += this.player.jumpForce;
+          
+          if (this.isSprinting && (this.moveForward || this.moveBackward || this.moveLeft || this.moveRight)) {
+            const sprintBoost = new THREE.Vector3(0, 0, -2.5);
+            sprintBoost.applyEuler(new THREE.Euler(0, this.player.cameraYaw, 0, 'YXZ'));
+            this.player.velocity.x += sprintBoost.x;
+            this.player.velocity.z += sprintBoost.z;
+          }
+          
+          this.player.canJump = false;
+          const blockBelow = this.player.world.getBlock(Math.floor(this.player.worldPosition.x), Math.floor(this.player.worldPosition.y - this.player.playerHeight - 0.1), Math.floor(this.player.worldPosition.z));
+          let surface = 'grass';
+          if (blockBelow === BLOCK.STONE || blockBelow === BLOCK.BLUE_STONE || blockBelow === BLOCK.RED_STONE || blockBelow === BLOCK.BRICK) surface = 'stone';
+          else if (blockBelow === BLOCK.SAND) surface = 'sand';
+          else if (blockBelow === BLOCK.WOOD || blockBelow === BLOCK.PLANKS) surface = 'wood';
+          audioManager.playStep(surface);
+        }
+        break;
+      case keybinds.crouch:
+        this.isCrouching = true;
+        this.moveDown = true;
+        break;
+    }
+  }
+
+  onKeyUp = (event: KeyboardEvent) => {
+    if (!this.player.controls.isLocked) return;
+    if (this.isInputFocused()) {
+      this.resetInput();
+      return;
+    }
+    const { keybinds } = settingsManager.getSettings();
+    
+    switch (event.code) {
+      case keybinds.forward: this.moveForward = false; break;
+      case keybinds.left: this.moveLeft = false; break;
+      case keybinds.backward: this.moveBackward = false; break;
+      case keybinds.right: this.moveRight = false; break;
+      case keybinds.sprint: this.isSprinting = false; break;
+      case keybinds.zoom: this.player.isZooming = false; break;
+      case keybinds.jump: this.moveUp = false; break;
+      case keybinds.crouch:
+        this.isCrouching = false; 
+        this.moveDown = false;
+        break;
+    }
+  }
+
+  onMouseMove = (event: MouseEvent) => {
+    if (this.player.controls.isLocked) {
+      if (this.isInputFocused()) return;
+      // Cap movement to prevent extreme jumps when locking/unlocking
+      if (Math.abs(event.movementX) > 500 || Math.abs(event.movementY) > 500) return;
+      
+      this.player.mouseDeltaX += event.movementX;
+      this.player.mouseDeltaY += event.movementY;
+    }
+  };
+
+  dropItem(dropStack: boolean = false) {
+    const stack = this.player.inventory.slots[this.player.hotbarIndex];
+    if (stack && stack.count > 0) {
+      const amount = dropStack ? stack.count : 1;
+      const itemType = stack.type;
+      this.player.inventory.removeItemFromSlot(this.player.hotbarIndex, amount);
+      
+      const direction = _dirAux.set(
+        -Math.sin(this.player.cameraYaw) * Math.cos(this.player.cameraPitch),
+        Math.sin(this.player.cameraPitch),
+        -Math.cos(this.player.cameraYaw) * Math.cos(this.player.cameraPitch)
+      ).normalize();
+      
+      const forwardScale = Math.abs(direction.y) > 0.8 ? 0.8 : 0.5;
+      const dropPos = this.player.playerHeadPos.clone().add(direction.clone().multiplyScalar(forwardScale));
+      dropPos.y -= 0.3;
+      
+      const tossVelocity = direction.clone().multiplyScalar(5);
+      tossVelocity.y += 2;
+      
+      for (let i = 0; i < amount; i++) {
+        _targetDirAux.set(
+          (Math.random() - 0.5) * 1.5,
+          (Math.random() - 0.5) * 1.5,
+          (Math.random() - 0.5) * 1.5
+        );
+        const finalVel = tossVelocity.clone().add(_targetDirAux);
+
+        networkManager.dropItem(itemType, {
+          x: dropPos.x + (Math.random() - 0.5) * 0.1,
+          y: dropPos.y + (Math.random() - 0.5) * 0.1,
+          z: dropPos.z + (Math.random() - 0.5) * 0.1
+        }, {
+          x: finalVel.x,
+          y: finalVel.y,
+          z: finalVel.z
+        });
+      }
+    }
+  }
+
+  private calculateDamage() {
+    const stats = skyBridgeManager.getEffectiveStats(this.player.inventory, this.player.hotbarIndex);
+    
+    const weaponDamage = stats.damage || 0;
+    const baseDamage = 5 + weaponDamage;
+    const strengthMultiplier = 1 + (stats.strength / 100);
+    
+    const isCrit = Math.random() < stats.critChance / 100;
+    const critMultiplier = isCrit ? (1 + stats.critDamage / 100) : 1;
+    
+    const combatLevel = skyBridgeManager.skills[SkillType.COMBAT].level;
+    const additiveMultiplier = 1 + (combatLevel * 0.04);
+    
+    const damage = Math.floor(baseDamage * strengthMultiplier * critMultiplier * additiveMultiplier);
+    
+    return { damage, isCrit };
+  }
+
+  onMouseDown = (event: MouseEvent) => {
+    const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (!this.player.controls.isLocked && !isMobile) return;
+    if (this.isInputFocused()) return;
+    if (this.player.isSpectator || this.player.isDead) return;
+
+    const initialStack = this.player.inventory.slots[this.player.hotbarIndex];
+    const isHose = initialStack?.type === ItemType.FLUID_CHOCOLATE_HOSE;
+
+    if (event.button === 0 && isHose) {
+      this.player.isLeftMouseDown = true;
+      return; 
+    }
+    
+    if (event.button === 2 && isHose) {
+      this.isRightMouseDown = true;
+      return;
+    }
+    
+    if (!(event.button === 2 && initialStack?.type === ItemType.BOW) && !isHose) {
+      this.player.isSwinging = true;
+      this.player.swingTimer = 0;
+    }
+
+    const direction = _dirAux.set(
+      -Math.sin(this.player.cameraYaw) * Math.cos(this.player.cameraPitch),
+      Math.sin(this.player.cameraPitch),
+      -Math.cos(this.player.cameraYaw) * Math.cos(this.player.cameraPitch)
+    ).normalize();
+
+    const rayOrigin = this.player.playerHeadPos.clone();
+
+      if (event.button === 2) { // Right click
+      const initialStack = this.player.inventory.slots[this.player.hotbarIndex];
+      if (initialStack?.type === ItemType.BOW) {
+        if (this.bowChargeStart === 0) {
+          this.bowChargeStart = Date.now();
+        }
+        this.player.isBlocking = true; // Use this state for 3rd person bow charging sync
+        this.isBlocking = true;
+      }
+      this.isRightMouseDown = true;
+      this.player.rightClickTimer = 0.25; // Prevent immediate double placement in update() loop
+      const npc = this.player.entityManager.raycastNPC(rayOrigin, direction, 4, this.player.camera);
+      if (npc) {
+        if (npc.id === 'hub_npc_q') {
+          // if (networkManager.serverName.startsWith('hub')) {
+          //   window.dispatchEvent(new CustomEvent('openServerJoin', { detail: { server: 'skybridge' } }));
+          // }
+        } else if (npc.id === 'hub_npc_r') {
+          // if (networkManager.serverName.startsWith('hub')) {
+          //   window.dispatchEvent(new CustomEvent('openServerJoin', { detail: { server: 'skycastles' } }));
+          // }
+        } else if (npc.id === 'hub_npc_dungeon') {
+          if (networkManager.serverName.startsWith('hub')) {
+            window.dispatchEvent(new CustomEvent('openServerJoin', { detail: { server: 'dungeondelver' } }));
+          }
+        } else if (npc.id === 'hub_npc_br') {
+          // if (networkManager.serverName.startsWith('hub')) {
+          //   window.dispatchEvent(new CustomEvent('openServerJoin', { detail: { server: 'battleroyale' } }));
+          // }
+        } else if (npc.id === 'hub_npc_void') {
+          // if (networkManager.serverName.startsWith('hub')) {
+          //   window.dispatchEvent(new CustomEvent('openServerJoin', { detail: { server: 'voidtrail' } }));
+          // }
+        } else if (npc.id === 'hub_npc_island') {
+          // if (networkManager.serverName.startsWith('hub')) {
+          //   window.dispatchEvent(new CustomEvent('openServerJoin', { detail: { server: 'skyisland' } }));
+          // }
+        } else if (npc.id.startsWith('bren')) {
+          window.dispatchEvent(new CustomEvent('openLaunchMenu'));
+        } else {
+          window.dispatchEvent(new CustomEvent('openShop', { detail: { npc } }));
+        }
+        return;
+      }
+
+      const minion = this.player.entityManager.raycastMinion(rayOrigin, direction, 4, this.player.camera);
+      if (minion) {
+        networkManager.collectMinion(minion.id);
+        return;
+      }
+
+      const selectedStack = this.player.inventory.getStackInSlot(this.player.hotbarIndex);
+      
+      if (selectedStack?.metadata?.ability) {
+        const ability = selectedStack.metadata.ability;
+        const manaCost = ability.manaCost || 0;
+        
+        if (skyBridgeManager.useMana(manaCost)) {
+          console.log(`Used ability: ${ability.name}`);
+          window.dispatchEvent(new CustomEvent('spawnParticles', { 
+            detail: { pos: this.player.playerHeadPos.clone().add(direction.clone().multiplyScalar(2)), type: BLOCK.BLUE_STONE } 
+          }));
+          
+          if (ability.name === "Instant Transmission") {
+            const teleportDist = 8;
+            const targetPos = this.player.worldPosition.clone().add(direction.clone().multiplyScalar(teleportDist));
+            
+            if (this.player.world.getBlock(Math.floor(targetPos.x), Math.floor(targetPos.y), Math.floor(targetPos.z)) === 0) {
+              this.player.worldPosition.copy(targetPos);
+              audioManager.play('pop', 1.0, 0.5);
+              this.player.velocity.add(direction.clone().multiplyScalar(10));
+            } else {
+              useGameStore.getState().addMessage("There are blocks in the way!", "#FF5555");
+            }
+          } else if (ability.name === "Deep Strike") {
+            this.player.velocity.add(direction.clone().multiplyScalar(30));
+            audioManager.play('explosion', 0.5, 1.5);
+          } else if (ability.name === "Dragon's Breath") {
+            audioManager.play('explosion', 0.8, 0.8);
+            for(let i=0; i<5; i++) {
+               window.dispatchEvent(new CustomEvent('spawnParticles', { 
+                detail: { pos: this.player.playerHeadPos.clone().add(direction.clone().multiplyScalar(3 + i)), type: BLOCK.RED_STONE } 
+              }));
+            }
+          }
+        } else {
+          useGameStore.getState().addMessage("Not enough mana!", "#55FFFF");
+        }
+      }
+    } else if (event.button === 0) { // Left click
+      this.player.isLeftMouseDown = true;
+      
+      const now = Date.now();
+      if (now - this.lastAttackTime < 250) return;
+      
+      const rayOrigin = this.player.playerHeadPos.clone();
+      const direction = _dirAux.set(
+        -Math.sin(this.player.cameraYaw) * Math.cos(this.player.cameraPitch),
+        Math.sin(this.player.cameraPitch),
+        -Math.cos(this.player.cameraYaw) * Math.cos(this.player.cameraPitch)
+      ).normalize();
+
+      const isHub = this.player.world.isHub;
+      const player = isHub ? null : this.player.entityManager.raycastPlayer(rayOrigin, direction, 4, this.player.camera);
+      const isSkyCastles = networkManager.serverName.startsWith('skycastles');
+
+      if (player) {
+        if (isSkyCastles && this.player.team && player.team && this.player.team === player.team) {
+           return; // Friendly fire disabled
+        }
+        
+        if (player.isInvulnerable) {
+           return; // Player is invulnerable
+        }
+        
+        this.lastAttackTime = now;
+        const { damage, isCrit } = this.calculateDamage();
+        
+        const isCombative = event.button === 0 && !this.player.isMining;
+        const kbForce = isCombative ? (this.isSprinting ? 12 : 8) : 0;
+        const attackerYaw = this.player.cameraYaw;
+        const kbDir = new THREE.Vector3(
+          -Math.sin(attackerYaw) * kbForce,
+          isCombative ? 12.0 : 0,
+          -Math.cos(attackerYaw) * kbForce
+        );
+        
+        networkManager.attack(player.id, false, kbDir, this.isSprinting, damage, isCrit);
+        
+        audioManager.play('hit', 0.5, 0.9 + Math.random() * 0.2);
+        
+        // Client-side prediction for instant hit feel
+        player.takeDamage(kbDir);
+        if (isCrit) {
+          for(let i=0; i<3; i++) {
+            window.dispatchEvent(new CustomEvent('spawnParticles', { 
+              detail: { pos: player.group.position.clone().add(new THREE.Vector3(0, 0.5, 0)), type: 73 } 
+            }));
+          }
+        }
+        
+        const pPos = player.group.position.clone().add(new THREE.Vector3(0, 1.5, 0));
+        pPos.project(this.player.camera);
+        const screenX = (pPos.x * 0.5 + 0.5) * window.innerWidth;
+        const screenY = -(pPos.y * 0.5 - 0.5) * window.innerHeight;
+        
+        window.dispatchEvent(new CustomEvent('mobDamage', { detail: { amount: Math.floor(damage), isCrit, screenX, screenY } }));
+        this.damageWeapon();
+        return;
+      }
+
+      const mob = isHub ? null : this.player.entityManager.raycastMob(rayOrigin, direction, 4, this.player.camera);
+      if (mob) {
+        if (isSkyCastles && this.player.team && mob.team && this.player.team === mob.team) return;
+        this.lastAttackTime = now;
+        const { damage, isCrit } = this.calculateDamage();
+        
+        const isCombative = true;
+        const kbForce = this.isSprinting ? 12 : 8;
+        const attackerYaw = this.player.cameraYaw;
+        const kbDir = new THREE.Vector3(
+          -Math.sin(attackerYaw) * kbForce,
+          12.0,
+          -Math.cos(attackerYaw) * kbForce
+        );
+        networkManager.attack(mob.id, true, kbDir, this.isSprinting, damage, isCrit);
+        // We now rely on the network to dictate our damage loop output (or we can predict it locally)
+        // Predicting locally for immediate feedback, but the server has the real state:
+        const lootType = mob.takeDamage(damage, kbDir); 
+        audioManager.play('hit', 0.5, 0.9 + Math.random() * 0.2);
+        this.damageWeapon();
+        
+        if (isCrit) {
+          for(let i=0; i<3; i++) {
+            window.dispatchEvent(new CustomEvent('spawnParticles', { 
+              detail: { pos: mob.position.clone().add(new THREE.Vector3(0, 0.5, 0)), type: BLOCK.RED_STONE } 
+            }));
+          }
+        }
+        
+        // Also note: we are just predicting the visual hit here.
+        // Mobs update their actual death logic from the server loop via 'mobDespawned' and 'mobsUpdate' events.
+
+        const pPos = mob.position.clone().add(new THREE.Vector3(0, 1.5, 0));
+        pPos.project(this.player.camera);
+        const screenX = (pPos.x * 0.5 + 0.5) * window.innerWidth;
+        const screenY = -(pPos.y * 0.5 - 0.5) * window.innerHeight;
+
+        window.dispatchEvent(new CustomEvent('mobDamage', { 
+          detail: { amount: Math.floor(damage), isCrit, screenX, screenY } 
+        }));
+
+        if (lootType != null) {
+          const remaining = this.player.inventory.addItem(lootType, 1);
+          
+          if (remaining > 0) {
+            networkManager.dropItem(lootType, {
+              x: mob.position.x,
+              y: mob.position.y + 0.5,
+              z: mob.position.z
+            });
+            useGameStore.getState().addMessage("Inventory full! Mob loot was dropped.", "#FF5555");
+          } else {
+            useGameStore.getState().addMessage(`+1 ${ITEM_NAMES[lootType]} (Auto-pickup)`, "#55FF55");
+          }
+
+          this.player.entityManager.removeMob(mob.id);
+        }
+        return;
+      }
+    }
+    
+    const hitResult = this.player.world.raycast(rayOrigin, direction, 5);
+    
+    if (hitResult.hit && hitResult.blockPos && hitResult.prevPos) {
+      if (event.button === 0) { // Left click: start mining
+        const blockType = this.player.world.getBlock(hitResult.blockPos.x, hitResult.blockPos.y, hitResult.blockPos.z);
+        if (blockType !== BLOCK.AIR && blockType !== BLOCK.WATER) {
+          if (!this.player.isFlying && this.player.world.isIndestructible(hitResult.blockPos.x, hitResult.blockPos.y, hitResult.blockPos.z)) {
+            // Cannot mine indestructible blocks
+            return;
+          }
+          if (this.player.isFlying) {
+            // Instant break for creative mode (flying)
+            this.player.performBlockBreak(hitResult.blockPos, blockType);
+            this.player.lastCreativeBreakTime = Date.now();
+            return;
+          }
+          this.player.isMining = true;
+          this.player.miningTarget = hitResult.blockPos.clone();
+          this.player.miningProgress = 0;
+          
+          const activeTool = this.player.inventory.slots[this.player.hotbarIndex];
+          const stats = getMiningStats(blockType, activeTool);
+          this.player.miningTimeRequired = stats.time;
+          this.player.canHarvestTarget = stats.drops;
+          
+          if (this.player.breakingMesh) {
+            this.player.breakingMesh.visible = true;
+            this.player.breakingMesh.position.set(
+              this.player.miningTarget.x + 0.5,
+              this.player.miningTarget.y + 0.5,
+              this.player.miningTarget.z + 0.5
+            );
+            (this.player.breakingMesh.material as THREE.MeshBasicMaterial).opacity = 0;
+          }
+        }
+      } else if (event.button === 2) { // Right click: place block
+        const blockType = this.player.world.getBlock(hitResult.blockPos.x, hitResult.blockPos.y, hitResult.blockPos.z);
+        
+        if (blockType === ItemType.CHEST || blockType === ItemType.ENDER_CHEST || blockType === ItemType.CHEST_REVERSED) {
+          const chestId = `${hitResult.blockPos.x},${hitResult.blockPos.y},${hitResult.blockPos.z}`;
+          if (blockType !== ItemType.CHEST && blockType !== ItemType.CHEST_REVERSED && blockType !== ItemType.ENDER_CHEST) {
+            // Unlikely fallback, but let's keep it safe
+          }
+          
+          if (blockType !== ItemType.ENDER_CHEST) {
+            if (!this.player.chestInventories.has(chestId)) {
+                const newInv = new Inventory(27);
+                if (this.player.world.isDungeonDelver && hitResult.blockPos.x === 0 && hitResult.blockPos.y === 0 && hitResult.blockPos.z === 0) {
+                  newInv.slots[0] = {
+                    type: ItemType.STONE_SWORD,
+                    count: 1,
+                    metadata: {
+                      rarity: Rarity.COMMON,
+                      stats: { damage: 15, strength: 5 },
+                      description: "A solid Stone Sword found in the starter chest.",
+                    }
+                  };
+                }
+                this.player.chestInventories.set(chestId, newInv);
+            }
+            this.player.chestInventory = this.player.chestInventories.get(chestId)!;
+          } else {
+            if (!this.player.chestInventories.has('ender_chest')) {
+                this.player.chestInventories.set('ender_chest', new Inventory(27));
+            }
+            this.player.chestInventory = this.player.chestInventories.get('ender_chest')!;
+          }
+
+          if (hitResult.blockPos.y === 16 && hitResult.blockPos.x === 0 && Math.abs(hitResult.blockPos.z) <= 12) {
+            const hasLootedKey = `looted_mid_chest_${hitResult.blockPos.z > 0 ? 'blue' : 'red'}`;
+            if (!(window as any)[hasLootedKey]) {
+              (window as any)[hasLootedKey] = true;
+              let emptySlot = this.player.chestInventory.slots.findIndex(s => !s);
+              if (emptySlot === -1) emptySlot = 13;
+              this.player.chestInventory.slots[emptySlot] = {
+                type: ItemType.ASPECT_OF_THE_END,
+                count: 1,
+                metadata: {
+                  rarity: Rarity.RARE,
+                  stats: { damage: 80, strength: 60 },
+                  description: "Teleport 8 blocks ahead of you and gain +50 Speed for 3 seconds.",
+                  ability: {
+                    name: "Instant Transmission",
+                    description: "Teleport 8 blocks ahead of you and gain +50 Speed for 3 seconds.",
+                    manaCost: 50
+                  }
+                }
+              };
+            }
+          }
+          window.dispatchEvent(new CustomEvent('openChest'));
+          this.player.controls.unlock();
+          return;
+        }
+
+        if (
+          blockType === ItemType.LAUNCHER ||
+          blockType === ItemType.LAUNCHER_WALL_X_POS ||
+          blockType === ItemType.LAUNCHER_WALL_X_NEG ||
+          blockType === ItemType.LAUNCHER_WALL_Z_POS ||
+          blockType === ItemType.LAUNCHER_WALL_Z_NEG
+        ) {
+          // Launch player up and forward
+          const lookDir = new THREE.Vector3(0, 0, -1);
+          lookDir.applyEuler(new THREE.Euler(0, this.player.cameraYaw, 0, 'YXZ'));
+          
+          this.player.velocity.x += lookDir.x * 40;
+          this.player.velocity.z += lookDir.z * 40;
+          this.player.velocity.y = 70; // Big jump up
+          
+          this.player.isGliding = true;
+          audioManager.play('pop', 0.8, 1.5);
+          return;
+        }
+
+        const selectedStack = this.player.inventory.getStackInSlot(this.player.hotbarIndex);
+        if (!selectedStack || selectedStack.count <= 0) return;
+
+        let placeType = selectedStack.type as unknown as number;
+        
+        if (isFlatItem(placeType) && !isAnyTorch(placeType)) {
+            return;
+        }
+
+        // Restriction for Torches and Plants: only place on top of solid blocks
+        const isTorch = selectedStack.type === ItemType.TORCH;
+        const isLauncher = selectedStack.type === ItemType.LAUNCHER;
+        if (isTorch || isLauncher) {
+          const dx = hitResult.prevPos.x - hitResult.blockPos.x;
+          const dz = hitResult.prevPos.z - hitResult.blockPos.z;
+          const dy = hitResult.prevPos.y - hitResult.blockPos.y;
+
+          if (dy === 1) {
+            // Placed on top
+            placeType = isTorch ? ItemType.TORCH : ItemType.LAUNCHER;
+          } else if (dx === 1) {
+            placeType = isTorch ? ItemType.TORCH_WALL_X_NEG : ItemType.LAUNCHER_WALL_X_NEG; 
+          } else if (dx === -1) {
+            placeType = isTorch ? ItemType.TORCH_WALL_X_POS : ItemType.LAUNCHER_WALL_X_POS;
+          } else if (dz === 1) {
+            placeType = isTorch ? ItemType.TORCH_WALL_Z_NEG : ItemType.LAUNCHER_WALL_Z_NEG; 
+          } else if (dz === -1) {
+            placeType = isTorch ? ItemType.TORCH_WALL_Z_POS : ItemType.LAUNCHER_WALL_Z_POS;
+          } else {
+            return; // Can't place torch from bottom!
+          }
+
+          let supportBlock = BLOCK.AIR;
+          if (placeType === ItemType.TORCH || placeType === ItemType.LAUNCHER) supportBlock = this.player.world.getBlock(hitResult.prevPos.x, hitResult.prevPos.y - 1, hitResult.prevPos.z);
+          else if (placeType === ItemType.TORCH_WALL_X_NEG || placeType === ItemType.LAUNCHER_WALL_X_NEG) supportBlock = this.player.world.getBlock(hitResult.prevPos.x - 1, hitResult.prevPos.y, hitResult.prevPos.z);
+          else if (placeType === ItemType.TORCH_WALL_X_POS || placeType === ItemType.LAUNCHER_WALL_X_POS) supportBlock = this.player.world.getBlock(hitResult.prevPos.x + 1, hitResult.prevPos.y, hitResult.prevPos.z);
+          else if (placeType === ItemType.TORCH_WALL_Z_NEG || placeType === ItemType.LAUNCHER_WALL_Z_NEG) supportBlock = this.player.world.getBlock(hitResult.prevPos.x, hitResult.prevPos.y, hitResult.prevPos.z - 1);
+          else if (placeType === ItemType.TORCH_WALL_Z_POS || placeType === ItemType.LAUNCHER_WALL_Z_POS) supportBlock = this.player.world.getBlock(hitResult.prevPos.x, hitResult.prevPos.y, hitResult.prevPos.z + 1);
+
+          if (!isSolidBlock(supportBlock)) {
+            return;
+          }
+        }
+
+        const playerMinX = this.player.worldPosition.x - 0.3; // playerRadius
+        const playerMaxX = this.player.worldPosition.x + 0.3;
+        const playerMinY = this.player.worldPosition.y - this.player.playerHeight;
+        const playerMaxY = this.player.worldPosition.y + 0.2;
+        const playerMinZ = this.player.worldPosition.z - 0.3;
+        const playerMaxZ = this.player.worldPosition.z + 0.3;
+
+        const blockMinX = hitResult.prevPos.x;
+        const blockMaxX = hitResult.prevPos.x + 1;
+        const blockMinY = hitResult.prevPos.y;
+        const blockMaxY = hitResult.prevPos.y + 1;
+        const blockMinZ = hitResult.prevPos.z;
+        const blockMaxZ = hitResult.prevPos.z + 1;
+
+        if (isSolidBlock(placeType)) {
+          if (playerMinX < blockMaxX && playerMaxX > blockMinX &&
+              playerMinY < blockMaxY && playerMaxY > blockMinY &&
+              playerMinZ < blockMaxZ && playerMaxZ > blockMinZ) {
+            return;
+          }
+        }
+
+        if (selectedStack.type === ItemType.MINION) {
+          const minionId = 'minion_' + Math.random().toString(36).substring(7);
+          const pos = new THREE.Vector3(hitResult.prevPos.x + 0.5, hitResult.prevPos.y, hitResult.prevPos.z + 0.5);
+          this.player.entityManager.addMinion(minionId, ItemType.STONE, pos);
+          this.player.inventory.removeItem(ItemType.MINION, 1);
+          return;
+        }
+
+        const success = this.player.world.setBlock(hitResult.prevPos.x, hitResult.prevPos.y, hitResult.prevPos.z, placeType, true, this.player.isFlying);
+        if (success) {
+           this.player.inventory.removeItem(selectedStack.type, 1);
+           audioManager.playPositional('place', new THREE.Vector3(hitResult.prevPos.x, hitResult.prevPos.y, hitResult.prevPos.z), 1.0, 0.9 + Math.random() * 0.2, 20);
+           networkManager.setBlock(hitResult.prevPos.x, hitResult.prevPos.y, hitResult.prevPos.z, placeType, this.player.isFlying);
+        }
+      }
+    }
+  }
+
+  damageWeapon() {
+    const stack = this.player.inventory.slots[this.player.hotbarIndex];
+    if (!stack || stack.count <= 0) return;
+    const itemType = stack.type as unknown as number;
+    const isSword = itemType >= 441 && itemType <= 445;
+    const isTool = ((itemType >= 436 && itemType <= 455) || (itemType >= 460 && itemType <= 472) || itemType === 54) && !isSword;
+    
+    if (isTool) {
+      const serverName = new URLSearchParams(window.location.search).get('server') || 'dungeondelver';
+      const isSkyCastles = serverName.startsWith('skycastles');
+      if (!isSkyCastles) {
+        if (this.player.inventory.damageItem(this.player.hotbarIndex, 1)) {
+          audioManager.play('pop', 0.5, 0.5);
+        }
+      }
+    }
+  }
+
+  onMouseUp = (event: MouseEvent) => {
+    if (this.player.isSpectator || this.player.isDead) return;
+    if (event.button === 0) {
+      this.player.isLeftMouseDown = false;
+      this.player.isMining = false;
+      this.player.miningTarget = null;
+      this.player.miningProgress = 0;
+      if (this.player.breakingMesh) {
+        this.player.breakingMesh.visible = false;
+      }
+    } else if (event.button === 2) {
+      if (this.bowChargeStart > 0) {
+        const selectedStack = this.player.inventory.slots[this.player.hotbarIndex];
+        if (selectedStack?.type === ItemType.BOW) {
+          const chargeTime = Date.now() - this.bowChargeStart;
+          if (chargeTime > 50) {
+            const power = Math.max(0.1, Math.min(1.0, chargeTime / 1000.0));
+            
+            // No arrows needed anymore
+            const direction = new THREE.Vector3(
+              -Math.sin(this.player.cameraYaw) * Math.cos(this.player.cameraPitch),
+              Math.sin(this.player.cameraPitch),
+              -Math.cos(this.player.cameraYaw) * Math.cos(this.player.cameraPitch)
+            ).normalize();
+            const velocity = direction.multiplyScalar(2 + 38 * power);
+            
+            let startPos = this.player.playerHeadPos.clone();
+            
+            if (this.player.perspective === 0 && this.player.renderer.fpHeldItemModel) {
+               const arrowMesh = this.player.renderer.fpHeldItemModel.getObjectByName('bow_arrow');
+               if (arrowMesh) arrowMesh.getWorldPosition(startPos);
+               else this.player.renderer.fpHeldItemModel.getWorldPosition(startPos);
+            } else if (this.player.perspective !== 0 && this.player.renderer.heldItemModel) {
+               const arrowMesh = this.player.renderer.heldItemModel.getObjectByName('bow_arrow');
+               if (arrowMesh) arrowMesh.getWorldPosition(startPos);
+               else this.player.renderer.heldItemModel.getWorldPosition(startPos);
+            }
+            
+            networkManager.shootArrow(startPos, velocity, power);
+            
+            // Spawn locally since server broadcast doesn't echo back
+            window.dispatchEvent(new CustomEvent("networkShootArrow", { 
+               detail: {
+                 shooter: networkManager.id,
+                 power: power,
+                 position: { x: startPos.x, y: startPos.y, z: startPos.z },
+                 velocity: { x: velocity.x, y: velocity.y, z: velocity.z }
+               }
+            }));
+            
+            this.damageWeapon();
+          }
+        }
+        this.bowChargeStart = 0;
+      }
+      this.player.isBlocking = false;
+      this.isBlocking = false;
+      this.isRightMouseDown = false;
+    }
+  }
+
+  checkStarterChestReset() {
+    if (!this.player.world.isDungeonDelver) return;
+    
+    const resetCycleMs = 20 * 60 * 1000;
+    const currentPeriodId = Math.floor(Date.now() / resetCycleMs);
+    
+    if (this._lastStarterChestPeriod === undefined) {
+      this._lastStarterChestPeriod = currentPeriodId;
+    }
+    
+    if (this._lastStarterChestPeriod !== currentPeriodId) {
+      const chestId = "0,0,0";
+      const newInv = new Inventory(27);
+      newInv.slots[0] = {
+        type: ItemType.STONE_SWORD,
+        count: 1,
+        metadata: {
+          rarity: Rarity.COMMON,
+          stats: { damage: 15, strength: 5 },
+          description: "A solid Stone Sword found in the starter chest.",
+        }
+      };
+      
+      this.player.chestInventories.set(chestId, newInv);
+      
+      // If the player currently has the chest open, update active chest inventory
+      if (this.player.chestInventory && this.player.chestInventory === this.player.chestInventories.get(chestId)) {
+        this.player.chestInventory = newInv;
+      }
+      
+      this._lastStarterChestPeriod = currentPeriodId;
+      useGameStore.getState().incrementInventoryVersion();
+    }
+  }
+
+  destroy() {
+    document.removeEventListener('keydown', this.onKeyDown);
+    document.removeEventListener('keyup', this.onKeyUp);
+    document.removeEventListener('mousedown', this.onMouseDown);
+    document.removeEventListener('mouseup', this.onMouseUp);
+    document.removeEventListener('mousemove', this.onMouseMove);
+    window.removeEventListener('blur', this.resetInput);
+    document.removeEventListener('pointerlockchange', this.onPointerLockChange);
+    window.removeEventListener('playerTakeDamage', this.onPlayerTakeDamage as EventListener);
+  }
+}
+
