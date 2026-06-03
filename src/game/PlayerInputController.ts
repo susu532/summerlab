@@ -435,7 +435,7 @@ export class PlayerInputController {
     if (this.player.isSpectator || this.player.isDead) return;
 
     const initialStack = this.player.inventory.slots[this.player.hotbarIndex];
-    const isHose = initialStack?.type === ItemType.FLUID_CHOCOLATE_HOSE;
+    const isHose = initialStack?.type === ItemType.FLUID_CHOCOLATE_HOSE || initialStack?.type === ItemType.WASHING_HOSE;
 
     if (event.button === 0 && isHose) {
       this.player.isLeftMouseDown = true;
@@ -491,7 +491,7 @@ export class PlayerInputController {
           // }
         } else if (npc.id === 'hub_npc_void') {
           // if (networkManager.serverName.startsWith('hub')) {
-          //   window.dispatchEvent(new CustomEvent('openServerJoin', { detail: { server: 'voidtrail' } }));
+          //   window.dispatchEvent(new CustomEvent('openServerJoin', { detail: { server: 'summerlab' } }));
           // }
         } else if (npc.id === 'hub_npc_island') {
           // if (networkManager.serverName.startsWith('hub')) {
@@ -913,7 +913,7 @@ export class PlayerInputController {
               Math.sin(this.player.cameraPitch),
               -Math.cos(this.player.cameraYaw) * Math.cos(this.player.cameraPitch)
             ).normalize();
-            const velocity = direction.multiplyScalar(2 + 38 * power);
+            const velocity = direction.multiplyScalar((2 + 38 * power) * 2);
             
             let startPos = this.player.playerHeadPos.clone();
             

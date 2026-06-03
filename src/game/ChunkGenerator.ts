@@ -7,7 +7,7 @@ import { buildHubCastles, generateHubTerrain } from "./generation/HubGenerator";
 import { getCastleBlock } from "./generation/SkyCastlesGenerator";
 import { getVillageBlock } from "./generation/SkyBridgeGenerator";
 import { getGiantMythicalShipBlock } from "./generation/ShipGenerator";
-import { getVoidTrailBlock } from "./generation/VoidTrailGenerator";
+import { getSummerLabBlock } from "./generation/SummerLabGenerator";
 import { generateSkyIslandTerrain } from "./generation/SkyIslandGenerator";
 import * as THREE from "three";
 import { skycastlesBakedBlocks } from "./SkycastlesBakedBlocks";
@@ -44,133 +44,18 @@ export async function generateChunkMethod(
         continue;
       }
 
-      if (world.isDungeonDelver) {
-        // Iterate only over the playable vertical space
+      // if (world.isDungeonDelver) {
+      //   for (let y = 58; y <= 67; y++) {
+      //     const worldY = y + WORLD_Y_OFFSET;
+      //     chunk.setBlockFast(x, y, z, BLOCK.AIR);
+      //   }
+      //   continue;
+      // }
+
+      if (world.isSummerLab) {
         for (let y = 0; y < CHUNK_HEIGHT; y++) {
           const worldY = y + WORLD_Y_OFFSET;
-          if (worldY < -2 || worldY > 7) continue;
-          
-          const blockKey = `${Math.floor(worldX)},${Math.floor(worldY)},${Math.floor(worldZ)}`;
-          if (dungeonBakedBlocks.has(blockKey)) {
-             chunk.setBlockFast(x, y, z, dungeonBakedBlocks.get(blockKey)!);
-             continue;
-          }
-
-          // Catacombs boundaries
-          if (Math.abs(worldX) > 50 || Math.abs(worldZ) > 50) {
-            if (Math.abs(worldX) > 55 || Math.abs(worldZ) > 55) {
-              chunk.setBlockFast(x, y, z, BLOCK.AIR);
-              continue;
-            }
-            if (worldY >= -2 && worldY <= 7) {
-              chunk.setBlockFast(x, y, z, BLOCK.OBSIDIAN);
-              continue;
-            }
-          }
-
-          // Outer bedrock/floor limits
-          // Note: In server y < -2 returns OBSIDIAN but if bounded to 105 it stops drawing.
-          // Because the catacombs boundaries rule already handles it, we can just do the same:
-          if (worldY < -2) {
-            chunk.setBlockFast(x, y, z, Math.abs(worldX) > 55 || Math.abs(worldZ) > 55 ? BLOCK.AIR : BLOCK.OBSIDIAN);
-            continue;
-          }
-          if (worldY > 7) {
-            chunk.setBlockFast(
-              x,
-              y,
-              z,
-              Math.abs(worldX) > 50 || Math.abs(worldZ) > 50
-                ? BLOCK.AIR
-                : BLOCK.STONE,
-            );
-            continue;
-          }
-
-          // Spawn Room (safe area)
-          const distSq = worldX * worldX + worldZ * worldZ;
-          if (distSq < 100) {
-            if (worldX === 0 && worldY === 0 && worldZ === 0) {
-              chunk.setBlockFast(x, y, z, BLOCK.CHEST);
-            } else if (worldY === -1) {
-              chunk.setBlockFast(
-                x,
-                y,
-                z,
-                (Math.abs(worldX) + Math.abs(worldZ)) % 2 === 0
-                  ? BLOCK.BRICK
-                  : BLOCK.STONE,
-              );
-            } else if (worldY < -1) {
-              chunk.setBlockFast(x, y, z, BLOCK.STONE);
-            } else if (worldY > 5) {
-              chunk.setBlockFast(x, y, z, BLOCK.CONCRETE_GRAY);
-            } else if (distSq > 64 && distSq < 100) {
-              if (worldZ < -3 && Math.abs(worldX) < 3)
-                chunk.setBlockFast(x, y, z, BLOCK.AIR);
-              else chunk.setBlockFast(x, y, z, BLOCK.STONE);
-            } else {
-              chunk.setBlockFast(x, y, z, BLOCK.AIR);
-            }
-            continue;
-          }
-
-          // Dungeon carving logic
-          let isCarved = false;
-          const roomNoise = noise2D(worldX * 0.05, worldZ * 0.05);
-          if (roomNoise > 0.4) isCarved = true;
-
-          const tunnelNoise1 = Math.abs(noise2D(worldX * 0.03, worldZ * 0.03));
-          const tunnelNoise2 = Math.abs(
-            noise2D(worldX * 0.03 + 1000, worldZ * 0.03 + 1000),
-          );
-          if (tunnelNoise1 < 0.06 || tunnelNoise2 < 0.06) isCarved = true;
-
-          const caveNoise = noise3D(
-            worldX * 0.04,
-            worldY * 0.04,
-            worldZ * 0.04,
-          );
-          if (caveNoise > 0.3) isCarved = true;
-
-          if (isCarved) {
-            if (worldY >= 0 && worldY <= 4) {
-              chunk.setBlockFast(x, y, z, BLOCK.AIR);
-            } else if (worldY === -1) {
-              if (caveNoise > 0.5) {
-                chunk.setBlockFast(x, y, z, BLOCK.LAVA);
-              } else {
-                const detailNoise = noise2D(worldX * 0.2, worldZ * 0.2);
-                if (detailNoise > 0.4) chunk.setBlockFast(x, y, z, BLOCK.DIRT);
-                else if (detailNoise < -0.4)
-                  chunk.setBlockFast(x, y, z, BLOCK.CONCRETE_GRAY);
-                else chunk.setBlockFast(x, y, z, BLOCK.STONE);
-              }
-            } else if (worldY < -1) {
-              chunk.setBlockFast(x, y, z, BLOCK.STONE);
-            } else if (worldY === 5) {
-              const glowNoise = noise2D(worldX * 0.1, worldZ * 0.1);
-              if (glowNoise > 0.8) chunk.setBlockFast(x, y, z, BLOCK.GLOWSTONE);
-              else chunk.setBlockFast(x, y, z, BLOCK.OBSIDIAN);
-            } else if (worldY > 5) {
-              chunk.setBlockFast(x, y, z, BLOCK.STONE);
-            }
-            continue;
-          }
-
-          // Solid walls
-          const wallNoise = noise3D(worldX * 0.1, worldY * 0.1, worldZ * 0.1);
-          if (wallNoise > 0.5) chunk.setBlockFast(x, y, z, BLOCK.OBSIDIAN);
-          else if (wallNoise < -0.5) chunk.setBlockFast(x, y, z, BLOCK.BRICK);
-          else chunk.setBlockFast(x, y, z, BLOCK.STONE);
-        }
-        continue;
-      }
-
-      if (world.isVoidtrail) {
-        for (let y = 0; y < CHUNK_HEIGHT; y++) {
-          const worldY = y + WORLD_Y_OFFSET;
-          const block = getVoidTrailBlock(worldX, worldY, worldZ);
+          const block = getSummerLabBlock(worldX, worldY, worldZ);
           chunk.setBlockFast(x, y, z, block);
         }
         continue;
@@ -1130,7 +1015,7 @@ export async function generateChunkMethod(
 
   // Apply baked blocks
   if (!world.isHub) {
-    if (world.isSkyCastles && !world.isVoidtrail) {
+    if (world.isSkyCastles && !world.isSummerLab) {
       if (!world.bakedBlocksProcessed) {
         world.bakedBlocksProcessed = true;
         world.skycastlesBakedChunkMap = new Map();

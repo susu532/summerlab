@@ -23,7 +23,7 @@ import { generateHubTerrain, buildHubCastles } from "./generation/HubGenerator";
 import { getCastleBlock } from "./generation/SkyCastlesGenerator";
 import { getVillageBlock } from "./generation/SkyBridgeGenerator";
 import { getGiantMythicalShipBlock } from "./generation/ShipGenerator";
-import { createVoidtrailTextureAtlas } from "./VoidTrailTextureAtlas";
+import { createSummerLabTextureAtlas } from "./SummerLabTextureAtlas";
 
 import { WorldPhysics } from "./WorldPhysics";
 
@@ -62,7 +62,7 @@ export class World {
   queuedMobs: { type: any; pos: THREE.Vector3; team?: string }[] = [];
   isHub: boolean = false;
   isSkyCastles: boolean = false;
-  isVoidtrail: boolean = false;
+  isSummerLab: boolean = false;
   isDungeonDelver: boolean = false;
   isBattleRoyale: boolean = false;
   isSkyIsland: boolean = false;
@@ -89,10 +89,10 @@ export class World {
   constructor(scene: THREE.Scene) {
     this.scene = scene;
     const urlParams = new URLSearchParams(window.location.search);
-    const serverName = urlParams.get("server") || "dungeondelver";
+    const serverName = urlParams.get("server") || "summerlab";
     this.isHub = serverName.startsWith("hub");
     this.isSkyCastles = serverName.startsWith("skycastles");
-    this.isVoidtrail = serverName.startsWith("voidtrail");
+    this.isSummerLab = serverName.startsWith("summerlab");
     this.isDungeonDelver = serverName.startsWith("dungeondelver");
     this.isBattleRoyale = serverName.startsWith("battleroyale");
     this.isSkyIsland = serverName.startsWith("skyisland");
@@ -103,8 +103,8 @@ export class World {
 
     
     let texture: THREE.Texture;
-    if (this.isVoidtrail) {
-      texture = createVoidtrailTextureAtlas();
+    if (this.isSummerLab) {
+      texture = createSummerLabTextureAtlas();
     } else {
       texture = createTextureAtlas();
     }
@@ -139,8 +139,8 @@ export class World {
       shader.uniforms.uShaders = {
         value: settingsManager.getSettings().premiumShaders ? 1.0 : 0.0,
       };
-      shader.uniforms.uIsVoidtrail = {
-        value: this.isVoidtrail ? 1.0 : 0.0,
+      shader.uniforms.uIsSummerLab = {
+        value: this.isSummerLab ? 1.0 : 0.0,
       };
       shader.uniforms.uHideShininess = {
         value: settingsManager.getSettings().hideShininess ? 1.0 : 0.0,
@@ -182,7 +182,7 @@ export class World {
         uniform float uTime;
         uniform float uShaders;
         uniform float uPerformanceMode;
-        uniform float uIsVoidtrail;
+        uniform float uIsSummerLab;
         uniform float uWetness;
         uniform float uHideShininess;
         varying vec3 vWorldNormal;
@@ -368,7 +368,7 @@ export class World {
                  customMetalness = 0.8;
              }
              
-             if (uIsVoidtrail > 0.5 || uHideShininess > 0.5) {
+             if (uIsSummerLab > 0.5 || uHideShininess > 0.5) {
                  // Completely eliminate specular/glossy highlights to prevent excessive light reflection
                  customRoughness = 1.0;
                  customMetalness = 0.0;
@@ -419,7 +419,7 @@ export class World {
           `
           #include <dithering_fragment>
           #ifdef USE_COLOR
-            if (uIsVoidtrail < 0.5) {
+            if (uIsSummerLab < 0.5) {
               // Voxel baked light (vColor) acts as minimum ambient illumination
               // If the scene lighting (ambient + directional) is darker than our baked light,
               // we boost the final output color to match the baked light!
@@ -509,8 +509,8 @@ export class World {
               }
               gl_FragColor.rgb = baseCol + emissiveColor;
             } else {
-              // Childish happy vibes for voidtrail
-              // Incorporate voxel-baked lighting (min illumination) here so interiors/shadows are illuminated properly, matching the bright exteriors of Voidtrail!
+              // Childish happy vibes for summerlab
+              // Incorporate voxel-baked lighting (min illumination) here so interiors/shadows are illuminated properly, matching the bright exteriors of SummerLab!
               vec3 color = max(gl_FragColor.rgb, diffuseColor.rgb * 1.5);
               float lum = dot(color, vec3(0.299, 0.587, 0.114));
               // Saturate slightly instead of blowing out
@@ -672,8 +672,8 @@ export class World {
       shader.uniforms.uShaders = {
         value: settingsManager.getSettings().premiumShaders ? 1.0 : 0.0,
       };
-      shader.uniforms.uIsVoidtrail = {
-        value: this.isVoidtrail ? 1.0 : 0.0,
+      shader.uniforms.uIsSummerLab = {
+        value: this.isSummerLab ? 1.0 : 0.0,
       };
       shader.uniforms.uHideShininess = {
         value: settingsManager.getSettings().hideShininess ? 1.0 : 0.0,
@@ -731,7 +731,7 @@ export class World {
         uniform float uTime;
         uniform float uPerformanceMode;
         uniform float uShaders;
-        uniform float uIsVoidtrail;
+        uniform float uIsSummerLab;
         uniform float uHideShininess;
         varying vec3 vWorldPos;
         varying vec2 vTileBase;
@@ -872,7 +872,7 @@ export class World {
                       customRoughness = 0.05;
                       customMetalness = 0.95;
                   }
-                  if (uIsVoidtrail > 0.5 && texelColor.a >= 0.9) {
+                  if (uIsSummerLab > 0.5 && texelColor.a >= 0.9) {
                       customRoughness = 1.0;
                       customMetalness = 0.0;
                   }
@@ -911,15 +911,15 @@ export class World {
           `
           #include <dithering_fragment>
           #ifdef USE_COLOR
-            if (uIsVoidtrail < 0.5) {
+            if (uIsSummerLab < 0.5) {
               // Voxel baked light (vColor) acts as minimum ambient illumination
               // If the scene lighting (ambient + directional) is darker than our baked light,
               // we boost the final output color to match the baked light!
               // diffuseColor already contains texelColor * vColor.
               gl_FragColor.rgb = max(gl_FragColor.rgb, diffuseColor.rgb);
             } else {
-              // Childish happy vibes for voidtrail
-              // Incorporate voxel-baked lighting (min illumination) here so interiors/shadows are illuminated properly, matching the bright exteriors of Voidtrail!
+              // Childish happy vibes for summerlab
+              // Incorporate voxel-baked lighting (min illumination) here so interiors/shadows are illuminated properly, matching the bright exteriors of SummerLab!
               vec3 color = max(gl_FragColor.rgb, diffuseColor.rgb * 1.5);
               float lum = dot(color, vec3(0.299, 0.587, 0.114));
               // Saturate slightly instead of blowing out
@@ -940,7 +940,7 @@ export class World {
     const settings = settingsManager.getSettings();
     const isPerformanceMode = settings.performanceMode;
     const isPremiumShadersEnabled = settings.premiumShaders;
-    const isVoidtrail = this.isVoidtrail;
+    const isSummerLab = this.isSummerLab;
 
     // Update performance mode uniform
     if ((this.opaqueMaterial as any).userData?.uPerformanceMode) {
@@ -948,12 +948,12 @@ export class World {
         isPerformanceMode ? 1.0 : 0.0;
     }
     
-    // Update uIsVoidtrail
-    if ((this.opaqueMaterial as any).userData?.uIsVoidtrail) {
-      (this.opaqueMaterial as any).userData.uIsVoidtrail.value = isVoidtrail ? 1.0 : 0.0;
+    // Update uIsSummerLab
+    if ((this.opaqueMaterial as any).userData?.uIsSummerLab) {
+      (this.opaqueMaterial as any).userData.uIsSummerLab.value = isSummerLab ? 1.0 : 0.0;
     }
-    if ((this.transparentMaterial as any).userData?.uIsVoidtrail) {
-      (this.transparentMaterial as any).userData.uIsVoidtrail.value = isVoidtrail ? 1.0 : 0.0;
+    if ((this.transparentMaterial as any).userData?.uIsSummerLab) {
+      (this.transparentMaterial as any).userData.uIsSummerLab.value = isSummerLab ? 1.0 : 0.0;
     }
 
     // Update uHideShininess
@@ -1115,10 +1115,6 @@ export class World {
     if (this.isDungeonDelver && Math.floor(x) === 0 && Math.floor(y) === 0 && Math.floor(z) === 0) {
       return true;
     }
-    
-    if (this.isDungeonDelver && this.getBlock(x, y, z) === BLOCK.OBSIDIAN) {
-      return true;
-    }
 
     const absX = Math.abs(Math.floor(x));
     const absZ = Math.abs(Math.floor(z));
@@ -1236,7 +1232,6 @@ export class World {
     const bz = z & 15;
     const oldType = chunk.getBlock(bx, cy, bz);
     chunk.setBlock(bx, cy, bz, type);
-    chunk.needsUpdate = true;
 
     // Light update
     const isEmissive =
@@ -1436,7 +1431,7 @@ export class World {
     if (!serverName) serverName = "dungeondelver";
     this.isHub = serverName.startsWith("hub");
     this.isSkyCastles = serverName.startsWith("skycastles");
-    this.isVoidtrail = serverName.startsWith("voidtrail");
+    this.isSummerLab = serverName.startsWith("summerlab");
     this.isDungeonDelver = serverName.startsWith("dungeondelver");
     this.isBattleRoyale = serverName.startsWith("battleroyale");
     this.isSkyIsland = serverName.startsWith("skyisland");

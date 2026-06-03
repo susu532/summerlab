@@ -4,10 +4,10 @@ import { ITEM_COLORS } from './Constants';
 import { ItemType } from './Inventory';
 export const ATLAS_TILES = 32;
 
-let cachedVoidtrailTexture: THREE.Texture | null = null;
+let cachedSummerLabTexture: THREE.Texture | null = null;
 
-export function createVoidtrailTextureAtlas(): THREE.Texture {
-  if (cachedVoidtrailTexture) return cachedVoidtrailTexture;
+export function createSummerLabTextureAtlas(): THREE.Texture {
+  if (cachedSummerLabTexture) return cachedSummerLabTexture;
 
   const canvas = document.createElement('canvas');
   const size = 16;
@@ -85,7 +85,7 @@ export function createVoidtrailTextureAtlas(): THREE.Texture {
     }
   };
 
-  const VOIDTRAIL_PALETTE = [
+  const SUMMERLAB_PALETTE = [
     '#FF69B4', // hotpink
     '#000000', // black
     '#FFFFFF', // white
@@ -95,11 +95,30 @@ export function createVoidtrailTextureAtlas(): THREE.Texture {
     '#FF00FF'  // magenta
   ];
 
+  const GLASS_COLORS_SUMMERLAB = [
+    '#FFFFFF', // GLASS_WHITE
+    '#F07613', // GLASS_ORANGE
+    '#BD44B3', // GLASS_MAGENTA
+    '#3AAfd9', // GLASS_LIGHT_BLUE
+    '#F8C627', // GLASS_YELLOW
+    '#70B919', // GLASS_LIME
+    '#ED8DAC', // GLASS_PINK
+    '#3E4447', // GLASS_GRAY
+    '#8E8E86', // GLASS_LIGHT_GRAY
+    '#158991', // GLASS_CYAN
+    '#792AAC', // GLASS_PURPLE
+    '#35399D', // GLASS_BLUE
+    '#724728', // GLASS_BROWN
+    '#546D1B', // GLASS_GREEN
+    '#A12722', // GLASS_RED
+    '#141519'  // GLASS_BLACK
+  ];
+
   for (let blockId=0; blockId<BLOCK_UVS.length; blockId++) {
     const uvs = BLOCK_UVS[blockId];
     if (!uvs) continue;
     
-    let color = VOIDTRAIL_PALETTE[blockId % VOIDTRAIL_PALETTE.length];
+    let color = SUMMERLAB_PALETTE[blockId % SUMMERLAB_PALETTE.length];
     
     if (blockId === ItemType.CONCRETE_WHITE) color = '#FFFFFF';
     else if (blockId === ItemType.CONCRETE_BLACK) color = '#000000';
@@ -107,6 +126,32 @@ export function createVoidtrailTextureAtlas(): THREE.Texture {
     else if (blockId === ItemType.CONCRETE_PURPLE) color = '#800080'; // purple
     else if (blockId === ItemType.CONCRETE_LIME) color = '#32CD32'; // limegreen
     else if (blockId === ItemType.CONCRETE_MAGENTA) color = '#FF00FF'; // magenta
+    else if (blockId === ItemType.CONCRETE_ORANGE) color = '#F07613'; // orange
+    else if (blockId === ItemType.CONCRETE_LIGHT_BLUE) color = '#3AAfd9'; // light blue
+    else if (blockId === ItemType.CONCRETE_YELLOW) color = '#F8C627'; // yellow
+    else if (blockId === ItemType.CONCRETE_GRAY) color = '#3E4447'; // gray
+    else if (blockId === ItemType.CONCRETE_LIGHT_GRAY) color = '#8E8E86'; // light gray
+    else if (blockId === ItemType.CONCRETE_CYAN) color = '#158991'; // cyan
+    else if (blockId === ItemType.CONCRETE_BLUE) color = '#35399D'; // blue
+    else if (blockId === ItemType.CONCRETE_BROWN) color = '#724728'; // brown
+    else if (blockId === ItemType.CONCRETE_GREEN) color = '#546D1B'; // green
+    else if (blockId === ItemType.CONCRETE_RED) color = '#A12722'; // red
+    else if (blockId === ItemType.CONCRETE_PASTEL_PINK) color = '#FFB6C1';
+    else if (blockId === ItemType.CONCRETE_PASTEL_PURPLE) color = '#E1BEE7';
+    else if (blockId === ItemType.CONCRETE_NEON_PINK) color = '#FF1493';
+    else if (blockId === ItemType.CONCRETE_NEON_GREEN) color = '#39FF14';
+    else if (blockId === ItemType.CONCRETE_NEON_ORANGE) color = '#FF5F1F';
+    else if (blockId === ItemType.CONCRETE_NEON_YELLOW) color = '#CCFF00';
+    else if (blockId === ItemType.CONCRETE_AQUAMARINE) color = '#7FFFD4';
+    else if (blockId === ItemType.CONCRETE_MINT_CREAM) color = '#A3E4D7';
+    else if (blockId === ItemType.CONCRETE_CORAL_RED) color = '#FF7F50';
+    else if (blockId === ItemType.CONCRETE_SUNSET_GOLD) color = '#FFD700';
+    else if (blockId === ItemType.CONCRETE_LAVENDER) color = '#C3B1E1';
+    else if (blockId === ItemType.CONCRETE_SKY_BLUE) color = '#87CEEB';
+    else if (blockId === ItemType.CONCRETE_TEAL) color = '#008080';
+    else if (blockId === ItemType.CONCRETE_SANDY_BEIGE) color = '#E5C49F';
+    else if (blockId === ItemType.CONCRETE_CHOCOLATE) color = '#5C3A21';
+    else if (blockId === ItemType.CONCRETE_DEEP_BLUE) color = '#1B4F72';
 
     const drawnOptions = new Set<string>();
     for (let face = 0; face < 6; face++) {
@@ -127,6 +172,19 @@ export function createVoidtrailTextureAtlas(): THREE.Texture {
           ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
           ctx.fillRect(tx*size + 3, ty*size + 3, 4, 1);
           ctx.fillRect(tx*size + 2, ty*size + 4, 1, 2);
+       } else if (ty === 11 && tx >= 0 && tx < 16) { // Colored Glass blocks
+          ctx.clearRect(tx*size, ty*size, size, size);
+          const glassCol = GLASS_COLORS_SUMMERLAB[tx] || '#FFFFFF';
+          ctx.fillStyle = glassCol + '44'; 
+          ctx.fillRect(tx*size, ty*size, size, size);
+          ctx.strokeStyle = glassCol + '88';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(tx*size + 0.5, ty*size + 0.5, size - 1, size - 1);
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+          ctx.beginPath();
+          ctx.moveTo(tx * size + 4, ty * size + 4); ctx.lineTo(tx * size + 6, ty * size + 6);
+          ctx.moveTo(tx * size + 10, ty * size + 10); ctx.lineTo(tx * size + 12, ty * size + 12);
+          ctx.stroke();
        } else if (tx === 1 && ty === 2) { // Glass
           ctx.clearRect(tx*size, ty*size, size, size);
           ctx.fillStyle = 'rgba(200, 255, 255, 0.3)';
@@ -147,6 +205,6 @@ export function createVoidtrailTextureAtlas(): THREE.Texture {
   texture.minFilter = THREE.NearestFilter;
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
-  cachedVoidtrailTexture = texture;
+  cachedSummerLabTexture = texture;
   return texture;
 }

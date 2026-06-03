@@ -11,6 +11,7 @@ import { SkyCastlesSidebar } from './SkyCastlesSidebar';
 import { BattleRoyaleSidebar } from './BattleRoyaleSidebar';
 import { DungeonDelverSidebar } from './DungeonDelverSidebar';
 import { DungeonDelverTitleUI } from './DungeonDelverTitleUI';
+import { SummerLabTitleUI } from './SummerLabTitleUI';
 import { SkyBridgeActionBar } from './SkyBridgeActionBar';
 import { DungeonDelverActionBar } from './DungeonDelverActionBar';
 import { SkyBridgeXPPopup } from './SkyBridgeXPPopup';
@@ -20,6 +21,7 @@ import { GameMessages } from './GameMessages';
 import { LevelUpUI } from './LevelUpUI';
 import { HotbarUI } from './HotbarUI';
 import { KillCelebrationUI } from './KillCelebrationUI';
+import { FluidColorPicker } from './FluidColorPicker';
 import { Game } from '../game/Game';
 import { Maximize, Settings as SettingsIcon } from 'lucide-react';
 
@@ -64,7 +66,7 @@ function CrosshairTargetInfo({ currentMode, game }: { currentMode: string, game?
     return () => cancelAnimationFrame(afId);
   }, [game]);
 
-  if (!targetInfo.type || currentMode === 'voidtrail') return null;
+  if (!targetInfo.type || currentMode === 'summerlab') return null;
 
   return (
     <div className="absolute top-6 px-2 py-1 bg-black/80 text-[12px] text-white font-sans drop-shadow-[1px_1px_0_rgba(0,0,0,1)] whitespace-nowrap">
@@ -91,46 +93,52 @@ export function GameHUD({ game, isMobile, showDebug, setPauseMenuOpen }: any) {
       {currentMode === 'hub' && <HubTitleUI />}
 
       {/* Dungeon Delver Title */}
-      {currentMode === 'dungeondelver' && <DungeonDelverTitleUI />}
+      {/* {currentMode === 'dungeondelver' && <DungeonDelverTitleUI />} */}
+
+      {/* Summer Lab Title */}
+      {currentMode === 'summerlab' && <SummerLabTitleUI />}
 
       {/* Debug Menu */}
       <DebugInfo game={game} showDebug={showDebug} />
 
       {/* Settings/Pause Button */}
       {isHUDVisible && !isMobile && (
-        <div className="absolute top-4 right-4 flex gap-2">
-          <button
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(err => {
-                  console.warn(`Error attempting to enable fullscreen mode: ${err.message}`);
-                });
-              } else {
-                if (document.exitFullscreen) {
-                  document.exitFullscreen();
+        <>
+          <div className="absolute top-4 right-4 flex gap-2">
+            <button
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!document.fullscreenElement) {
+                  document.documentElement.requestFullscreen().catch(err => {
+                    console.warn(`Error attempting to enable fullscreen mode: ${err.message}`);
+                  });
+                } else {
+                  if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                  }
                 }
-              }
-            }}
-            className="p-2 bg-black/40 hover:bg-black/60 text-white rounded-lg backdrop-blur-md border border-white/20 transition-all group"
-            title="Toggle Fullscreen"
-          >
-            <Maximize className="w-6 h-6" />
-          </button>
-          <button
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (game) game.controls.unlock();
-              setPauseMenuOpen(true);
-            }}
-            className="p-2 bg-black/40 hover:bg-black/60 text-white rounded-lg backdrop-blur-md border border-white/20 transition-all group"
-            title="Menu (Esc)"
-          >
-            <SettingsIcon className="w-6 h-6 group-hover:rotate-90 transition-transform duration-500" />
-          </button>
-        </div>
+              }}
+              className="p-2 bg-black/40 hover:bg-black/60 text-white rounded-lg backdrop-blur-md border border-white/20 transition-all group"
+              title="Toggle Fullscreen"
+            >
+              <Maximize className="w-6 h-6" />
+            </button>
+            <button
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (game) game.controls.unlock();
+                setPauseMenuOpen(true);
+              }}
+              className="p-2 bg-black/40 hover:bg-black/60 text-white rounded-lg backdrop-blur-md border border-white/20 transition-all group"
+              title="Menu (Esc)"
+            >
+              <SettingsIcon className="w-6 h-6 group-hover:rotate-90 transition-transform duration-500" />
+            </button>
+          </div>
+          <FluidColorPicker game={game} />
+        </>
       )}
 
       {/* Crosshair */}
@@ -159,11 +167,11 @@ export function GameHUD({ game, isMobile, showDebug, setPauseMenuOpen }: any) {
       {/* {isHUDVisible && currentMode === 'skybridge' && <SkyBridgeSidebar isMobile={isMobile} />} */}
       {/* {isHUDVisible && currentMode === 'skycastles' && <SkyCastlesSidebar isMobile={isMobile} />} */}
       {/* {isHUDVisible && currentMode === 'battleroyale' && <BattleRoyaleSidebar isMobile={isMobile} />} */}
-      {isHUDVisible && currentMode === 'dungeondelver' && <DungeonDelverSidebar isMobile={isMobile} />}
+      {/* {isHUDVisible && currentMode === 'dungeondelver' && <DungeonDelverSidebar isMobile={isMobile} />} */}
 
       {/* SkyBridge UI */}
       {/* {isHUDVisible && (currentMode === 'skybridge' || currentMode === 'skycastles') && <SkyBridgeActionBar />} */}
-      {isHUDVisible && currentMode === 'dungeondelver' && <DungeonDelverActionBar isMobile={isMobile} />}
+      {/* {isHUDVisible && currentMode === 'dungeondelver' && <DungeonDelverActionBar isMobile={isMobile} />} */}
       {/* {isHUDVisible && currentMode === 'skybridge' && <SkyBridgeXPPopup />} */}
       
       {isHUDVisible && (

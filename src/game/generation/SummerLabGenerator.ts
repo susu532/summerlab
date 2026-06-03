@@ -1,6 +1,6 @@
 import { ItemType } from '../Inventory';
 
-export function getVoidTrailBlock(x: number, y: number, z: number): number {
+export function getSummerLabBlock(x: number, y: number, z: number): number {
   if (y < -20 || y > 100) return ItemType.AIR;
   
   const fy = Math.floor(y);

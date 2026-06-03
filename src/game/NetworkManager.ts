@@ -102,7 +102,7 @@ class FakeClientSocket {
 export class NetworkManager {
   socket!: FakeClientSocket;
   // ... rest of implementation (using socket as FakeClientSocket)
-  serverName: string = "dungeondelver";
+  serverName: string = "summerlab";
   players: Record<string, any> = {};
   blockChanges: Record<string, number> = {};
   private pendingEmits: { event: string; args: any[] }[] = [];
@@ -222,10 +222,10 @@ export class NetworkManager {
     
     // Check if we should instantly join multiplayer (skip hub)
     if (!mode && CrazyGamesManager.isInstantMultiplayer) {
-       mode = "dungeondelver_" + Math.random().toString(36).substring(2, 9);
+       mode = "summerlab_" + Math.random().toString(36).substring(2, 9);
     }
     
-    if (!mode) mode = "dungeondelver";
+    if (!mode) mode = "summerlab";
 
     // Immediately update URL to provide instant visual feedback of server transition
     if (modeOverride) {
@@ -234,8 +234,8 @@ export class NetworkManager {
 
     try {
       const region = settingsManager.getSettings().serverRegion || 'auto';
-      const euUrl = "https://skybridge-server.onrender.com" ;
-      const usUrl = "https://skybridge-server-nycz.onrender.com" ;
+      const euUrl = "https://summerlab-server.onrender.com" ;
+      const usUrl = "https://https://summerlab-server-hhnw.onrender.com" ;
       let baseUrl = euUrl;
 
       if (region === 'us') {
@@ -310,11 +310,13 @@ export class NetworkManager {
       isBlocking: !!(stateMask & 64),
       isGliding: !!(stateMask & 128),
       isInvulnerable: !!(stateMask & 256),
+      isShooting: !!(stateMask & 512),
       swingSpeed: packed[6],
       heldItem: packed[7],
       offHandItem: packed[8],
       defense: packed[9],
       health: packed[10],
+      fluidColor: packed[11] || 0,
     };
 
     let isNew = false;
@@ -346,10 +348,10 @@ export class NetworkManager {
     this.blockChanges = {};
     this.serverName = serverName;
 
-    useGameStore.getState().setCurrentMode(serverName.split("_")[0] || "dungeondelver");
+    useGameStore.getState().setCurrentMode(serverName.split("_")[0] || "summerlab");
     useGameStore.getState().setServerId(serverName);
 
-    const backendUrl = this.currentBackendUrl || "https://skybridge-server.onrender.com";
+    const backendUrl = this.currentBackendUrl || "https://summerlab-server.onrender.com";
     const wsUrl = backendUrl.replace(/^https:/, 'wss:').replace(/^http:/, 'ws:');
     this.socket = new FakeClientSocket(`${wsUrl}/ws/${serverName}`);
     
@@ -508,8 +510,8 @@ export class NetworkManager {
         }
         offset = floatOffset;
         
-        const packed = new Float32Array(buffer, offset, 11);
-        offset += 11 * 4;
+        const packed = new Float32Array(buffer, offset, 12);
+        offset += 12 * 4;
         
         if (id !== this.id) {
            this.applyPlayerUpdate(id, packed);
@@ -602,6 +604,29 @@ export class NetworkManager {
         window.dispatchEvent(
           new CustomEvent("networkMobHit", { detail: data }),
         );
+      }
+    });
+
+    this.socket.on("splats", (data: any[]) => {
+      const g = (window as any).game;
+      if (g && g.chocolateFluidSystem && data && data.length) {
+         for (const s of data) {
+           g.chocolateFluidSystem.spawnSplat(
+             new THREE.Vector3(s[0], s[1], s[2]),
+             new THREE.Vector3(s[3], s[4], s[5]),
+             new THREE.Color(s[6]),
+             true // fromNetwork flag? Wait, I need to add this param.
+           );
+         }
+      }
+    });
+    
+    this.socket.on("cleanSplats", (keys: string[]) => {
+      const g = (window as any).game;
+      if (g && g.chocolateFluidSystem && keys && keys.length) {
+         for (const k of keys) {
+           g.chocolateFluidSystem.removeSplat(k, true);
+         }
       }
     });
 

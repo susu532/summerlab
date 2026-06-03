@@ -123,12 +123,12 @@ export const ChatUI = React.memo(function ChatUI({ isLocked, isTyping, setIsTypi
 
   return (
     <div 
-      className="absolute left-4 top-10 sm:top-[12vh] md:top-[15vh] lg:top-[18vh] z-[60] w-[60vw] sm:w-[45vw] md:w-[40vw] lg:w-[35vw] xl:w-[30vw] min-w-[200px] max-w-[500px] flex flex-col gap-1 pointer-events-none transition-all landscape:top-[10vh] landscape:w-[45vw] lg:landscape:w-[35vw]"
+      className="absolute left-4 top-16 md:top-20 md:left-6 lg:top-24 lg:left-8 z-[60] w-[92vw] sm:w-[48vw] md:w-[44vw] lg:w-[38vw] xl:w-[34vw] min-w-[280px] max-w-[560px] flex flex-col gap-1 pointer-events-none transition-all"
     >
       <div 
         ref={chatContainerRef}
         onScroll={handleScroll}
-        className={`max-h-[25vh] sm:max-h-[30vh] md:max-h-[38vh] lg:max-h-[45vh] overflow-y-auto flex flex-col gap-0.5 rounded-sm transition-all
+        className={`max-h-[32vh] sm:max-h-[42vh] md:max-h-[48vh] lg:max-h-[55vh] overflow-y-auto flex flex-col gap-0.5 rounded-sm transition-all
           ${showFullChat 
             ? 'pointer-events-auto bg-black/45 border border-white/10 p-2 custom-scrollbar' 
             : 'pointer-events-none bg-transparent'
@@ -149,7 +149,7 @@ export const ChatUI = React.memo(function ChatUI({ isLocked, isTyping, setIsTypi
             }
 
             return (
-              <div key={msg.id} className="text-[11px] sm:text-[12px] md:text-[13px] lg:text-[14px] text-white drop-shadow-[1px_1px_0_rgba(0,0,0,1)] bg-black/0 px-1 py-0.5 rounded w-fit max-w-full break-words font-sans selection:bg-white/30">
+              <div key={msg.id} className="text-[13px] sm:text-[14px] md:text-[15px] lg:text-[16px] text-white drop-shadow-[1px_1px_0_rgba(0,0,0,1)] bg-black/0 px-1 py-0.5 rounded w-fit max-w-full break-words font-sans selection:bg-white/30">
                 <span className={`font-bold ${senderColor}`}>{msg.sender}: </span>
                 {formatMessage(msg.message)}
               </div>

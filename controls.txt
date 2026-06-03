@@ -1,0 +1,49 @@
+================================================================================
+             S T A R P L E X . I O   -   G A M E   C O N T R O L S            
+================================================================================
+
+Welcome to the official controls guide for starplex.io!
+
+--------------------------------------------------------------------------------
+1. KEYBOARD NAVIGATION & MOVEMENT
+--------------------------------------------------------------------------------
+  [W] [A] [S] [D]  - Move Forward, Left, Backward, Right
+  [Spacebar]       - Jump / Swim/Ascend in fluids
+  [Left Shift]     - Crouch & Sneak (Prevents falling off ledges) / Descend in fluid
+  [Left Control]   - Sprint Toggle (Boosts movement velocity)
+
+--------------------------------------------------------------------------------
+2. MOUSE & TARGETING CONTROLS
+--------------------------------------------------------------------------------
+  Mouse Movement   - Rotate camera / Aim reticle (Requires Pointer Lock)
+  Left Click       - Break Block / Swing weapon to attack / Use primary tool
+  Right Click      - Place Block / Interact with chests, shops, and NPCs / Charge bow
+  Scroll Wheel     - Cycle active Hotbar slots (1-9)
+
+--------------------------------------------------------------------------------
+3. INTERFACE, HOTBAR & QUICK ACTIONS
+--------------------------------------------------------------------------------
+  [1] to [9]       - Instantly select corresponding Hotbar Slot
+  [Q]              - Drop active item unit (Ctrl+Q to drop entire stack)
+  [E]              - Toggle Inventory screen & 2x2 Crafting Grid
+  [Escape]         - Open Pause Menu / Close active UI screens / Release mouse lock
+  [Enter]          - Toggle active Chat Input window (submit message or commands)
+  [Tab]            - Hold to view live scoreboard & online player list
+  [F3]             - Toggle Debug HUD (Coordinates, FPS, and chunk status)
+  [N]              - Toggle HUD visibility (Telescopic/screenshot mode)
+  [V]              - Telescope Zoom (Hold to magnify distant view)
+  [B]              - Cycle Camera Views (First-person, Third-person rear/front)
+
+--------------------------------------------------------------------------------
+4. MOBILE SCREEN CONTROLS
+--------------------------------------------------------------------------------
+When running on mobile, Starplex.io enables on-screen touch elements:
+  - Left Virtual Joystick  : Handle movement in any direction
+  - Right Screen Touch Zone: Drag anywhere on the right to steer the camera view
+  - Action Buttons         : On-screen triggers for Jump, Sprint, Zoom, and Drop
+  - Tap Hotbar HUD         : Swap active items instantly
+  - Double Tap Screen      : Recalibrate landscape visual alignment
+
+================================================================================
+                    S T A R P L E X   -   H A V E   F U N !                   
+================================================================================

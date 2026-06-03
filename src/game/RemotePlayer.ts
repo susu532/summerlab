@@ -2,12 +2,11 @@ import * as THREE from 'three';
 import { generateSkin, applySkinUVs } from './SkinManager';
 import { createItemModel } from './ItemModels';
 import { getBlockUVs, createTextureAtlas, ATLAS_TILES, isPlant, isFlatItem, isLightEmitting, isSolidBlock, isSlab } from './TextureAtlas';
-import { createVoidtrailTextureAtlas } from './VoidTrailTextureAtlas';
+import { createSummerLabTextureAtlas } from './SummerLabTextureAtlas';
 import { settingsManager } from './Settings';
 import { ItemType } from './Inventory';
 import { audioManager } from './AudioManager';
 import { useGameStore } from '../store/gameStore';
-import { applyMilestoneColor } from './MilestoneColor';
 
 const _zeroVec = new THREE.Vector3(0, 0, 0);
 
@@ -104,10 +103,12 @@ export class RemotePlayer {
   isSprinting = false;
   isSwinging = false;
   isBlocking = false;
+  isShooting = false;
   isGliding = false;
   isInvulnerable = false;
   isGrounded = true;
   swingSpeed = 15;
+  fluidColor: number | undefined;
   
   skills: any = {};
   isDead: boolean = false;
@@ -646,9 +647,9 @@ export class RemotePlayer {
     const isShovel = type >= ItemType.WOODEN_SHOVEL && type <= ItemType.DIAMOND_SHOVEL;
     const isAxe = type >= ItemType.WOODEN_AXE && type <= ItemType.DIAMOND_AXE;
     const isTorch = type === ItemType.TORCH;
-    const isTool = isPickaxe || isSword || isShovel || isAxe || (type >= 460 && type <= 472) || type === 54;
+    const isTool = isPickaxe || isSword || isShovel || isAxe || (type >= 460 && type <= 472) || type === 54 || type === ItemType.FLUID_CHOCOLATE_HOSE || type === ItemType.WASHING_HOSE;
     const isFood = (type >= 456 && type <= 459);
-    const isMaterial = type === 13 || (type >= 500 && type <= 509) || type === 29 || type === 303 || type === 300 || type === 319 || type === 321 || type === 43 || type === 44 || isTorch;
+    const isMaterial = type === 13 || (type >= 500 && type <= 509) || type === 29 || type === 303 || type === 300 || type === 319 || type === 321 || type === 43 || type === 44 || isTorch || type === ItemType.CHEST || type === ItemType.ENDER_CHEST || type === ItemType.FLUID_CHOCOLATE_HOSE || type === ItemType.WASHING_HOSE;
     const use3DModel = isTool || isFood || isMaterial;
 
     if (use3DModel) {
@@ -680,6 +681,10 @@ export class RemotePlayer {
           model.position.set(0, -0.4, -0.1);
           model.scale.set(1.1, 1.1, 1.1);
           model.rotation.set(Math.PI - Math.PI / 4, Math.PI / 8 * side, Math.PI / 16 * side);
+        } else if (type === ItemType.FLUID_CHOCOLATE_HOSE || type === ItemType.WASHING_HOSE) {
+          model.position.set(0, -0.45, -0.1);
+          model.scale.set(1.1, 1.1, 1.1);
+          model.rotation.set(-Math.PI/2 - 0.2, Math.PI / 8 * side, 0);
         } else {
           model.position.set(0, -0.4, -0.1);
           model.scale.set(1.1, 1.1, 1.1);
@@ -731,8 +736,8 @@ export class RemotePlayer {
         uvAttribute.needsUpdate = true;
         
         if (!(mesh.material as THREE.MeshStandardMaterial).map) {
-          const isVoidtrail = new URLSearchParams(window.location.search).get("server")?.startsWith("voidtrail");
-          (mesh.material as THREE.MeshStandardMaterial).map = isVoidtrail ? createVoidtrailTextureAtlas() : createTextureAtlas();
+          const isSummerLab = new URLSearchParams(window.location.search).get("server")?.startsWith("summerlab");
+          (mesh.material as THREE.MeshStandardMaterial).map = isSummerLab ? createSummerLabTextureAtlas() : createTextureAtlas();
         }
       }
     }
@@ -1082,6 +1087,33 @@ export class RemotePlayer {
 
     this.animateModel(delta, isMoving, horizontalVelocity);
     this.updateGlider(delta);
+
+    // Fluid sync
+    if (this.isShooting && (this.heldItemType === ItemType.FLUID_CHOCOLATE_HOSE || this.heldItemType === ItemType.WASHING_HOSE)) {
+      if ((window as any).game && (window as any).game.chocolateFluidSystem) {
+        const cs = (window as any).game.chocolateFluidSystem;
+        let origin = new THREE.Vector3();
+        let emitDir = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(this.targetRotation.x, this.targetRotation.y, 0, 'YXZ'));
+        
+        if (this.heldItemModel && this.heldItemModel.visible) {
+          const nozzle = this.heldItemModel.getObjectByName('hose_nozzle');
+          this.heldItemModel.updateMatrixWorld(true);
+          if (nozzle) {
+            origin.set(0, 0.1, 0); 
+            nozzle.localToWorld(origin);
+          } else {
+            origin.copy(new THREE.Vector3(0, 0.7, 0));
+            this.heldItemModel.localToWorld(origin);
+          }
+        } else {
+          origin = this.currentPos.clone().add(new THREE.Vector3(0, 1.1, 0));
+          origin.add(emitDir.clone().multiplyScalar(0.7));
+        }
+        
+        const color = this.fluidColor !== undefined ? new THREE.Color(this.fluidColor) : new THREE.Color('#3d1c04');
+        cs.emit(origin, emitDir, this.isBlocking, color, this.velocity); // Pass this.velocity
+      }
+    }
   }
 
   private updateGlider(delta: number) {
@@ -1380,7 +1412,21 @@ export class RemotePlayer {
       }
     }
 
-    if (this.blockTransition > 0.01 && this.heldItemModel) {
+    if (this.heldItemType === ItemType.FLUID_CHOCOLATE_HOSE || this.heldItemType === ItemType.WASHING_HOSE) {
+      // Hose aiming animation - aligns exactly with look direction
+      this.rightArmMesh.rotation.x = this.headPitch + Math.PI / 2;
+      this.rightArmMesh.rotation.y = 0;
+      this.rightArmMesh.rotation.z = 0;
+
+      // Left arm supports the hose loosely
+      this.leftArmMesh.rotation.x = this.headPitch + Math.PI / 2 - 0.4;
+      this.leftArmMesh.rotation.y = 0.5;
+      this.leftArmMesh.rotation.z = 0.5;
+
+      if (this.heldItemModel) {
+        this.heldItemModel.rotation.set(Math.PI, 0, 0);
+      }
+    } else if (this.blockTransition > 0.01 && this.heldItemModel) {
       const t = this.blockTransition;
 
       if (this.heldItemType === ItemType.BOW) {
@@ -1492,13 +1538,6 @@ export class RemotePlayer {
       this.rightLegMesh.rotation.x -= hitT * 0.15;
       this.leftLegMesh.rotation.z += hitT * 0.1;
       this.rightLegMesh.rotation.z -= hitT * 0.1;
-    }
-
-    if (this.heldItemType >= ItemType.WOODEN_SWORD && this.heldItemType <= ItemType.DIAMOND_SWORD && this.heldItemModel) {
-        let kills = 0;
-        const leaderboardObj = useGameStore.getState().leaderboard[this.id];
-        if (leaderboardObj) kills = leaderboardObj.kills || 0;
-        applyMilestoneColor(kills, this.heldItemModel);
     }
   }
 

@@ -7,7 +7,7 @@ export class ParticleSystem implements ISystem {
   particles: { mesh: THREE.InstancedMesh, life: number, velocities: THREE.Vector3[], positions: THREE.Vector3[], active: boolean }[] = [];
   private scene: THREE.Scene;
   private camera: THREE.Camera;
-  private isVoidtrail: boolean;
+  private isSummerLab: boolean;
 
   private _upVec = new THREE.Vector3(0, 1, 0);
   private _smallScaleVec = new THREE.Vector3();
@@ -17,18 +17,18 @@ export class ParticleSystem implements ISystem {
   private _particleQuat = new THREE.Quaternion();
   private _particleColorTemp = new THREE.Color();
 
-  constructor(scene: THREE.Scene, camera: THREE.Camera, isVoidtrail: boolean) {
+  constructor(scene: THREE.Scene, camera: THREE.Camera, isSummerLab: boolean) {
     this.scene = scene;
     this.camera = camera;
-    this.isVoidtrail = isVoidtrail;
+    this.isSummerLab = isSummerLab;
 
-    const particleGeometry = isVoidtrail 
+    const particleGeometry = isSummerLab 
         ? new THREE.CircleGeometry(0.2, 8) 
         : new THREE.BoxGeometry(0.15, 0.15, 0.15);
         
     for (const count of [4, 12]) {
       for (let i = 0; i < 25; i++) {
-        const material = isVoidtrail 
+        const material = isSummerLab 
             ? new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 1.0, depthWrite: false, side: THREE.DoubleSide }) 
             : new THREE.MeshLambertMaterial({ color: 0x888888, transparent: true, opacity: 1.0 });
         const mesh = new THREE.InstancedMesh(particleGeometry, material, count);
@@ -89,7 +89,7 @@ export class ParticleSystem implements ISystem {
     p.active = true;
     p.life = 1.0;
     p.mesh.visible = true;
-    if (this.isVoidtrail) {
+    if (this.isSummerLab) {
       (p.mesh.material as any).color.setHex(0xffffff);
     } else {
       (p.mesh.material as any).color.copy(color);
@@ -105,7 +105,7 @@ export class ParticleSystem implements ISystem {
         pos.z + (Math.random() - 0.5) * 0.4
       );
       
-      const speedParam = this.isVoidtrail ? 2.5 : 4.0;
+      const speedParam = this.isSummerLab ? 2.5 : 4.0;
       p.velocities[i].set(
         (Math.random() - 0.5) * speedParam,
         Math.random() * speedParam + 2,
@@ -113,7 +113,7 @@ export class ParticleSystem implements ISystem {
       );
       
       matrix.makeTranslation(pPos.x, pPos.y, pPos.z);
-      if (this.isVoidtrail) {
+      if (this.isSummerLab) {
         matrix.lookAt(pPos, this.camera.position, this._upVec);
         this._smallScaleVec.set(0.1, 0.1, 0.1);
         matrix.scale(this._smallScaleVec); // Start small
@@ -139,7 +139,7 @@ export class ParticleSystem implements ISystem {
         const v = p.velocities[j];
         const pos = p.positions[j];
         
-        if (this.isVoidtrail) {
+        if (this.isSummerLab) {
           v.y -= 2 * delta; // Light gravity
           v.multiplyScalar(0.95); // Drag
           this._particleTempVec.copy(v).multiplyScalar(delta);
@@ -166,7 +166,7 @@ export class ParticleSystem implements ISystem {
         p.mesh.setMatrixAt(j, this._particleMatrix);
       }
       p.mesh.instanceMatrix.needsUpdate = true;
-      if (this.isVoidtrail) {
+      if (this.isSummerLab) {
         (p.mesh.material as any).opacity = Math.pow(p.life, 2.0); // smooth fade
       } else {
         (p.mesh.material as any).opacity = p.life;

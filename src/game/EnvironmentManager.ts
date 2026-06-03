@@ -51,10 +51,10 @@ export class EnvironmentManager implements ISystem {
     dirLight.shadow.camera.far = 300;
     dirLight.shadow.mapSize.width = 4096;
     dirLight.shadow.mapSize.height = 4096;
-    dirLight.shadow.bias = 0.0015; // Increased to eliminate shadow acne/z-fighting in voxel/dungeon delver mode
-    dirLight.shadow.normalBias = 0.12; // Increased normal bias to smoothly map voxel faces and eliminate edge-on z-fighting
+    dirLight.shadow.bias = this.game.world.isSummerLab ? -0.0005 : 0.0015; // Adjust based on mode
+    dirLight.shadow.normalBias = this.game.world.isSummerLab ? 0.02 : 0.12; // Lower normal bias for summerlab
     dirLight.shadow.autoUpdate = true;
-    dirLight.shadow.radius = this.game.world.isVoidtrail ? 6 : 1; // Super soft shadow for voidtrail
+    dirLight.shadow.radius = this.game.world.isSummerLab ? 6 : 1; // Super soft shadow for summerlab
     
     // Add VSM or PCF softness if needed through renderer? Three handles radius based on map type.
     
@@ -256,17 +256,17 @@ export class EnvironmentManager implements ISystem {
 
     // Clouds
     this.clouds = new THREE.Group();
-    const cloudColor = this.game.world.isVoidtrail ? 0xffeef5 : 0xffffff;
-    const cloudOpacity = this.game.world.isVoidtrail ? 0.95 : 0.8;
+    const cloudColor = this.game.world.isSummerLab ? 0xffeef5 : 0xffffff;
+    const cloudOpacity = this.game.world.isSummerLab ? 0.95 : 0.8;
     const cloudMat = new THREE.MeshLambertMaterial({ color: cloudColor, transparent: true, opacity: cloudOpacity });
     for (let i = 0; i < 40; i++) {
       const cloud = new THREE.Group();
       const blocks = 3 + Math.floor(Math.random() * 5);
       for (let j = 0; j < blocks; j++) {
-        // If voidtrail, we could use rounded corners... but BoxGeometry is fine if we stick to voxels.
+        // If summerlab, we could use rounded corners... but BoxGeometry is fine if we stick to voxels.
         // We'll make them taller and chunkier.
         const width = 10 + Math.random() * 10;
-        const height = this.game.world.isVoidtrail ? 8 + Math.random() * 8 : 4 + Math.random() * 4;
+        const height = this.game.world.isSummerLab ? 8 + Math.random() * 8 : 4 + Math.random() * 4;
         const depth = 10 + Math.random() * 10;
         const blockGeo = new THREE.BoxGeometry(width, height, depth);
         const block = new THREE.Mesh(blockGeo, cloudMat);
@@ -563,12 +563,12 @@ export class EnvironmentManager implements ISystem {
     }
     
     // Sky and Fog
-    const daySky = this.game.world.isVoidtrail ? new THREE.Color(0x7ec8e3) : new THREE.Color(0x4facfe);
-    const nightSky = this.game.world.isVoidtrail ? new THREE.Color(0x191970) : new THREE.Color(0x0f0c29);
-    const sunsetSky = this.game.world.isVoidtrail ? new THREE.Color(0xffa07a) : new THREE.Color(0xff8c00);
+    const daySky = this.game.world.isSummerLab ? new THREE.Color(0x7ec8e3) : new THREE.Color(0x4facfe);
+    const nightSky = this.game.world.isSummerLab ? new THREE.Color(0x191970) : new THREE.Color(0x0f0c29);
+    const sunsetSky = this.game.world.isSummerLab ? new THREE.Color(0xffa07a) : new THREE.Color(0xff8c00);
     const waterSky = new THREE.Color(0x103060);
     const lavaSky = new THREE.Color(0x601010);
-    const rainSky = this.game.world.isVoidtrail ? new THREE.Color(0x90b0c0) : new THREE.Color(0x5a6a7a);
+    const rainSky = this.game.world.isSummerLab ? new THREE.Color(0x90b0c0) : new THREE.Color(0x5a6a7a);
     
     let skyColor;
     if (this.game.world.isDungeonDelver) {
@@ -628,7 +628,7 @@ export class EnvironmentManager implements ISystem {
         // Volumetric fog effect: enhance fog density in the morning/evening for god ray simulation
         const volumetricBoost = (isPremium && sunY > 0.0 && sunY < 0.3) ? 0.003 : 0.0;
         let baseDensity = isDay ? (0.004 + volumetricBoost) : 0.002 + fogFactor * 0.005;
-        if (this.game.world.isVoidtrail) {
+        if (this.game.world.isSummerLab) {
             baseDensity *= 1.5; // Thicker pastel fog
             // Tint fog pastel:
             this.game.scene.fog.color.lerp(new THREE.Color(0xffe4e1), 0.3 * (sunY > 0.1 ? 1 : 0));
@@ -656,9 +656,9 @@ export class EnvironmentManager implements ISystem {
       dirLight.target.position.copy(snappedPos);
       dirLight.target.updateMatrixWorld();
       
-      const sunColorDay = this.game.world.isVoidtrail ? new THREE.Color(0xfffbcc) : new THREE.Color(0xffffee);
-      const sunColorSunset = this.game.world.isVoidtrail ? new THREE.Color(0xffbbaa) : new THREE.Color(0xffaa55);
-      const sunColorNight = this.game.world.isVoidtrail ? new THREE.Color(0xccddff) : new THREE.Color(0xabcdef);
+      const sunColorDay = this.game.world.isSummerLab ? new THREE.Color(0xfffbcc) : new THREE.Color(0xffffee);
+      const sunColorSunset = this.game.world.isSummerLab ? new THREE.Color(0xffbbaa) : new THREE.Color(0xffaa55);
+      const sunColorNight = this.game.world.isSummerLab ? new THREE.Color(0xccddff) : new THREE.Color(0xabcdef);
       
       let sunCol;
       if (sunY > 0.2) {
@@ -676,7 +676,7 @@ export class EnvironmentManager implements ISystem {
       dirLight.color.copy(sunCol);
       
       let targetIntensity = isDay ? Math.max(0, sunY) * 2.5 + 0.5 : Math.max(0, Math.abs(sunY)) * 0.8;
-      if (this.game.world.isVoidtrail) {
+      if (this.game.world.isSummerLab) {
        targetIntensity = isDay ? targetIntensity * 0.1 : targetIntensity * 0.2;
       } else if (isPremium) {
        // RTX Style: much brighter direct sunlight
@@ -689,7 +689,7 @@ export class EnvironmentManager implements ISystem {
       
       if (this.game.world.isDungeonDelver) {
         dirLight.intensity = 0.25; // Faint dungeon moonlight/ambient leak
-        dirLight.castShadow = false;
+        dirLight.castShadow = !isPerformance;
       } else {
         dirLight.intensity = targetIntensity;
         dirLight.castShadow = !isPerformance;
@@ -703,12 +703,12 @@ export class EnvironmentManager implements ISystem {
             hemiLight.groundColor.copy(new THREE.Color(0x050505));
             hemiLight.intensity = 0.05;
           } else {
-            const upBlend = this.game.world.isVoidtrail ? new THREE.Color(0xffffee) : new THREE.Color(0xffffff);
-            const downBlend = this.game.world.isVoidtrail ? new THREE.Color(0xddeeff) : new THREE.Color(0x556633);
+            const upBlend = this.game.world.isSummerLab ? new THREE.Color(0xffffee) : new THREE.Color(0xffffff);
+            const downBlend = this.game.world.isSummerLab ? new THREE.Color(0xddeeff) : new THREE.Color(0x556633);
             hemiLight.color.copy(skyColor).lerp(upBlend, 0.5);
             hemiLight.groundColor.copy(downBlend).lerp(new THREE.Color(0x111111), isDay ? 0.0 : 0.8);
-            hemiLight.intensity = isDay ? (this.game.world.isVoidtrail ? 1.0 : 0.8) : (this.game.world.isVoidtrail ? 0.5 : 0.3);
-            if (isPremium && !this.game.world.isVoidtrail) {
+            hemiLight.intensity = isDay ? (this.game.world.isSummerLab ? 1.0 : 0.8) : (this.game.world.isSummerLab ? 0.5 : 0.3);
+            if (isPremium && !this.game.world.isSummerLab) {
                 // Stronger GI bounce feel
                 hemiLight.intensity *= 1.4;
             }
@@ -718,18 +718,18 @@ export class EnvironmentManager implements ISystem {
     const ambientLight = this.game.scene.getObjectByName('ambient') as THREE.AmbientLight;
     if (ambientLight) {
       let ambientIntensity = isDay ? (Math.max(0, sunY) * 0.4 + 0.4) : (Math.abs(sunY) * 0.2 + 0.2);
-      if (this.game.world.isVoidtrail) ambientIntensity *= 1.3;
+      if (this.game.world.isSummerLab) ambientIntensity *= 1.3;
       if (this.game.world.isDungeonDelver) ambientIntensity = 0.01;
 
       if (this.globalWeatherIntensity > 0) {
         ambientIntensity = THREE.MathUtils.lerp(ambientIntensity, ambientIntensity * 0.6, this.globalWeatherIntensity);
       }
-      if (isPremium && !this.game.world.isVoidtrail) {
+      if (isPremium && !this.game.world.isSummerLab) {
          // RTX style: lower flat ambient, rely on directional + hemi + reflections
          ambientIntensity *= 0.3;
       }
       ambientLight.intensity = ambientIntensity;
-      if (this.game.world.isVoidtrail) {
+      if (this.game.world.isSummerLab) {
         ambientLight.color.copy(skyColor).lerp(new THREE.Color(0xffffff), 0.3);
       } else if (this.game.world.isDungeonDelver) {
         ambientLight.color.setHex(0xffffff);

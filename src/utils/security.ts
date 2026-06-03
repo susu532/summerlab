@@ -24,7 +24,7 @@ export const isHeadless = (): boolean => {
 // ===== DOMAIN LOCK =====
 const ALLOWED_DOMAINS = [
   'starplex-io.vercel.app',
-  'skybridge-server.onrender.com',
+  'summerlab-server.onrender.com',
   'crazygames.com',
   '1001juegos.com',
   'speelspelletjes.nl',

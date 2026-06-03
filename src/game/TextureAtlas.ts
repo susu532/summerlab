@@ -3,6 +3,7 @@ import { BLOCK_UVS } from "./TextureAtlasData";
 export { createBreakingTexture } from "./TextureAtlasData";
 export { isTransparent, isCutout, isSlab, isSolidBlock, isLightEmitting, isPlant, isAnyTorch, isFlatItem, isLeaves } from "./TextureAtlasData";
 import { ITEM_COLORS } from './Constants';
+import { createSummerLabTextureAtlas } from './SummerLabTextureAtlas';
 
 import { ItemType, isChest } from './Inventory';
 export const BLOCK = ItemType as any;
@@ -1471,6 +1472,29 @@ export function createTextureAtlas(): THREE.Texture {
 
   ctx.shadowBlur = 0; // Reset
 
+  // Draw 20 custom concrete blocks in standard TextureAtlas too
+  const customConcreteSpecs = [
+    { type: BLOCK.CONCRETE_PASTEL_PINK, color: '#FFB6C1', shadow: '#E4A0AC', x: 16, y: 14 },
+    { type: BLOCK.CONCRETE_PASTEL_PURPLE, color: '#E1BEE7', shadow: '#C8A9CE', x: 21, y: 14 },
+    { type: BLOCK.CONCRETE_NEON_PINK, color: '#FF1493', shadow: '#E01282', x: 22, y: 14 },
+    { type: BLOCK.CONCRETE_NEON_GREEN, color: '#39FF14', shadow: '#32E012', x: 23, y: 14 },
+    { type: BLOCK.CONCRETE_NEON_ORANGE, color: '#FF5F1F', shadow: '#DF531B', x: 24, y: 14 },
+    { type: BLOCK.CONCRETE_NEON_YELLOW, color: '#CCFF00', shadow: '#B3DF00', x: 25, y: 14 },
+    { type: BLOCK.CONCRETE_AQUAMARINE, color: '#7FFFD4', shadow: '#70DFBA', x: 26, y: 14 },
+    { type: BLOCK.CONCRETE_MINT_CREAM, color: '#A3E4D7', shadow: '#8FC9BE', x: 27, y: 14 },
+    { type: BLOCK.CONCRETE_CORAL_RED, color: '#FF7F50', shadow: '#DF7046', x: 28, y: 14 },
+    { type: BLOCK.CONCRETE_SUNSET_GOLD, color: '#FFD700', shadow: '#DFBC00', x: 29, y: 14 },
+    { type: BLOCK.CONCRETE_LAVENDER, color: '#C3B1E1', shadow: '#AC9CC8', x: 30, y: 14 },
+    { type: BLOCK.CONCRETE_SKY_BLUE, color: '#87CEEB', shadow: '#77B8D0', x: 31, y: 14 },
+    { type: BLOCK.CONCRETE_TEAL, color: '#008080', shadow: '#006B6B', x: 16, y: 15 },
+    { type: BLOCK.CONCRETE_SANDY_BEIGE, color: '#E5C49F', shadow: '#C8AA8B', x: 17, y: 15 },
+    { type: BLOCK.CONCRETE_CHOCOLATE, color: '#5C3A21', shadow: '#4D301C', x: 18, y: 15 },
+    { type: BLOCK.CONCRETE_DEEP_BLUE, color: '#1B4F72', shadow: '#174360', x: 19, y: 15 },
+  ];
+  customConcreteSpecs.forEach(spec => {
+    drawTile(spec.x, spec.y, (ITEM_COLORS[spec.type] || spec.color), spec.shadow);
+  });
+
   const texture = new THREE.CanvasTexture(canvas);
   texture.magFilter = THREE.NearestFilter;
   texture.minFilter = THREE.NearestFilter;
@@ -1480,7 +1504,21 @@ export function createTextureAtlas(): THREE.Texture {
 }
 
 let cachedAtlasDataUrl: string | null = null;
+let cachedSummerLabAtlasDataUrl: string | null = null;
+
 export function getTextureAtlasDataUrl(): string {
+  const isSummerLab = typeof window !== 'undefined' && 
+         (new URLSearchParams(window.location.search).get('server')?.startsWith('summerlab') || 
+          window.location.pathname.includes('summerlab'));
+
+  if (isSummerLab) {
+    if (cachedSummerLabAtlasDataUrl) return cachedSummerLabAtlasDataUrl;
+    const texture = createSummerLabTextureAtlas();
+    const canvas = texture.image as HTMLCanvasElement;
+    cachedSummerLabAtlasDataUrl = canvas.toDataURL();
+    return cachedSummerLabAtlasDataUrl;
+  }
+
   if (cachedAtlasDataUrl) return cachedAtlasDataUrl;
   
   const texture = createTextureAtlas();

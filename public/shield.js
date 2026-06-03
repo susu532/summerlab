@@ -145,7 +145,7 @@
   // ===== 10. DOMAIN LOCK =====
   var _allowedHosts = [
     'starplex-io.vercel.app',
-    'skybridge-server.onrender.com',
+    'summerlab-server.onrender.com',
     'crazygames.com',
     '1001juegos.com',
     'speelspelletjes.nl',

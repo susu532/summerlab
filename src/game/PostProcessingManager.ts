@@ -18,12 +18,12 @@ export class PostProcessingManager {
     const isMobile = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
     const disableComposer = isPerformanceMode && isMobile;
     
-    if (!disableComposer && (this.game.world.isVoidtrail || usePremiumShaders)) {
+    if (!disableComposer && (this.game.world.isSummerLab || usePremiumShaders)) {
       if (usePremiumShaders) {
         this.game.renderer.toneMapping = THREE.ACESFilmicToneMapping;
         this.game.renderer.toneMappingExposure = 1.0;
         this.game.renderer.shadowMap.enabled = true;
-        this.game.renderer.shadowMap.type = THREE.PCFShadowMap;
+        this.game.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       } else {
         this.game.renderer.toneMapping = THREE.ACESFilmicToneMapping;
         this.game.renderer.toneMappingExposure = 1.1; // Bright punchy lighting
@@ -44,7 +44,7 @@ export class PostProcessingManager {
       }
       
       // Subtle bloom
-      if (this.game.world.isVoidtrail) {
+      if (this.game.world.isSummerLab) {
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.35, 0.4, 0.85);
         this.composer.addPass(bloomPass);
       } else if (usePremiumShaders) {
@@ -67,7 +67,7 @@ export class PostProcessingManager {
       const hideShininess = settingsManager.getSettings().hideShininess;
       this.composer.passes.forEach(pass => {
         if (pass instanceof UnrealBloomPass) {
-          pass.strength = hideShininess ? 0.0 : (this.game.world.isVoidtrail ? 0.35 : 0.25);
+          pass.strength = hideShininess ? 0.0 : (this.game.world.isSummerLab ? 0.35 : 0.25);
         }
       });
       this.composer.render();

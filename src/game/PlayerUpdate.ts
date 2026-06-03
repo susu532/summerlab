@@ -108,7 +108,7 @@ export function updatePlayer(player: Player, delta: number) {
     }
 
     const activeTool = player.inventory.slots[player.hotbarIndex];
-    const isHose = activeTool?.type === ItemType.FLUID_CHOCOLATE_HOSE;
+    const isHose = activeTool?.type === ItemType.FLUID_CHOCOLATE_HOSE || activeTool?.type === ItemType.WASHING_HOSE;
 
     // Handle Mining
     if (player.isLeftMouseDown && !player.isDead && !player.isSpectator && !isHose) {
@@ -386,7 +386,8 @@ export function updatePlayer(player: Player, delta: number) {
           (itemTypeNum >= 436 && itemTypeNum <= 455) ||
           (itemTypeNum >= 460 && itemTypeNum <= 472) ||
           itemTypeNum === 54 ||
-          itemTypeNum === ItemType.FLUID_CHOCOLATE_HOSE;
+          itemTypeNum === ItemType.FLUID_CHOCOLATE_HOSE ||
+          itemTypeNum === ItemType.WASHING_HOSE;
         const isFood = itemTypeNum >= 456 && itemTypeNum <= 459;
         const isMaterial =
           itemTypeNum === 13 ||
@@ -400,6 +401,7 @@ export function updatePlayer(player: Player, delta: number) {
           itemTypeNum === 44 ||
           isTorch ||
           itemTypeNum === ItemType.FLUID_CHOCOLATE_HOSE ||
+          itemTypeNum === ItemType.WASHING_HOSE ||
           isChest(itemTypeNum);
         const use3DModel = isTool || isFood || isMaterial;
 
@@ -435,7 +437,7 @@ export function updatePlayer(player: Player, delta: number) {
             player.fpHeldItemModel.position.set(0.5, -0.45, -0.7);
             player.fpHeldItemModel.rotation.set(-0.3, -Math.PI / 4, 0.6);
             player.fpHeldItemModel.scale.set(0.9, 0.9, 0.9);
-          } else if (itemTypeNum === ItemType.FLUID_CHOCOLATE_HOSE) {
+          } else if (itemTypeNum === ItemType.FLUID_CHOCOLATE_HOSE || itemTypeNum === ItemType.WASHING_HOSE) {
             player.fpHeldItemModel.position.set(0.5, -0.4, -0.6); // Adjusted for better view
             player.fpHeldItemModel.scale.set(0.85, 0.85, 0.85); // Slightly smaller scale
             // Point outward slightly down, slight inward tilt for hose look
@@ -702,7 +704,7 @@ export function updatePlayer(player: Player, delta: number) {
 
       player.camera.position.set(
         player.worldPosition.x + bobX,
-        player.worldPosition.y -
+        player.worldPosition.y - 0.2 -
           (player.standingHeight - player.currentCameraHeight) +
           bobY +
           player.cameraYOffset,
@@ -855,7 +857,9 @@ export function updatePlayer(player: Player, delta: number) {
       isSprinting: player.inputController.isSprinting,
       isSwinging: player.isSwinging,
       isGliding: player.isGliding,
-      isBlocking: player.isBlocking,
+      isBlocking: player.isBlocking || (player.inputController.isRightMouseDown && (player.inventory.slots[player.hotbarIndex]?.type === ItemType.FLUID_CHOCOLATE_HOSE || player.inventory.slots[player.hotbarIndex]?.type === ItemType.WASHING_HOSE)),
+      isShooting: (player.inputController.isRightMouseDown || player.isLeftMouseDown) && (player.inventory.slots[player.hotbarIndex]?.type === ItemType.FLUID_CHOCOLATE_HOSE || player.inventory.slots[player.hotbarIndex]?.type === ItemType.WASHING_HOSE),
+      fluidColor: player.inventory.slots[player.hotbarIndex]?.type === ItemType.WASHING_HOSE ? 0x3889f0 : parseInt(useGameStore.getState().fluidColor.replace('#', '0x')) || 0,
       swingSpeed: player.swingSpeed,
       isGrounded: player.canJump,
       heldItem: player.inventory.slots[player.hotbarIndex]?.type || 0,

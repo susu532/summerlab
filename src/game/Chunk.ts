@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import { BLOCK, getBlockUVs, isTransparent, isCutout, isSolidBlock, isSlab, isWater, ATLAS_TILES, isPlant, isLeaves, isAnyTorch } from './TextureAtlas';
 
 export const CHUNK_SIZE = 16;
-export const CHUNK_HEIGHT = 16;
-export const WORLD_Y_OFFSET = -5;
+export const CHUNK_HEIGHT = 256;
+export const WORLD_Y_OFFSET = -60;
 
 export class Chunk {
   x: number;
@@ -59,6 +59,8 @@ export class Chunk {
 
 
   applyMesh(opaque: any, transparent: any, opaqueMaterial: THREE.Material, transparentMaterial: THREE.Material, opaqueDepthMaterial: THREE.MeshDepthMaterial, transparentDepthMaterial: THREE.MeshDepthMaterial, performanceMode: boolean = false) {
+    this.needsUpdate = false;
+    
     const updateMesh = (layer: any, mesh: THREE.Mesh | null, material: THREE.Material) => {
       if (!layer || layer.positions.length === 0) {
         if (mesh) { mesh.geometry.dispose(); mesh.parent?.remove(mesh); }
@@ -77,8 +79,8 @@ export class Chunk {
       if (mesh) {
         mesh.geometry.dispose();
         mesh.geometry = geo;
-        mesh.castShadow = !performanceMode;
-        mesh.receiveShadow = !performanceMode;
+        mesh.castShadow = false;
+        mesh.receiveShadow = false;
         if (layer === opaque) {
           mesh.customDepthMaterial = opaqueDepthMaterial;
         } else if (layer === transparent) {
@@ -89,8 +91,8 @@ export class Chunk {
 
       const newMesh = new THREE.Mesh(geo, material);
       newMesh.position.set(this.x * CHUNK_SIZE, WORLD_Y_OFFSET, this.z * CHUNK_SIZE);
-      newMesh.castShadow = !performanceMode;
-      newMesh.receiveShadow = !performanceMode;
+      newMesh.castShadow = false;
+      newMesh.receiveShadow = false;
       if (layer === opaque) {
         newMesh.customDepthMaterial = opaqueDepthMaterial;
       } else if (layer === transparent) {
@@ -103,7 +105,7 @@ export class Chunk {
     this.transparentMesh = updateMesh(transparent, this.transparentMesh, transparentMaterial);
     
     if (this.transparentMesh) {
-      this.transparentMesh.castShadow = !performanceMode;
+      this.transparentMesh.castShadow = false;
       this.transparentMesh.receiveShadow = false;
     }
     this.isMeshing = false;

@@ -243,8 +243,8 @@ export class Player {
       this.hotbarIndex = 0;
     } else if (serverName.startsWith("skycastles")) {
       this.setupSkyCastlesInventory();
-    } else if (serverName.startsWith("voidtrail")) {
-      this.setupVoidTrailInventory();
+    } else if (serverName.startsWith("summerlab")) {
+      this.setupSummerLabInventory();
     }
 
     const euler = new THREE.Euler(0, 0, 0, "YXZ");
@@ -419,10 +419,9 @@ export class Player {
            this.inventory.slots[Inventory.OFF_HAND_SLOT] = { type: ItemType.TORCH, count: 1 };
            itemsAdded = true;
         }
-      } else if (modeWithoutNum === 'voidtrail') {
-        if (getInventoryCount(ItemType.FLUID_CHOCOLATE_HOSE) === 0) {
-          this.inventory.addItem(ItemType.FLUID_CHOCOLATE_HOSE, 1);
-          itemsAdded = true;
+      } else if (modeWithoutNum === 'summerlab') {
+        if (getInventoryCount(ItemType.FLUID_CHOCOLATE_HOSE) === 0 && getInventoryCount(ItemType.BOW) === 0) {
+          window.dispatchEvent(new CustomEvent("triggerChooseRole"));
         }
       }
       
@@ -478,11 +477,10 @@ export class Player {
     useGameStore.getState().incrementInventoryVersion();
   }
 
-  setupVoidTrailInventory() {
+  setupSummerLabInventory() {
     this.inventory.clear();
     this.chestInventories.clear();
     this.chestInventory = new Inventory(27);
-    this.inventory.addItem(ItemType.FLUID_CHOCOLATE_HOSE, 1);
     this.hotbarIndex = 0;
     useGameStore.getState().incrementInventoryVersion();
   }

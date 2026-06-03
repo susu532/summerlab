@@ -495,6 +495,23 @@ export enum ItemType {
   CHEST = 519,
   CHEST_REVERSED = 520,
   FLUID_CHOCOLATE_HOSE = 521,
+  WASHING_HOSE = 522,
+  CONCRETE_PASTEL_PINK = 523,
+  CONCRETE_PASTEL_PURPLE = 528,
+  CONCRETE_NEON_PINK = 529,
+  CONCRETE_NEON_GREEN = 530,
+  CONCRETE_NEON_ORANGE = 531,
+  CONCRETE_NEON_YELLOW = 532,
+  CONCRETE_AQUAMARINE = 533,
+  CONCRETE_MINT_CREAM = 534,
+  CONCRETE_CORAL_RED = 535,
+  CONCRETE_SUNSET_GOLD = 536,
+  CONCRETE_LAVENDER = 537,
+  CONCRETE_SKY_BLUE = 538,
+  CONCRETE_TEAL = 539,
+  CONCRETE_SANDY_BEIGE = 540,
+  CONCRETE_CHOCOLATE = 541,
+  CONCRETE_DEEP_BLUE = 542,
 };
 
 export const isChest = (type: number) => type === ItemType.CHEST || type === ItemType.ENDER_CHEST || type === ItemType.CHEST_REVERSED;
@@ -665,7 +682,7 @@ export function getMaxStack(type: ItemType): number {
     ItemType.WOODEN_SWORD, ItemType.STONE_SWORD, ItemType.IRON_SWORD, ItemType.GOLDEN_SWORD, ItemType.DIAMOND_SWORD,
     ItemType.WOODEN_SHOVEL, ItemType.STONE_SHOVEL, ItemType.IRON_SHOVEL, ItemType.GOLDEN_SHOVEL, ItemType.DIAMOND_SHOVEL,
     ItemType.WOODEN_AXE, ItemType.STONE_AXE, ItemType.IRON_AXE, ItemType.GOLDEN_AXE, ItemType.DIAMOND_AXE,
-    ItemType.ASPECT_OF_THE_END, ItemType.MINION, ItemType.BOW, ItemType.FISHING_ROD, ItemType.BUCKET, ItemType.WATER_BUCKET, ItemType.LAVA_BUCKET, ItemType.FLUID_CHOCOLATE_HOSE
+    ItemType.ASPECT_OF_THE_END, ItemType.MINION, ItemType.BOW, ItemType.FISHING_ROD, ItemType.BUCKET, ItemType.WATER_BUCKET, ItemType.LAVA_BUCKET, ItemType.FLUID_CHOCOLATE_HOSE, ItemType.WASHING_HOSE
   ];
   return unstackable.includes(type) ? 1 : 64;
 }
@@ -674,6 +691,7 @@ export class Inventory {
   static OFF_HAND_SLOT = 36;
   slots: (ItemStack | null)[] = [];
   hotbarSize = 9;
+  isBuilder = false;
 
   damageItem(slotIndex: number, amount: number = 1): boolean {
     const item = this.slots[slotIndex];
@@ -811,6 +829,8 @@ export class Inventory {
   }
 
   removeItem(type: ItemType, count: number): boolean {
+    if (this.isBuilder) return true;
+
     if (type === ItemType.SKYCOIN) {
       const current = useGameStore.getState().getSkycoins();
       if (current < count) return false;
@@ -841,6 +861,7 @@ export class Inventory {
   }
 
   removeItemFromSlot(index: number, count: number): boolean {
+    if (this.isBuilder) return true;
     const slot = this.slots[index];
     if (!slot || slot.count < count) return false;
     const newCount = slot.count - count;

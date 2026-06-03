@@ -6,6 +6,7 @@ import { networkManager } from '../game/NetworkManager';
 import { audioManager } from '../game/AudioManager';
 import { settingsManager } from '../game/Settings';
 import { ITEM_NAMES } from '../game/Constants';
+import { ItemType } from '../game/Inventory';
 import { CrazyGamesManager } from '../game/CrazyGamesManager';
 
 import { PointerLockStateMachine } from '../game/PointerLockStateMachine';
@@ -77,6 +78,7 @@ export function useGameEngine() {
     containerRef.current.appendChild(canvas);
 
     const newGame = new Game(canvas);
+    (window as any).game = newGame;
     setGame(newGame);
     newGame.start();
     newGame.player.renderer.setHandVisible(useUIStore.getState().isHUDVisible);
@@ -94,17 +96,20 @@ export function useGameEngine() {
       useUIStore.getState().setLocked(locked);
       if (locked) {
         CrazyGamesManager.gameplayStart();
+        useGameStore.getState().setIsFluidColorPickerOpen(false);
       } else {
         CrazyGamesManager.gameplayStop();
         // Open pause menu when unlocking if not in other specific menus and not suppressed
         setTimeout(() => {
           const state = useUIStore.getState();
+          const gameStoreState = useGameStore.getState();
           if (!suppressPauseMenu.current && 
               !state.isInventoryOpen && 
               !state.isShopOpen && 
               !state.isSettingsOpen && 
               !state.isChestOpen && 
               !state.isLoadoutOpen &&
+              !gameStoreState.isFluidColorPickerOpen &&
               !state.isTyping) {
             state.setPauseMenuOpen(true);
           }
@@ -162,6 +167,24 @@ export function useGameEngine() {
         newGame.player.renderer.setHandVisible(nextVisible);
       }
 
+      if (e.code === keybinds.openFluidColorPicker) {
+         if (!typing && !newGame.world.isHub) {
+            const hasHose = newGame.player.inventory.slots[newGame.player.hotbarIndex]?.type === ItemType.FLUID_CHOCOLATE_HOSE;
+            if (hasHose) {
+               const gState = useGameStore.getState();
+               const nextState = !gState.isFluidColorPickerOpen;
+               gState.setIsFluidColorPickerOpen(nextState);
+               
+               if (nextState) {
+                 suppressPauseMenu.current = true;
+                 newGame.controls.unlock();
+               } else if (!isMobile) {
+                 trySafeLock(false);
+               }
+            }
+         }
+      }
+
       if (e.code === 'Escape') {
         const { 
           isInventoryOpen: inv, 
@@ -174,6 +197,7 @@ export function useGameEngine() {
           isLaunchMenuOpen: launchMenu,
           isLoadoutOpen: loadout
         } = state;
+        const colorPickerOpen = useGameStore.getState().isFluidColorPickerOpen;
 
         if (isInputFocused) {
           suppressPauseMenu.current = true;
@@ -185,7 +209,7 @@ export function useGameEngine() {
           return;
         }
 
-        if (inv || shop || settings || pause || typing || chest || serverJoin || launchMenu || loadout) {
+        if (inv || shop || settings || pause || typing || chest || serverJoin || launchMenu || loadout || colorPickerOpen) {
           state.setInventoryOpen(false);
           state.setShopOpen(false);
           state.setSettingsOpen(false);
@@ -195,6 +219,7 @@ export function useGameEngine() {
           state.setServerJoinOpen(false);
           state.setLaunchMenuOpen(false);
           state.setLoadoutOpen(false);
+          useGameStore.getState().setIsFluidColorPickerOpen(false);
           
           if (!isMobile) {
             trySafeLock(true);
@@ -279,6 +304,7 @@ export function useGameEngine() {
       if (
         uiState.isTyping ||
         gameState.showLeaderboard ||
+        gameState.isFluidColorPickerOpen ||
         uiState.isInventoryOpen ||
         uiState.isShopOpen ||
         uiState.isSettingsOpen ||

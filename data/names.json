@@ -482,5 +482,21 @@
   "TORCH": "Torch",
   "LAUNCHER": "Launcher",
   "CHEST": "Supply Chest",
-  "FLUID_CHOCOLATE_HOSE": "Fluid Chocolate Hose"
+  "FLUID_CHOCOLATE_HOSE": "Fluid Chocolate Hose",
+  "CONCRETE_PASTEL_PINK": "Pastel Pink Concrete",
+  "CONCRETE_PASTEL_PURPLE": "Pastel Purple Concrete",
+  "CONCRETE_NEON_PINK": "Neon Pink Concrete",
+  "CONCRETE_NEON_GREEN": "Neon Green Concrete",
+  "CONCRETE_NEON_ORANGE": "Neon Orange Concrete",
+  "CONCRETE_NEON_YELLOW": "Neon Yellow Concrete",
+  "CONCRETE_AQUAMARINE": "Aquamarine Concrete",
+  "CONCRETE_MINT_CREAM": "Mint Cream Concrete",
+  "CONCRETE_CORAL_RED": "Coral Red Concrete",
+  "CONCRETE_SUNSET_GOLD": "Sunset Gold Concrete",
+  "CONCRETE_LAVENDER": "Lavender Concrete",
+  "CONCRETE_SKY_BLUE": "Sky Blue Concrete",
+  "CONCRETE_TEAL": "Teal Concrete",
+  "CONCRETE_SANDY_BEIGE": "Sandy Beige Concrete",
+  "CONCRETE_CHOCOLATE": "Chocolate Concrete",
+  "CONCRETE_DEEP_BLUE": "Deep Ocean Blue Concrete"
 }

@@ -78,6 +78,8 @@ export interface IServerPlayer extends IPlayerUpdate {
   isSwinging?: boolean;
   isBlocking?: boolean;
   isGliding?: boolean;
+  isShooting?: boolean;
+  fluidColor?: number;
   swingSpeed?: number;
   heldItem?: number;
   offHandItem?: number;

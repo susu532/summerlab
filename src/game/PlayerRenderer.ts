@@ -2,14 +2,11 @@ import * as THREE from 'three';
 import { Player } from './Player';
 import { generateSkin, applySkinUVs } from './SkinManager';
 import { createTextureAtlas, createBreakingTexture, getBlockUVs, ATLAS_TILES, isPlant, isFlatItem, isLightEmitting, BLOCK } from './TextureAtlas';
-import { createVoidtrailTextureAtlas } from './VoidTrailTextureAtlas';
+import { createSummerLabTextureAtlas } from './SummerLabTextureAtlas';
 import { ItemType } from './Inventory';
 import { createItemModel } from './ItemModels';
 import { settingsManager } from './Settings';
 import { audioManager } from './AudioManager';
-import { useGameStore } from '../store/gameStore';
-import { applyMilestoneColor } from './MilestoneColor';
-import { networkManager } from './NetworkManager';
 
 export class PlayerRenderer {
   player: Player;
@@ -622,7 +619,7 @@ export class PlayerRenderer {
   private createFirstPersonArm() {
     const skinTexture = generateSkin('player_seed_1');
     const isPerformance = settingsManager.getSettings().performanceMode;
-    const isVoidtrail = this.player.world.isVoidtrail;
+    const isSummerLab = this.player.world.isSummerLab;
     const skinMaterial = isPerformance ?
       new THREE.MeshBasicMaterial({ map: skinTexture }) :
       new THREE.MeshStandardMaterial({ 
@@ -642,7 +639,7 @@ export class PlayerRenderer {
     this.fpArmMesh.rotation.set(0.4, -0.2, 0.1);
     
     const blockGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
-    const texture = this.player.world.isVoidtrail ? createVoidtrailTextureAtlas() : createTextureAtlas();
+    const texture = this.player.world.isSummerLab ? createSummerLabTextureAtlas() : createTextureAtlas();
     const blockMat = isPerformance ?
       new THREE.MeshBasicMaterial({ map: texture, transparent: true, alphaTest: 0.5 }) :
       new THREE.MeshStandardMaterial({ map: texture, transparent: true, alphaTest: 0.5, roughness: 1.0, metalness: 0.0 });
@@ -661,7 +658,7 @@ export class PlayerRenderer {
   private createFirstPersonOffHandArm() {
     const skinTexture = generateSkin('player_seed_1');
     const isPerformance = settingsManager.getSettings().performanceMode;
-    const isVoidtrail = this.player.world.isVoidtrail;
+    const isSummerLab = this.player.world.isSummerLab;
     const skinMaterial = isPerformance ?
       new THREE.MeshBasicMaterial({ map: skinTexture }) :
       new THREE.MeshStandardMaterial({ 
@@ -680,7 +677,7 @@ export class PlayerRenderer {
     this.fpOffHandArmMesh.rotation.set(0.4, 0.2, -0.1);
     
     const blockGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
-    const texture = this.player.world.isVoidtrail ? createVoidtrailTextureAtlas() : createTextureAtlas();
+    const texture = this.player.world.isSummerLab ? createSummerLabTextureAtlas() : createTextureAtlas();
     const blockMat = isPerformance ?
       new THREE.MeshBasicMaterial({ map: texture, transparent: true, alphaTest: 0.5 }) :
       new THREE.MeshStandardMaterial({ map: texture, transparent: true, alphaTest: 0.5, roughness: 1.0, metalness: 0.0 });
@@ -749,9 +746,9 @@ export class PlayerRenderer {
     const isShovel = type >= ItemType.WOODEN_SHOVEL && type <= ItemType.DIAMOND_SHOVEL;
     const isAxe = type >= ItemType.WOODEN_AXE && type <= ItemType.DIAMOND_AXE;
     const isTorch = type === ItemType.TORCH;
-    const isTool = isPickaxe || isSword || isShovel || isAxe || (type >= 460 && type <= 472) || type === 54 || type === ItemType.FLUID_CHOCOLATE_HOSE;
+    const isTool = isPickaxe || isSword || isShovel || isAxe || (type >= 460 && type <= 472) || type === 54 || type === ItemType.FLUID_CHOCOLATE_HOSE || type === ItemType.WASHING_HOSE;
     const isFood = (type >= 456 && type <= 459);
-    const isMaterial = type === 13 || (type >= 500 && type <= 509) || type === 29 || type === 303 || type === 300 || type === 319 || type === 321 || type === 43 || type === 44 || isTorch || type === ItemType.CHEST || type === ItemType.ENDER_CHEST || type === ItemType.FLUID_CHOCOLATE_HOSE;
+    const isMaterial = type === 13 || (type >= 500 && type <= 509) || type === 29 || type === 303 || type === 300 || type === 319 || type === 321 || type === 43 || type === 44 || isTorch || type === ItemType.CHEST || type === ItemType.ENDER_CHEST || type === ItemType.FLUID_CHOCOLATE_HOSE || type === ItemType.WASHING_HOSE;
     const use3DModel = isTool || isFood || isMaterial;
 
     if (use3DModel) {
@@ -829,7 +826,7 @@ export class PlayerRenderer {
         fpModelGrp.position.set(0.45 * side, -0.35, -0.7);
         fpModelGrp.scale.set(1.3, 1.3, 1.3);
         fpModelGrp.rotation.set(0.8, -Math.PI / 4 * side, -0.2 * side);
-      } else if (type === ItemType.FLUID_CHOCOLATE_HOSE) {
+      } else if (type === ItemType.FLUID_CHOCOLATE_HOSE || type === ItemType.WASHING_HOSE) {
         model.position.set(0, -0.45, -0.1);
         model.scale.set(1.1, 1.1, 1.1);
         model.rotation.set(-Math.PI/2 - 0.2, Math.PI / 8 * side, 0);
@@ -894,7 +891,7 @@ export class PlayerRenderer {
         uvAttribute.needsUpdate = true;
         
         if (!(mesh.material as THREE.MeshStandardMaterial).map) {
-          (mesh.material as THREE.MeshStandardMaterial).map = this.player.world.isVoidtrail ? createVoidtrailTextureAtlas() : createTextureAtlas();
+          (mesh.material as THREE.MeshStandardMaterial).map = this.player.world.isSummerLab ? createSummerLabTextureAtlas() : createTextureAtlas();
         }
       } else {
         mesh.visible = false;
@@ -1285,7 +1282,21 @@ export class PlayerRenderer {
         }
       }
 
-      if (this.player.blockTransition > 0.01 && this.heldItemModel) {
+      if (this.heldItemType === ItemType.FLUID_CHOCOLATE_HOSE || this.heldItemType === ItemType.WASHING_HOSE) {
+        // Hose aiming animation
+        this.player.rightArmMesh.rotation.x = this.player.cameraPitch + Math.PI / 2;
+        this.player.rightArmMesh.rotation.y = 0;
+        this.player.rightArmMesh.rotation.z = 0;
+
+        // Left arm supports the hose loosely
+        this.player.leftArmMesh.rotation.x = this.player.cameraPitch + Math.PI / 2 - 0.4;
+        this.player.leftArmMesh.rotation.y = 0.5;
+        this.player.leftArmMesh.rotation.z = 0.5;
+
+        if (this.heldItemModel) {
+           this.heldItemModel.rotation.set(Math.PI, 0, 0);
+        }
+      } else if (this.player.blockTransition > 0.01 && this.heldItemModel) {
         const t = this.player.blockTransition;
         if (this.heldItemType === ItemType.BOW) {
           // 3rd Person Bow Charge Animation
@@ -1436,21 +1447,5 @@ export class PlayerRenderer {
         Math.max(-limitDown, Math.min(limitUp, this.player.headMesh.rotation.x)) +
         headPitchOffset;
     }
-
-    const activeTool = this.player.inventory.slots[this.player.hotbarIndex];
-    if (activeTool && activeTool.type >= ItemType.WOODEN_SWORD && activeTool.type <= ItemType.DIAMOND_SWORD) {
-        let kills = 0;
-        if (networkManager.id) {
-           const leaderboardObj = useGameStore.getState().leaderboard[networkManager.id];
-           if (leaderboardObj) kills = leaderboardObj.kills || 0;
-        }
-        if (this.currentModelType === activeTool.type && this.heldItemModel) {
-           applyMilestoneColor(kills, this.heldItemModel);
-        }
-        if (this.currentFpModelType === activeTool.type && this.fpHeldItemModel) {
-           applyMilestoneColor(kills, this.fpHeldItemModel);
-        }
-    }
   }
 }
-

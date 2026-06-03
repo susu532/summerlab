@@ -45,6 +45,10 @@ export interface CoreGameSlice {
   setLoadingProgress: (progress: number, message: string) => void;
   targetInfo: { type: 'block' | 'npc' | null, name: string | null, id?: string };
   setTargetInfo: (info: { type: 'block' | 'npc' | null, name: string | null, id?: string }) => void;
+  fluidColor: string;
+  setFluidColor: (color: string) => void;
+  isFluidColorPickerOpen: boolean;
+  setIsFluidColorPickerOpen: (open: boolean) => void;
 }
 
 export interface StatsSlice {
@@ -169,7 +173,7 @@ const createPopupSlice: StateCreator<GameState, [], [], PopupSlice> = (set) => (
 });
 
 const createCoreGameSlice: StateCreator<GameState, [], [], CoreGameSlice> = (set) => ({
-  currentMode: 'dungeondelver',
+  currentMode: 'summerlab',
   setCurrentMode: (mode) => set({ currentMode: mode }),
   serverId: '',
   setServerId: (id) => set({ serverId: id }),
@@ -184,6 +188,10 @@ const createCoreGameSlice: StateCreator<GameState, [], [], CoreGameSlice> = (set
   setLoadingProgress: (progress, message) => set({ loadingProgress: progress, loadingMessage: message }),
   targetInfo: { type: null, name: null },
   setTargetInfo: (info) => set({ targetInfo: info }),
+  fluidColor: '#3d1c04',
+  setFluidColor: (color) => set({ fluidColor: color }),
+  isFluidColorPickerOpen: false,
+  setIsFluidColorPickerOpen: (open) => set({ isFluidColorPickerOpen: open }),
 });
 
 const createStatsSlice: StateCreator<GameState, [], [], StatsSlice> = (set, get) => ({

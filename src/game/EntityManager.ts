@@ -292,7 +292,7 @@ export class EntityManager {
       data.position.z,
     );
 
-    // Apply special settings only for the Hub NPCs (SkyBridge, SkyCastles, Voidtrail, Dungeon, Battle Royale)
+    // Apply special settings only for the Hub NPCs (SkyBridge, SkyCastles, SummerLab, Dungeon, Battle Royale)
     const isHubNPC = data.id.startsWith("hub_npc");
     const scale = isHubNPC ? 2.5 : data.scale || 1.0;
     const autoRotate = false; // Rotation disabled per user request
@@ -513,6 +513,8 @@ export class EntityManager {
         player.swingTimer = 0;
       }
       player.isBlocking = !!data.isBlocking;
+      player.isShooting = !!(data as any).isShooting;
+      player.fluidColor = (data as any).fluidColor;
       if (data.health !== undefined) {
         player.health = data.health;
       }
@@ -633,7 +635,6 @@ export class EntityManager {
           // Check if arrow hit a solid block/wall before scanning targets behind it
           const blockAtPos = this.world.getBlock(Math.floor(testPos.x), Math.floor(testPos.y), Math.floor(testPos.z));
           if (blockAtPos !== 0 && isSolidBlock(blockAtPos)) {
-            hitSomething = true;
             arrow.group.position.copy(testPos);
             break;
           }
@@ -715,7 +716,7 @@ export class EntityManager {
       if (b !== 0 && isSolidBlock(b)) {
         arrow.disposeTimer = setTimeout(() => {
           arrow.dispose();
-        }, 1000);
+        }, 5000);
       }
     }
     

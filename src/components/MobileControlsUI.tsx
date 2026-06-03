@@ -43,7 +43,7 @@ window.mobileInputs = window.mobileInputs || {
   zoomJoystickY: 0,
 };
 
-import { Menu, Backpack, MessageSquare, Camera, ScanEye, Sword, ArrowDown, ChevronsUp, Trophy, BarChart2 } from 'lucide-react';
+import { Menu, Backpack, MessageSquare, Camera, ScanEye, Sword, ArrowDown, ChevronsUp, Trophy } from 'lucide-react';
 
 export const MobileControlsUI: React.FC = () => {
   const isInventoryOpen = useUI(state => state.isInventoryOpen);
@@ -200,7 +200,7 @@ export const MobileControlsUI: React.FC = () => {
           const dy = touch.clientY - lastLookPos.current.y;
           
           const isLandscape = window.innerWidth > window.innerHeight;
-          const scale = window.innerWidth >= 768 ? 1.0 : (isLandscape ? 6.0 : 1.5);
+          const scale = window.innerWidth >= 768 ? 1.0 : (isLandscape ? 2.5 : 1.5);
           window.mobileInputs.lookDeltaX += dx * scale;
           window.mobileInputs.lookDeltaY += dy * scale;
           lastLookPos.current = { x: touch.clientX, y: touch.clientY };
@@ -335,10 +335,10 @@ export const MobileControlsUI: React.FC = () => {
         </button>
         <button 
           className="w-12 h-12 rounded-full bg-black/40 border border-white/20 flex items-center justify-center text-white active:bg-white/40 mobile-button pointer-events-auto target-stats-btn portrait:hidden"
-          onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setShowLeaderboard(true); }}
-          onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); setShowLeaderboard(true); }}
+          onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setShowLeaderboard(!showLeaderboard); }}
+          onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); setShowLeaderboard(!showLeaderboard); }}
         >
-          <BarChart2 size={20} />
+          <Trophy size={20} />
         </button>
         <button 
           className="w-12 h-12 rounded-full bg-black/40 border border-white/20 flex items-center justify-center text-white active:bg-white/40 mobile-button pointer-events-auto"

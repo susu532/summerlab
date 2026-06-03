@@ -78,28 +78,63 @@ export function createItemModel(type: ItemType): THREE.Group {
   const isMushroom = type === ItemType.MUSHROOM_RED || type === ItemType.MUSHROOM_BROWN;
   const isTorch = type === ItemType.TORCH;
   const isChest = type === ItemType.CHEST || type === ItemType.ENDER_CHEST;
-  const isHose = type === ItemType.FLUID_CHOCOLATE_HOSE;
+  const isHose = type === ItemType.FLUID_CHOCOLATE_HOSE || type === ItemType.WASHING_HOSE;
   
   if (isHose) {
-    // Hose model: A brown cylinder with a nozzle at the end
+    // Hose model: A vibrant colored cylinder with a shiny nozzle at the end
     const hoseMat = new THREE.MeshStandardMaterial({
-      color: 0x4E2F1D, // dark brown
+      color: type === ItemType.WASHING_HOSE ? 0x3889f0 : 0xFF5500, // blue for washer, orange for chocolate
+      emissive: type === ItemType.WASHING_HOSE ? 0x3889f0 : 0xFF5500, // slight glow
+      emissiveIntensity: 0.2,
+      roughness: 0.4,
+      metalness: 0.1
+    });
+    const darkMat = new THREE.MeshStandardMaterial({
+      color: 0x333333, // dark plastic
       roughness: 0.8,
       metalness: 0.2
     });
     const nozzleMat = new THREE.MeshStandardMaterial({
-      color: 0x777777, // grey metal
-      roughness: 0.5,
-      metalness: 0.8
+      color: 0xDDDDDD, // shiny metal
+      roughness: 0.2,
+      metalness: 1.0,
+      emissive: 0x222222
     });
-    const hoseGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.8, 8);
+
+    // Main body tube
+    const hoseGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.6, 12);
     const hoseMesh = new THREE.Mesh(hoseGeo, hoseMat);
     hoseMesh.position.y = 0.2;
     group.add(hoseMesh);
 
-    const nozzleGeo = new THREE.CylinderGeometry(0.12, 0.08, 0.2, 8);
+    // Thick base/back
+    const baseGeo = new THREE.CylinderGeometry(0.14, 0.14, 0.2, 12);
+    const baseMesh = new THREE.Mesh(baseGeo, darkMat);
+    baseMesh.position.y = -0.1;
+    group.add(baseMesh);
+
+    // Handle
+    const handleGeo = new THREE.BoxGeometry(0.08, 0.25, 0.15);
+    const handleMesh = new THREE.Mesh(handleGeo, darkMat);
+    handleMesh.position.set(0, -0.05, 0.12);
+    handleMesh.rotation.x = -Math.PI / 8; // slanted backward slightly
+    group.add(handleMesh);
+
+    // Trigger
+    const triggerGeo = new THREE.BoxGeometry(0.04, 0.08, 0.08);
+    const triggerMesh = new THREE.Mesh(triggerGeo, nozzleMat);
+    triggerMesh.position.set(0, 0.1, 0.12); 
+    group.add(triggerMesh);
+
+    // Accent ring near nozzle
+    const ringGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.05, 12);
+    const ringMesh = new THREE.Mesh(ringGeo, darkMat);
+    ringMesh.position.y = 0.5;
+    group.add(ringMesh);
+
+    const nozzleGeo = new THREE.CylinderGeometry(0.12, 0.07, 0.25, 12);
     const nozzleMesh = new THREE.Mesh(nozzleGeo, nozzleMat);
-    nozzleMesh.position.y = 0.6;
+    nozzleMesh.position.y = 0.65;
     nozzleMesh.name = 'hose_nozzle';
     group.add(nozzleMesh);
   } else if (isPickaxe) {

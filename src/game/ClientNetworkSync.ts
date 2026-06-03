@@ -44,8 +44,8 @@ export class ClientNetworkSync {
         useGameStore.getState().setSkycoins(500);
       } else if (modeWithoutNum === "dungeondelver") {
         this.game.player.setupDungeonDelverInventory();
-      } else if (modeWithoutNum === "voidtrail") {
-        this.game.player.setupVoidTrailInventory();
+      } else if (modeWithoutNum === "summerlab") {
+        this.game.player.setupSummerLabInventory();
       } else if (modeWithoutNum === "skybridge") {
         // If skybridge has a setup, do it, but for now just leave it or clear it.
         // Skybridge usually gives you starting items? We can just clear it.
@@ -344,7 +344,7 @@ export class ClientNetworkSync {
 
       // 2. Check sunlight exposure (raycast straight up)
       let isExposed = true;
-      const maxHeight = 11; // CHUNK_HEIGHT (16) + WORLD_Y_OFFSET (-5)
+      const maxHeight = 196; // CHUNK_HEIGHT (256) + WORLD_Y_OFFSET (-60)
       for (let y = py + 1; y < maxHeight; y++) {
         const block = this.game.world.getBlock(px, y, pz);
         if (block !== 0 && !isTransparent(block)) {
@@ -396,8 +396,8 @@ export class ClientNetworkSync {
         skyBridgeManager.reset();
       } else if (modeWithoutNum === "dungeondelver") {
         this.game.player.setupDungeonDelverInventory();
-      } else if (modeWithoutNum === "voidtrail") {
-        this.game.player.setupVoidTrailInventory();
+      } else if (modeWithoutNum === "summerlab") {
+        this.game.player.setupSummerLabInventory();
       } else {
         this.game.player.inventory.clear();
       }

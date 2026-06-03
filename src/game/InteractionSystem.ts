@@ -3,6 +3,7 @@ import { Game } from './Game';
 import { settingsManager } from './Settings';
 import { ItemType } from './Inventory';
 import { Perspective } from './Player';
+import { useGameStore } from '../store/gameStore';
 
 import { ISystem } from './ISystem';
 
@@ -62,10 +63,10 @@ export class InteractionSystem implements ISystem {
 
     // Check for fluid chocolate hose emission
     const equippedItem = this.game.player.inventory.slots[this.game.player.hotbarIndex];
-    if (equippedItem?.type === ItemType.FLUID_CHOCOLATE_HOSE) {
+    if (equippedItem?.type === ItemType.FLUID_CHOCOLATE_HOSE || equippedItem?.type === ItemType.WASHING_HOSE) {
       if (this.game.player.inputController.isRightMouseDown || this.game.player.isLeftMouseDown) {
         if (this.game.chocolateFluidSystem) {
-          const isSpray = this.game.player.inputController.isRightMouseDown;
+          const isSpray = this.game.player.inputController.isRightMouseDown || (equippedItem.type === ItemType.WASHING_HOSE && this.game.player.isLeftMouseDown);
           let origin: THREE.Vector3;
           let camDir = new THREE.Vector3(0, 0, -1).transformDirection(this.game.camera.matrixWorld);
           let emitDir = camDir.clone();
@@ -89,10 +90,9 @@ export class InteractionSystem implements ISystem {
             } else {
               origin = new THREE.Vector3(0.55, -0.35, -1.0);
               origin.applyMatrix4(this.game.camera.matrixWorld);
+              // Move origin forward significantly in first person to avoid clipping or being too close to eyes
+              origin.add(camDir.clone().multiplyScalar(0.7));
             }
-            
-            // Move origin forward significantly in first person to avoid clipping or being too close to eyes
-            origin.add(camDir.clone().multiplyScalar(0.7));
           } else {
             origin = new THREE.Vector3();
             if (this.game.player.renderer.heldItemModel && this.game.player.renderer.heldItemModel.visible) {
@@ -117,7 +117,8 @@ export class InteractionSystem implements ISystem {
             }
           }
           
-          this.game.chocolateFluidSystem.emit(origin, emitDir, isSpray);
+          const fluidColor = equippedItem.type === ItemType.WASHING_HOSE ? new THREE.Color('#3889f0') : new THREE.Color(useGameStore.getState().fluidColor || '#3d1c04');
+          this.game.chocolateFluidSystem.emit(origin, emitDir, isSpray, fluidColor, this.game.player.velocity);
         }
       }
     }

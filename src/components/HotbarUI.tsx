@@ -5,6 +5,7 @@ import { ITEM_NAMES } from '../game/Constants';
 import { ItemIcon } from './inventory/Slot';
 import { Mail, X } from 'lucide-react';
 import { settingsManager } from '../game/Settings';
+import { ItemType } from '../game/Inventory';
 
 export const HotbarUI: React.FC<{ game: Game | null }> = ({ game }) => {
   const inventoryVersion = useGameStore(state => state.inventoryVersion);
@@ -97,7 +98,7 @@ export const HotbarUI: React.FC<{ game: Game | null }> = ({ game }) => {
   const sendFeedback = async () => {
     if (!feedbackText.trim()) return;
     try {
-      const baseUrl = "https://skybridge-server.onrender.com";
+      const baseUrl = "https://https://summerlab-server.onrender.com";
       const resp = await fetch(`${baseUrl}/api/feedback`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -120,7 +121,6 @@ export const HotbarUI: React.FC<{ game: Game | null }> = ({ game }) => {
   if (!game) return null;
 
   return (
-    <>
       <div 
         className="absolute bottom-0 sm:bottom-2 md:bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-0.5 sm:gap-2 pointer-events-none z-[60] safe-mb transform origin-bottom scale-[0.65] sm:scale-85 md:scale-100 landscape:scale-[0.65] sm:landscape:scale-85 md:landscape:scale-90 lg:landscape:scale-100"
       >

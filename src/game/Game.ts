@@ -108,7 +108,7 @@ export class Game {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     const effectivePremiumShaders = initialSettings.premiumShaders && !initialSettings.performanceMode;
     this.renderer.shadowMap.enabled = effectivePremiumShaders;
-    this.renderer.shadowMap.type = THREE.PCFShadowMap; // Use PCFShadowMap
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Use PCFSoftShadowMap for ultra-realistic soft penumbras
 
     this.controls = new PointerLockControls(this.camera, document.body);
     // Disable internal rotation handling as we handle it in Player.ts to support sensitivity/invert
@@ -131,7 +131,7 @@ export class Game {
     // Initialize audio
     audioManager.init(this.camera);
 
-    this.particleSystem = new ParticleSystem(this.scene, this.camera, this.world.isVoidtrail);
+    this.particleSystem = new ParticleSystem(this.scene, this.camera, this.world.isSummerLab);
     
     this.interactionSystem = new InteractionSystem(this);
     this.entityTagsSystem = new EntityTagsSystem(this);
