@@ -2,12 +2,21 @@ import * as THREE from 'three';
 import { BLOCK_UVS } from "./TextureAtlasData";
 import { ITEM_COLORS } from './Constants';
 import { ItemType } from './Inventory';
+import { createTextureAtlas } from './TextureAtlas';
 export const ATLAS_TILES = 32;
 
 let cachedSummerLabTexture: THREE.Texture | null = null;
 
 export function createSummerLabTextureAtlas(): THREE.Texture {
   if (cachedSummerLabTexture) return cachedSummerLabTexture;
+
+  let stdCanvas: HTMLCanvasElement | null = null;
+  try {
+    const stdTexture = createTextureAtlas();
+    stdCanvas = stdTexture.image as HTMLCanvasElement;
+  } catch (e) {
+    console.error("Failed to load standard texture atlas in SummerLab:", e);
+  }
 
   const canvas = document.createElement('canvas');
   const size = 16;
@@ -195,7 +204,12 @@ export function createSummerLabTextureAtlas(): THREE.Texture {
           ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
           ctx.strokeRect(tx*size + 1, ty*size + 1, size - 2, size - 2);
        } else {
-          drawBeveledTile(tx, ty, color, hasFace);
+          if (ty >= 27 && stdCanvas) {
+              ctx.clearRect(tx * size, ty * size, size, size);
+              ctx.drawImage(stdCanvas, tx * size, ty * size, size, size, tx * size, ty * size, size, size);
+           } else {
+              drawBeveledTile(tx, ty, color, hasFace);
+           }
        }
     }
   }

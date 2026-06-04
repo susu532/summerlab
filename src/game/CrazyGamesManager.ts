@@ -18,33 +18,43 @@ export class CrazyGamesManager {
   }
 
   static loadingStart() {
-    if (this.initialized) {
-      try { (window as any).CrazyGames.SDK.game.loadingStart(); } catch(e){}
-    }
+    try {
+      if (typeof window !== 'undefined' && (window as any).CrazyGames) {
+        (window as any).CrazyGames.SDK.game.loadingStart();
+      }
+    } catch(e) {}
   }
 
   static loadingStop() {
-    if (this.initialized) {
-      try { (window as any).CrazyGames.SDK.game.loadingStop(); } catch(e){}
-    }
+    try {
+      if (typeof window !== 'undefined' && (window as any).CrazyGames) {
+        (window as any).CrazyGames.SDK.game.loadingStop();
+      }
+    } catch(e) {}
   }
 
   static gameplayStart() {
-    if (this.initialized) {
-      try { (window as any).CrazyGames.SDK.game.gameplayStart(); } catch(e){}
-    }
+    try {
+      if (typeof window !== 'undefined' && (window as any).CrazyGames) {
+        (window as any).CrazyGames.SDK.game.gameplayStart();
+      }
+    } catch(e) {}
   }
 
   static gameplayStop() {
-    if (this.initialized) {
-      try { (window as any).CrazyGames.SDK.game.gameplayStop(); } catch(e){}
-    }
+    try {
+      if (typeof window !== 'undefined' && (window as any).CrazyGames) {
+        (window as any).CrazyGames.SDK.game.gameplayStop();
+      }
+    } catch(e) {}
   }
 
   static happyTime() {
-    if (this.initialized) {
-      try { (window as any).CrazyGames.SDK.game.happyTime(); } catch(e){}
-    }
+    try {
+      if (typeof window !== 'undefined' && (window as any).CrazyGames) {
+        (window as any).CrazyGames.SDK.game.happyTime();
+      }
+    } catch(e) {}
   }
 
   static requestAd(type: 'midgame' | 'rewarded' = 'midgame', callbacks?: { adStarted?: () => void, adFinished?: () => void, adError?: (error: string) => void }) {

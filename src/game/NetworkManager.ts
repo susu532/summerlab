@@ -235,7 +235,7 @@ export class NetworkManager {
     try {
       const region = settingsManager.getSettings().serverRegion || 'auto';
       const euUrl = "https://summerlab-server.onrender.com" ;
-      const usUrl = "https://https://summerlab-server-hhnw.onrender.com" ;
+      const usUrl = "https://summerlab-server-hhnw.onrender.com" ;
       let baseUrl = euUrl;
 
       if (region === 'us') {
