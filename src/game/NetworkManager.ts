@@ -4,7 +4,7 @@ import { encodePacketClient, decodePacketClient } from "./WSHelpersClient";
 import { encodeRLE, decodeRLE } from "./RLE";
 import { audioManager } from "./AudioManager";
 import { CrazyGamesManager } from "./CrazyGamesManager";
-
+import { getSecureBackendUrl } from '../utils/security';
 import { settingsManager } from "./Settings";
 
 class FakeClientSocket {
@@ -234,8 +234,8 @@ export class NetworkManager {
 
     try {
       const region = settingsManager.getSettings().serverRegion || 'auto';
-      const euUrl = "https://summerlab-server.onrender.com" ;
-      const usUrl = "https://summerlab-server-hhnw.onrender.com" ;
+      const euUrl = import.meta.env.VITE_BACKEND_URL as string;
+      const usUrl = import.meta.env.VITE_BACKEND_URL_US as string || euUrl;
       let baseUrl = euUrl;
 
       if (region === 'us') {
@@ -249,7 +249,7 @@ export class NetworkManager {
             const controller = new AbortController();
             const id = setTimeout(() => controller.abort(), 2000);
             try {
-              await fetch(`${url}/api/matchmake?mode=ping`, { signal: controller.signal, mode: 'no-cors' });
+              await fetch(`${getSecureBackendUrl(url)}/api/matchmake?mode=ping`, { signal: controller.signal, mode: 'no-cors' });
             } catch(err) {}
             clearTimeout(id);
             return { url, time: performance.now() - start };
@@ -262,6 +262,7 @@ export class NetworkManager {
         }
       }
 
+      baseUrl = getSecureBackendUrl(baseUrl);
       this.currentBackendUrl = baseUrl;
 
       const resp = await fetch(`${baseUrl}/api/matchmake?mode=${mode}`);
@@ -351,7 +352,7 @@ export class NetworkManager {
     useGameStore.getState().setCurrentMode(serverName.split("_")[0] || "summerlab");
     useGameStore.getState().setServerId(serverName);
 
-    const backendUrl = this.currentBackendUrl || "https://summerlab-server.onrender.com";
+    const backendUrl = this.currentBackendUrl || getSecureBackendUrl(import.meta.env.VITE_BACKEND_URL as string);
     const wsUrl = backendUrl.replace(/^https:/, 'wss:').replace(/^http:/, 'ws:');
     this.socket = new FakeClientSocket(`${wsUrl}/ws/${serverName}`);
     
