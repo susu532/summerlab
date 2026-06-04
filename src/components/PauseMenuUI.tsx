@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Play, Settings, LogOut, Users, Check } from 'lucide-react';
+import { X, Play, Settings, LogOut, Users, Check, RefreshCw } from 'lucide-react';
 import { audioManager } from '../game/AudioManager';
 import { networkManager } from '../game/NetworkManager';
 import { CommunitySidebar } from './CommunitySidebar';
@@ -48,6 +48,14 @@ export const PauseMenuUI: React.FC<PauseMenuUIProps> = ({
       icon: copied ? <Check className="w-5 h-5 text-green-500" /> : <Users className="w-5 h-5 text-blue-400" />, 
       onClick: handleInvite,
       primary: false 
+    },
+    { 
+      label: 'Change Role', 
+      icon: <RefreshCw className="w-5 h-5" />, 
+      onClick: () => {
+        networkManager.initMatchmaking(networkManager.serverName || 'hub');
+        window.dispatchEvent(new CustomEvent('requestGameRestart'));
+      }
     },
     { 
       label: 'Settings', 

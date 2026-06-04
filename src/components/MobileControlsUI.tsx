@@ -285,7 +285,7 @@ export const MobileControlsUI: React.FC = () => {
     <div className="absolute inset-0 pointer-events-none z-40 overflow-hidden touch-none">
       {/* Top HUD Buttons */}
       <div 
-        className="absolute flex gap-2 pointer-events-auto transform origin-top-right scale-[0.8] landscape:scale-[0.8]"
+        className="absolute flex gap-2 pointer-events-auto transform origin-top-right scale-[0.8] landscape:scale-[1.0] md:landscape:scale-[1.1]"
         style={{ 
           top: 'calc(0.5rem + env(safe-area-inset-top))', 
           right: 'calc(0.5rem + env(safe-area-inset-right))' 
@@ -380,18 +380,18 @@ export const MobileControlsUI: React.FC = () => {
       >
         {!joystickOrigin && (
           <div 
-            className="absolute w-48 h-48 md:w-56 md:h-56 bg-white/5 border-2 border-white/10 rounded-full flex items-center justify-center pointer-events-none -translate-x-1/2 -translate-y-1/2 left-[30%] top-[60%] landscape:left-[25%] landscape:top-[75%]"
+            className="absolute w-44 h-44 sm:w-48 sm:h-48 md:w-56 md:h-56 landscape:w-[25vw] landscape:h-[25vw] landscape:min-w-[160px] landscape:min-h-[160px] max-w-[240px] max-h-[240px] bg-white/5 border-2 border-white/10 rounded-full flex items-center justify-center pointer-events-none -translate-x-1/2 -translate-y-1/2 left-[30%] top-[60%] landscape:left-[25%] landscape:top-[70%]"
           >
-             <div className="w-18 h-18 md:w-22 md:h-22 border-2 border-white/20 bg-white/10 rounded-full shadow-lg pointer-events-none" />
+             <div className="w-[40%] h-[40%] border-2 border-white/20 bg-white/10 rounded-full shadow-lg pointer-events-none" />
           </div>
         )}
         {joystickOrigin && (
           <div 
-            className="absolute w-48 h-48 md:w-56 md:h-56 bg-black/20 border border-white/20 rounded-full flex items-center justify-center p-2 pointer-events-none -translate-x-1/2 -translate-y-1/2"
+            className="absolute w-44 h-44 sm:w-48 sm:h-48 md:w-56 md:h-56 landscape:w-[25vw] landscape:h-[25vw] landscape:min-w-[160px] landscape:min-h-[160px] max-w-[240px] max-h-[240px] bg-black/20 border border-white/20 rounded-full flex items-center justify-center p-2 pointer-events-none -translate-x-1/2 -translate-y-1/2"
             style={{ left: joystickOrigin.x, top: joystickOrigin.y }}
           >
              <div 
-                className={`w-18 h-18 md:w-22 md:h-22 border-2 rounded-full shadow-lg pointer-events-none flex items-center justify-center transition-colors ${window.mobileInputs.isSprinting ? 'bg-white/60 border-white/80' : 'bg-white/40 border-white/60'}`}
+                className={`w-[45%] h-[45%] border-2 rounded-full shadow-lg pointer-events-none flex items-center justify-center transition-colors ${window.mobileInputs.isSprinting ? 'bg-white/60 border-white/80' : 'bg-white/40 border-white/60'}`}
                 style={{ 
                    transform: `translate(${joystick.x * 125}%, ${joystick.y * 125}%)`,
                    transition: joystickPointerId.current === null ? 'transform 0.15s ease-out' : 'none'
@@ -409,7 +409,7 @@ export const MobileControlsUI: React.FC = () => {
 
       {/* Action Buttons (Right side - Diamond layout for thumbs) */}
       <div 
-        className="absolute pointer-events-none w-64 h-64 landscape:w-56 landscape:h-56 transform origin-bottom-right scale-[1.12] sm:scale-[1.3] landscape:scale-[1.05] md:landscape:scale-[1.25] lg:landscape:scale-[1.2]"
+        className="absolute pointer-events-none w-64 h-64 transform origin-bottom-right scale-[1.2] sm:scale-[1.4] landscape:scale-[1.4] md:landscape:scale-[1.6] lg:landscape:scale-[1.6]"
         style={{
           bottom: 'calc(0.5rem + env(safe-area-inset-bottom))',
           right: 'calc(0.5rem + env(safe-area-inset-right))'
@@ -417,7 +417,7 @@ export const MobileControlsUI: React.FC = () => {
       >
         {/* Jump Button (Top) */}
         <button 
-          className="absolute top-0 left-1/2 -translate-x-1/2 mobile-button w-18 h-18 landscape:w-15 landscape:h-15 rounded-full bg-white/20 border-[3px] border-white/50 flex items-center justify-center active:bg-white/40 pointer-events-auto shadow-lg"
+          className="absolute top-0 left-1/2 -translate-x-1/2 mobile-button w-18 h-18 rounded-full bg-white/20 border-[3px] border-white/50 flex items-center justify-center active:bg-white/40 pointer-events-auto shadow-lg"
           onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); window.mobileInputs.isJumping = true; e.currentTarget.setPointerCapture?.(e.pointerId); }}
           onPointerUp={(e) => { e.preventDefault(); e.stopPropagation(); window.mobileInputs.isJumping = false; e.currentTarget.releasePointerCapture?.(e.pointerId); }}
           onPointerCancel={(e) => { e.stopPropagation(); window.mobileInputs.isJumping = false; e.currentTarget.releasePointerCapture?.(e.pointerId); }}
@@ -430,7 +430,7 @@ export const MobileControlsUI: React.FC = () => {
 
         {/* Interact Button (Left) */}
         <button 
-          className="absolute top-1/2 left-0 -translate-y-1/2 mobile-button w-18 h-18 landscape:w-15 landscape:h-15 rounded-full bg-white/20 border-[3px] border-white/50 flex items-center justify-center active:bg-white/40 pointer-events-auto shadow-lg"
+          className="absolute top-1/2 left-0 -translate-y-1/2 mobile-button w-18 h-18 rounded-full bg-white/20 border-[3px] border-white/50 flex items-center justify-center active:bg-white/40 pointer-events-auto shadow-lg"
           onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); window.mobileInputs.isInteracting = true; e.currentTarget.setPointerCapture?.(e.pointerId); }}
           onPointerUp={(e) => { e.preventDefault(); e.stopPropagation(); window.mobileInputs.isInteracting = false; e.currentTarget.releasePointerCapture?.(e.pointerId); }}
           onPointerCancel={(e) => { e.stopPropagation(); window.mobileInputs.isInteracting = false; e.currentTarget.releasePointerCapture?.(e.pointerId); }}
@@ -443,7 +443,7 @@ export const MobileControlsUI: React.FC = () => {
         
         {/* Attack/Mine Button (Right) */}
         <button 
-          className="absolute top-1/2 right-0 -translate-y-1/2 mobile-button w-22 h-22 landscape:w-19 landscape:h-19 rounded-full bg-white/20 border-[3px] border-white/50 flex items-center justify-center active:bg-white/40 pointer-events-auto shadow-lg"
+          className="absolute top-1/2 right-0 -translate-y-1/2 mobile-button w-22 h-22 rounded-full bg-white/20 border-[3px] border-white/50 flex items-center justify-center active:bg-white/40 pointer-events-auto shadow-lg"
           onPointerDown={(e) => { 
             e.preventDefault(); 
             e.stopPropagation();
@@ -498,7 +498,7 @@ export const MobileControlsUI: React.FC = () => {
 
         {/* Crouch Button (Bottom) */}
         <button 
-          className="absolute bottom-0 left-1/2 -translate-x-1/2 mobile-button w-16 h-16 landscape:w-13 landscape:h-13 rounded-full bg-white/20 border-[3px] border-white/40 flex items-center justify-center active:bg-white/40 opacity-80 pointer-events-auto shadow-md"
+          className="absolute bottom-0 left-1/2 -translate-x-1/2 mobile-button w-16 h-16 rounded-full bg-white/20 border-[3px] border-white/40 flex items-center justify-center active:bg-white/40 opacity-80 pointer-events-auto shadow-md"
           onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); window.mobileInputs.isCrouching = true; e.currentTarget.setPointerCapture?.(e.pointerId); }}
           onPointerUp={(e) => { e.preventDefault(); e.stopPropagation(); window.mobileInputs.isCrouching = false; e.currentTarget.releasePointerCapture?.(e.pointerId); }}
           onPointerCancel={(e) => { e.stopPropagation(); window.mobileInputs.isCrouching = false; e.currentTarget.releasePointerCapture?.(e.pointerId); }}

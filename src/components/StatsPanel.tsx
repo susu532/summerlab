@@ -98,7 +98,10 @@ export const StatsPanel: React.FC = () => {
       <div 
         onWheel={(e) => e.stopPropagation()}
         onPointerDown={(e) => e.stopPropagation()}
-        className="bg-black/80  border-[3px] border-white/20 p-6 rounded shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto pointer-events-auto shadow-[0_10px_30px_rgba(0,0,0,0.8)] custom-scrollbar relative"
+        onTouchStart={(e) => e.stopPropagation()}
+        onTouchMove={(e) => e.stopPropagation()}
+        onTouchEnd={(e) => e.stopPropagation()}
+        className="bg-black/80  border-[3px] border-white/20 p-6 rounded shadow-2xl max-w-2xl w-full max-h-[85vh] landscape:max-h-[90vh] overflow-y-auto pointer-events-auto shadow-[0_10px_30px_rgba(0,0,0,0.8)] custom-scrollbar relative"
       >
         <button 
           onClick={() => setShowLeaderboard(false)}
@@ -110,7 +113,7 @@ export const StatsPanel: React.FC = () => {
           Post-Match Stats
         </h2>
         
-        <div className="flex flex-col md:flex-row gap-6 w-full">
+        <div className="flex flex-col sm:flex-row gap-6 w-full">
           {isSkyCastles ? (
             <>
               <div className="flex-1 bg-red-900/20 p-3 border border-red-500/30 rounded">
