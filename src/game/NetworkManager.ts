@@ -151,6 +151,7 @@ export class NetworkManager {
     y: number;
     z: number;
     type: number;
+    force?: boolean;
   }) => void;
   onChatMessage?: (data: { sender: string; message: string }) => void;
   onItemSpawned?: (data: {

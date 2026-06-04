@@ -104,16 +104,20 @@ export function useGameEngine() {
           const state = useUIStore.getState();
           const gameStoreState = useGameStore.getState();
           if (!suppressPauseMenu.current && 
+              !(window as any).suppressPauseMenu &&
               !state.isInventoryOpen && 
               !state.isShopOpen && 
               !state.isSettingsOpen && 
               !state.isChestOpen && 
               !state.isLoadoutOpen &&
               !gameStoreState.isFluidColorPickerOpen &&
+              !gameStoreState.showLeaderboard &&
+              !state.isEmojiWheelOpen &&
               !state.isTyping) {
             state.setPauseMenuOpen(true);
           }
           suppressPauseMenu.current = false;
+          (window as any).suppressPauseMenu = false;
         }, 50);
       }
     };
@@ -135,6 +139,21 @@ export function useGameEngine() {
       }
       
       const { keybinds } = settingsManager.getSettings();
+
+      if (e.code === 'KeyH') {
+        if (typing) return;
+        const newState = !state.isEmojiWheelOpen;
+        state.setEmojiWheelOpen(newState);
+        if (newState) {
+          suppressPauseMenu.current = true;
+          (window as any).suppressPauseMenu = true;
+          newGame.controls.unlock();
+          state.setSettingsOpen(false);
+          state.setPauseMenuOpen(false);
+        } else {
+          handleStart(null);
+        }
+      }
 
       if (e.code === keybinds.inventory) {
         if (typing || newGame.world.isHub) return;
@@ -195,7 +214,8 @@ export function useGameEngine() {
           isChestOpen: chest,
           isServerJoinOpen: serverJoin,
           isLaunchMenuOpen: launchMenu,
-          isLoadoutOpen: loadout
+          isLoadoutOpen: loadout,
+          isEmojiWheelOpen: emojiWheel
         } = state;
         const colorPickerOpen = useGameStore.getState().isFluidColorPickerOpen;
 
@@ -209,7 +229,7 @@ export function useGameEngine() {
           return;
         }
 
-        if (inv || shop || settings || pause || typing || chest || serverJoin || launchMenu || loadout || colorPickerOpen) {
+        if (inv || shop || settings || pause || typing || chest || serverJoin || launchMenu || loadout || colorPickerOpen || emojiWheel) {
           state.setInventoryOpen(false);
           state.setShopOpen(false);
           state.setSettingsOpen(false);
@@ -219,6 +239,7 @@ export function useGameEngine() {
           state.setServerJoinOpen(false);
           state.setLaunchMenuOpen(false);
           state.setLoadoutOpen(false);
+          state.setEmojiWheelOpen(false);
           useGameStore.getState().setIsFluidColorPickerOpen(false);
           
           if (!isMobile) {
@@ -452,7 +473,7 @@ export function useGameEngine() {
 
     const uiState = useUIStore.getState();
     const isMapLoading = useGameStore.getState().isMapLoading;
-    if (game && !game.controls.isLocked && !isMapLoading && !uiState.isInventoryOpen && !uiState.isShopOpen && !uiState.isSettingsOpen && !uiState.isPauseMenuOpen && !uiState.isServerJoinOpen && !uiState.isLoadoutOpen) {
+    if (game && !game.controls.isLocked && !isMapLoading && !uiState.isInventoryOpen && !uiState.isShopOpen && !uiState.isSettingsOpen && !uiState.isPauseMenuOpen && !uiState.isServerJoinOpen && !uiState.isLoadoutOpen && !uiState.isEmojiWheelOpen) {
       const isTouch = e && e.pointerType === 'touch';
       if (isTouch) {
         try {

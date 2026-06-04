@@ -102,7 +102,7 @@ export const StatsPanel: React.FC = () => {
       >
         <button 
           onClick={() => setShowLeaderboard(false)}
-          className="absolute top-2 right-2 text-white/50 hover:text-white bg-black/50 p-2 rounded-full md:hidden"
+          className="absolute top-3 right-3 text-white/50 hover:text-white bg-black/50 hover:bg-black/70 p-2 rounded-full transition-colors flex items-center justify-center w-8 h-8 pointer-events-auto shadow-md"
         >
           ✕
         </button>

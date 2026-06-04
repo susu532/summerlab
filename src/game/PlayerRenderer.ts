@@ -1195,10 +1195,10 @@ export class PlayerRenderer {
         this.player.rightArmMesh.scale.y = 1.0 / bodyScaleY;
 
         // Elevate head and arms slightly on the torso
-        this.player.headMesh.position.y += 0.05 * t;
-        if (this.player.neckMesh) this.player.neckMesh.position.y += 0.05 * t;
-        this.player.leftArmMesh.position.y += 0.05 * t;
-        this.player.rightArmMesh.position.y += 0.05 * t;
+        this.player.headMesh.position.y += 0.15 * t;
+        if (this.player.neckMesh) this.player.neckMesh.position.y += 0.15 * t;
+        this.player.leftArmMesh.position.y += 0.15 * t;
+        this.player.rightArmMesh.position.y += 0.15 * t;
 
         // Lean body forward (head and arms follow because they are children)
         this.player.bodyMesh.rotation.x = THREE.MathUtils.lerp(

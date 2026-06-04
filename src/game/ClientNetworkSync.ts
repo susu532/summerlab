@@ -246,6 +246,9 @@ export class ClientNetworkSync {
           rp.isDead = player.isDead || false;
           rp.isSpectator = player.isSpectator || false;
           rp.health = player.health || 100;
+          if (player.currentEmoji !== undefined) {
+            rp.currentEmoji = player.currentEmoji;
+          }
         }
       }
     };

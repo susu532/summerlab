@@ -23,7 +23,9 @@ import { HotbarUI } from './HotbarUI';
 import { KillCelebrationUI } from './KillCelebrationUI';
 import { FluidColorPicker } from './FluidColorPicker';
 import { Game } from '../game/Game';
+import { Perspective } from '../game/Player';
 import { Maximize, Settings as SettingsIcon } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 import { useState, useEffect } from 'react';
 import { ITEM_NAMES } from '../game/Constants';
@@ -74,6 +76,45 @@ function CrosshairTargetInfo({ currentMode, game }: { currentMode: string, game?
       {targetInfo.type === 'npc' && targetInfo.id?.startsWith('hub_npc_') && currentMode === 'hub' && <span className="ml-2 text-[#FFFF55]">[Right Click to Join]</span>}
       {targetInfo.type === 'npc' && !targetInfo.id?.startsWith('hub_npc_') && <span className="ml-2 text-[#FFFF55]">[Right Click to Talk]</span>}
     </div>
+  );
+}
+
+function FirstPersonEmojiOverlay({ game }: { game: Game | null }) {
+  const [emoji, setEmoji] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!game) return;
+    let afId: number;
+    const update = () => {
+      const player = game.player;
+      if (player) {
+        const isFirstPerson = player.perspective === Perspective.FIRST_PERSON;
+        const currentEmoji = isFirstPerson ? (player.currentEmoji || null) : null;
+        setEmoji(currentEmoji);
+      }
+      afId = requestAnimationFrame(update);
+    };
+    afId = requestAnimationFrame(update);
+    return () => cancelAnimationFrame(afId);
+  }, [game]);
+
+  return (
+    <AnimatePresence>
+      {emoji && (
+        <div className="fixed right-6 sm:right-12 top-1/2 -translate-y-1/2 pointer-events-none z-[100] flex flex-col items-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.3, x: 50, rotate: -15 }}
+            animate={{ opacity: 1, scale: 1, x: 0, rotate: 0 }}
+            exit={{ opacity: 0, scale: 0.5, x: 50, rotate: 15 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+            className="w-20 h-20 sm:w-28 sm:h-28 bg-black/60 border-2 border-white/20 rounded-2xl backdrop-blur-md shadow-2xl flex items-center justify-center text-5xl sm:text-7xl select-none"
+          >
+            {emoji}
+          </motion.div>
+         
+        </div>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -159,6 +200,9 @@ export function GameHUD({ game, isMobile, showDebug, setPauseMenuOpen }: any) {
 
       {/* Mob Tags */}
       {isHUDVisible && <EntityTags game={game} />}
+
+      {/* First Person Emoji Overlay */}
+      {isHUDVisible && <FirstPersonEmojiOverlay game={game} />}
 
       {/* Mobile Controls */}
       {isHUDVisible && isMobile && <MobileControlsUI />}

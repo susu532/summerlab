@@ -866,6 +866,7 @@ export function updatePlayer(player: Player, delta: number) {
       offHandItem: player.inventory.slots[Inventory.OFF_HAND_SLOT]?.type || 0,
       defense: skyBridgeManager.effectiveStats.defense || 0,
       maxHealth: skyBridgeManager.effectiveStats.maxHealth || 100,
+      currentEmoji: player.currentEmoji,
     };
 
     const stateHash = JSON.stringify(currentState);

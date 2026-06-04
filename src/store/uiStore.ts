@@ -13,6 +13,7 @@ interface UIState {
   isChestOpen: boolean;
   isLoadoutOpen: boolean;
   isHUDVisible: boolean;
+  isEmojiWheelOpen: boolean;
   currentNPC: NPC | null;
   setInventoryOpen: (open: boolean) => void;
   setShopOpen: (open: boolean) => void;
@@ -25,6 +26,7 @@ interface UIState {
   setChestOpen: (open: boolean) => void;
   setLoadoutOpen: (open: boolean) => void;
   setHUDVisible: (visible: boolean) => void;
+  setEmojiWheelOpen: (open: boolean) => void;
   setCurrentNPC: (npc: NPC | null) => void;
   forceCloseAllMenus: () => void;
 }
@@ -41,6 +43,7 @@ export const useUIStore = create<UIState>((set) => ({
   isChestOpen: false,
   isLoadoutOpen: false,
   isHUDVisible: true,
+  isEmojiWheelOpen: false,
   currentNPC: null,
   setInventoryOpen: (open) => set({ isInventoryOpen: open }),
   setShopOpen: (open) => set({ isShopOpen: open }),
@@ -53,6 +56,7 @@ export const useUIStore = create<UIState>((set) => ({
   setChestOpen: (open) => set({ isChestOpen: open }),
   setLoadoutOpen: (open) => set({ isLoadoutOpen: open }),
   setHUDVisible: (visible) => set({ isHUDVisible: visible }),
+  setEmojiWheelOpen: (open) => set({ isEmojiWheelOpen: open }),
   setCurrentNPC: (npc) => set({ currentNPC: npc }),
   forceCloseAllMenus: () => set({
     isInventoryOpen: false,
@@ -63,6 +67,7 @@ export const useUIStore = create<UIState>((set) => ({
     isLaunchMenuOpen: false,
     isChestOpen: false,
     isLoadoutOpen: false,
+    isEmojiWheelOpen: false,
     currentNPC: null
   })
 }));

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Game } from './Game';
 import { settingsManager } from './Settings';
 import { useGameStore } from '../store/gameStore';
+import { Perspective } from './Player';
 
 export class EntityTagsSystem {
   game: Game;
@@ -31,7 +32,7 @@ export class EntityTagsSystem {
     const heightHalf = window.innerHeight / 2;
     this.game.camera.getWorldDirection(this._tempCameraDir);
 
-    const projectEntity = (id: string, pos: THREE.Vector3, type: string, health: number, maxHealth: number, level: number, name?: string, isPassive: boolean = false, heightOffset?: number, team?: string) => {
+    const projectEntity = (id: string, pos: THREE.Vector3, type: string, health: number, maxHealth: number, level: number, name?: string, isPassive: boolean = false, heightOffset?: number, team?: string, emoji?: string) => {
       // Distance check
       const distSq = pos.distanceToSquared(this.game.camera.position);
       if (isNaN(distSq) || distSq > 2500) return; // 50 blocks for players
@@ -53,7 +54,7 @@ export class EntityTagsSystem {
       const distance = Math.sqrt(distSq);
       if (distance > 40) return;
 
-      tags.push({ id, x, y, level, type, health, maxHealth, distance, name, isPassive, team });
+      tags.push({ id, x, y, level, type, health, maxHealth, distance, name, isPassive, team, emoji });
     };
 
     this.game.entityManager.mobs.forEach((mob) => {
@@ -108,8 +109,21 @@ export class EntityTagsSystem {
       this.game.entityManager.remotePlayers.forEach((player) => {
         const combatLevel = player.skills?.Combat?.level || 1;
         const heightOffset = player.isCrouching ? 1.8 : 2.2;
-        projectEntity(player.id, player.group.position, 'Player', player.health || 100, 100, combatLevel, player.name, true, heightOffset, player.team);
+        projectEntity(player.id, player.group.position, 'Player', player.health || 100, 100, combatLevel, player.name, true, heightOffset, player.team, player.currentEmoji);
       });
+      
+      const localPlayer = this.game.player;
+      if (localPlayer && localPlayer.perspective !== Perspective.FIRST_PERSON) {
+          const combatLevel = useGameStore.getState().playerSkills?.Combat?.level || 1;
+          const heightOffset = localPlayer.inputController?.isCrouching ? 1.8 : 2.2;
+          const playerName = settingsManager.getSettings().username || 'Player';
+          
+          // worldPosition is at eye level. Calculate player's feet position for the tag offset
+          const localPlayerFeetPos = localPlayer.worldPosition.clone();
+          localPlayerFeetPos.y = localPlayer.worldPosition.y - localPlayer.playerHeight + (localPlayer.cameraYOffset || 0);
+
+          projectEntity('localPlayer', localPlayerFeetPos, 'Player', localPlayer.health || 100, 100, combatLevel, playerName, true, heightOffset, localPlayer.team, localPlayer.currentEmoji);
+      }
     }
 
     this._cachedTags = tags;

@@ -85,6 +85,7 @@ export class RemotePlayer {
   renderedOffHandItemType: number = -1;
   currentModelType: number | null = null;
   currentOffHandModelType: number | null = null;
+  currentEmoji?: string;
 
 
   targetPosition: THREE.Vector3;
@@ -1190,7 +1191,7 @@ export class RemotePlayer {
         this.bodyMesh.rotation.x = -0.5 * t;
         
         // Lower the body mesh specifically to simulate the crouch
-        const crouchDrop = 0.35 * t;
+        const crouchDrop = 0.15 * t;
         this.bodyMesh.position.y = 0.9 - crouchDrop;
         this.bodyMesh.position.z = -0.15 * t;
         
@@ -1203,10 +1204,10 @@ export class RemotePlayer {
         this.leftArmMesh.scale.y = 1.0 / bodyScaleY;
         this.rightArmMesh.scale.y = 1.0 / bodyScaleY;
 
-        this.headMesh.position.y = 0.5 + 0.05 * t;
-        this.neckMesh.position.y = 0.4 + 0.05 * t;
-        this.leftArmMesh.position.y = 0.3 + 0.05 * t;
-        this.rightArmMesh.position.y = 0.3 + 0.05 * t;
+        this.headMesh.position.y = 0.5 + 0.15 * t;
+        this.neckMesh.position.y = 0.4 + 0.15 * t;
+        this.leftArmMesh.position.y = 0.3 + 0.15 * t;
+        this.rightArmMesh.position.y = 0.3 + 0.15 * t;
         
         // Bend legs (simulated by rotating them forward and shifting up)
         this.leftLegMesh.rotation.x = 0.3 * t;
@@ -1357,7 +1358,7 @@ export class RemotePlayer {
       const t = this.crouchTransition;
       
       // Lower the body mesh specifically to simulate the crouch
-      const crouchDrop = 0.35 * t; // More obvious drop
+      const crouchDrop = 0.15 * t; // Reduced to elevate torso/stomach
       this.bodyMesh.position.y -= crouchDrop;
       this.bodyMesh.position.z -= 0.15 * t; // Move torso forward
       
@@ -1371,10 +1372,10 @@ export class RemotePlayer {
       this.rightArmMesh.scale.y = 1.0 / bodyScaleY;
 
       // Elevate head and arms slightly on the torso
-      this.headMesh.position.y += 0.05 * t;
-      this.neckMesh.position.y += 0.05 * t;
-      this.leftArmMesh.position.y += 0.05 * t;
-      this.rightArmMesh.position.y += 0.05 * t;
+      this.headMesh.position.y += 0.15 * t;
+      this.neckMesh.position.y += 0.15 * t;
+      this.leftArmMesh.position.y += 0.15 * t;
+      this.rightArmMesh.position.y += 0.15 * t;
       
       // Lean body forward (head and arms follow because they are children)
       this.bodyMesh.rotation.x = THREE.MathUtils.lerp(this.bodyMesh.rotation.x, -0.5, t);

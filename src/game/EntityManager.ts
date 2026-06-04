@@ -466,14 +466,14 @@ export class EntityManager {
     }
   }
 
-  updateRemotePlayer(id: string, data: Partial<IPlayerUpdate> & { position?: { x: number, y: number, z: number }, rotation?: { x: number, y: number, z: number }, isFlying?: boolean, isSwimming?: boolean, isCrouching?: boolean, isSprinting?: boolean, isSwinging?: boolean, isGliding?: boolean, isInvulnerable?: boolean, swingSpeed?: number, isGrounded?: boolean, heldItem?: number, offHandItem?: number, isBlocking?: boolean }) {
+  updateRemotePlayer(id: string, data: Partial<IPlayerUpdate> & { position?: { x: number, y: number, z: number }, rotation?: { x: number, y: number, z: number }, isFlying?: boolean, isSwimming?: boolean, isCrouching?: boolean, isSprinting?: boolean, isSwinging?: boolean, isGliding?: boolean, isInvulnerable?: boolean, swingSpeed?: number, isGrounded?: boolean, heldItem?: number, offHandItem?: number, isBlocking?: boolean, currentEmoji?: string }) {
     const player = this.remotePlayers.get(id);
     if (player) {
       player.lastNetPos.copy(player.currentPos);
       player.targetPosition.set(
-        data.position.x,
-        data.position.y,
-        data.position.z,
+        data.position!.x,
+        data.position!.y,
+        data.position!.z,
       );
       
       const rotEuler = new THREE.Euler(
@@ -485,19 +485,22 @@ export class EntityManager {
       player.interpolationTimer = 0;
 
       player.targetRotation.set(
-        data.rotation.x,
-        data.rotation.y,
-        data.rotation.z,
+        data.rotation!.x,
+        data.rotation!.y,
+        data.rotation!.z,
       );
-      player.isFlying = data.isFlying;
-      player.isSwimming = data.isSwimming;
-      player.isCrouching = data.isCrouching;
-      player.isSprinting = data.isSprinting;
-      player.isSwinging = data.isSwinging;
-      player.isGliding = data.isGliding;
-      player.isInvulnerable = data.isInvulnerable;
+      player.isFlying = data.isFlying || false;
+      player.isSwimming = data.isSwimming || false;
+      player.isCrouching = data.isCrouching || false;
+      player.isSprinting = data.isSprinting || false;
+      if (player.isSwinging !== data.isSwinging) player.isSwinging = data.isSwinging || false;
+      player.isGliding = data.isGliding || false;
+      player.isInvulnerable = data.isInvulnerable || false;
       if (data.team !== undefined && data.team !== player.team) {
         player.updateTeam(data.team);
+      }
+      if (data.currentEmoji !== undefined) {
+        player.currentEmoji = data.currentEmoji;
       }
       player.swingSpeed = data.swingSpeed || 15;
       player.isGrounded =

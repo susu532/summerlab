@@ -31,7 +31,7 @@ export const EntityTags: React.FC<MobTagProps> = ({ game }) => {
           if (!el) {
             el = document.createElement('div');
             el.id = `entity-tag-${tag.id}`;
-            el.className = "absolute flex flex-col items-center justify-center transform origin-bottom";
+            el.className = "absolute flex flex-col items-center justify-center transform origin-bottom gap-0.5 md:gap-1";
             el.style.top = "0";
             el.style.left = "0";
             
@@ -64,7 +64,7 @@ export const EntityTags: React.FC<MobTagProps> = ({ game }) => {
               nameSpan.className = `${nameColor} font-medium`;
             }
             nameSpan.id = `entity-name-${tag.id}`;
-            nameSpan.innerText = (isPlayer || tag.type === 'SpecialText') ? tag.name : tag.type;
+            nameSpan.innerText = (isPlayer || tag.type === 'SpecialText') ? (tag.name || 'Player') : tag.type;
             innerDiv.appendChild(nameSpan);
             
             if (!isPlayer && tag.type !== 'SpecialText') {
@@ -76,6 +76,24 @@ export const EntityTags: React.FC<MobTagProps> = ({ game }) => {
             }
             
             el.appendChild(innerDiv);
+            
+            const emojiDiv = document.createElement('div');
+            emojiDiv.id = `entity-emoji-${tag.id}`;
+            emojiDiv.className = "absolute top-full left-1/2 text-6xl md:text-8xl mc-text-shadow transition-all duration-300 pointer-events-none select-none font-sans overflow-visible leading-none text-center flex items-center justify-center";
+            emojiDiv.style.transform = 'translateX(-50%) scale(1)';
+            if (tag.emoji) {
+                emojiDiv.innerText = tag.emoji;
+                emojiDiv.style.opacity = '1';
+                emojiDiv.style.height = 'auto';
+                emojiDiv.style.marginTop = '8px';
+            } else {
+                emojiDiv.style.opacity = '0';
+                emojiDiv.style.height = '0px';
+                emojiDiv.style.marginTop = '0px';
+                emojiDiv.innerText = '';
+            }
+            el.appendChild(emojiDiv);
+
             container.appendChild(el);
           } else {
             // Update health or special text name if it changed
@@ -85,6 +103,11 @@ export const EntityTags: React.FC<MobTagProps> = ({ game }) => {
               if (nameSpan && nameSpan.innerText !== tag.name) {
                 nameSpan.innerText = tag.name;
               }
+            } else if (isPlayer) {
+              const nameSpan = document.getElementById(`entity-name-${tag.id}`);
+              if (nameSpan && nameSpan.innerText !== (tag.name || 'Player')) {
+                nameSpan.innerText = tag.name || 'Player';
+              }
             } else if (!isPlayer) {
               const hpSpan = document.getElementById(`entity-hp-${tag.id}`);
               if (hpSpan) {
@@ -93,6 +116,32 @@ export const EntityTags: React.FC<MobTagProps> = ({ game }) => {
                   hpSpan.innerText = newHpText;
                 }
               }
+            }
+            
+            const emojiDiv = document.getElementById(`entity-emoji-${tag.id}`);
+            if (emojiDiv) {
+                if (tag.emoji) {
+                    emojiDiv.style.height = 'auto';
+                    emojiDiv.style.marginTop = '8px';
+                    if (emojiDiv.innerText !== tag.emoji) {
+                        emojiDiv.innerText = tag.emoji;
+                        // Trigger a small pop animation
+                        emojiDiv.style.transform = `translateX(-50%) scale(1.2)`;
+                        setTimeout(() => {
+                           if (emojiDiv) emojiDiv.style.transform = `translateX(-50%) scale(1)`;
+                        }, 150);
+                    }
+                    emojiDiv.style.opacity = '1';
+                } else {
+                    emojiDiv.style.opacity = '0';
+                    emojiDiv.style.height = '0px';
+                    emojiDiv.style.marginTop = '0px';
+                    setTimeout(() => {
+                        if (emojiDiv && emojiDiv.style.opacity === '0') {
+                            emojiDiv.innerText = '';
+                        }
+                    }, 300);
+                }
             }
           }
 
