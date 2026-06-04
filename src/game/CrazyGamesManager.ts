@@ -3,6 +3,9 @@ import { audioManager } from './AudioManager';
 export class CrazyGamesManager {
   private static initialized = false;
 
+  private static pendingLoadingStart = false;
+  private static pendingGameplayStart = false;
+
   static async init() {
     if (this.initialized) return;
     try {
@@ -11,6 +14,15 @@ export class CrazyGamesManager {
         if (cg && typeof cg.init === 'function') { await cg.init(); }
         this.initialized = true;
         console.log("CrazyGames SDK initialized");
+        
+        if (this.pendingLoadingStart) {
+          try { cg.game.loadingStart(); } catch(e){}
+          this.pendingLoadingStart = false;
+        }
+        if (this.pendingGameplayStart) {
+          try { cg.game.gameplayStart(); } catch(e){}
+          this.pendingGameplayStart = false;
+        }
       }
     } catch (e) {
       console.warn("CrazyGames SDK integration skipped or error", e);
@@ -18,43 +30,37 @@ export class CrazyGamesManager {
   }
 
   static loadingStart() {
-    try {
-      if (typeof window !== 'undefined' && (window as any).CrazyGames) {
-        (window as any).CrazyGames.SDK.game.loadingStart();
-      }
-    } catch(e) {}
+    this.pendingLoadingStart = true;
+    if (this.initialized) {
+      try { (window as any).CrazyGames.SDK.game.loadingStart(); } catch(e){}
+    }
   }
 
   static loadingStop() {
-    try {
-      if (typeof window !== 'undefined' && (window as any).CrazyGames) {
-        (window as any).CrazyGames.SDK.game.loadingStop();
-      }
-    } catch(e) {}
+    this.pendingLoadingStart = false;
+    if (this.initialized) {
+      try { (window as any).CrazyGames.SDK.game.loadingStop(); } catch(e){}
+    }
   }
 
   static gameplayStart() {
-    try {
-      if (typeof window !== 'undefined' && (window as any).CrazyGames) {
-        (window as any).CrazyGames.SDK.game.gameplayStart();
-      }
-    } catch(e) {}
+    this.pendingGameplayStart = true;
+    if (this.initialized) {
+      try { (window as any).CrazyGames.SDK.game.gameplayStart(); } catch(e){}
+    }
   }
 
   static gameplayStop() {
-    try {
-      if (typeof window !== 'undefined' && (window as any).CrazyGames) {
-        (window as any).CrazyGames.SDK.game.gameplayStop();
-      }
-    } catch(e) {}
+    this.pendingGameplayStart = false;
+    if (this.initialized) {
+      try { (window as any).CrazyGames.SDK.game.gameplayStop(); } catch(e){}
+    }
   }
 
   static happyTime() {
-    try {
-      if (typeof window !== 'undefined' && (window as any).CrazyGames) {
-        (window as any).CrazyGames.SDK.game.happyTime();
-      }
-    } catch(e) {}
+    if (this.initialized) {
+      try { (window as any).CrazyGames.SDK.game.happyTime(); } catch(e){}
+    }
   }
 
   static requestAd(type: 'midgame' | 'rewarded' = 'midgame', callbacks?: { adStarted?: () => void, adFinished?: () => void, adError?: (error: string) => void }) {

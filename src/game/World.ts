@@ -515,8 +515,7 @@ export class World {
               float lum = dot(color, vec3(0.299, 0.587, 0.114));
               // Saturate slightly instead of blowing out
               color = mix(vec3(lum), color, 1.3);
-              // Quantize / posterize
-              color = floor(color * 8.0 + 0.5) / 8.0;
+              // Quantize posterize removed to stop AO vibration
               // Add a soft tint
               vec3 tint = mix(vec3(0.05, 0.0, 0.1), vec3(0.0), lum);
               gl_FragColor.rgb = clamp(color + tint, 0.0, 1.0);
@@ -924,8 +923,7 @@ export class World {
               float lum = dot(color, vec3(0.299, 0.587, 0.114));
               // Saturate slightly instead of blowing out
               color = mix(vec3(lum), color, 1.3);
-              // Quantize / posterize
-              color = floor(color * 8.0 + 0.5) / 8.0;
+              // Quantize posterize removed to stop AO vibration
               // Add a soft tint
               vec3 tint = mix(vec3(0.05, 0.0, 0.1), vec3(0.0), lum);
               gl_FragColor.rgb = clamp(color + tint, 0.0, 1.0);

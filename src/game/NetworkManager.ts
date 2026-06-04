@@ -10,7 +10,7 @@ import { settingsManager } from "./Settings";
 class FakeClientSocket {
   public connected = false;
   public ws: WebSocket | null = null;
-  public handlers: Record<string, Function> = {};
+  public handlers: Record<string, Function[]> = {};
   private emitQueue: { event: string; args: any[] }[] = [];
   public _id = "";
   public reconnectCallback: (() => void) | null = null;
@@ -26,7 +26,9 @@ class FakeClientSocket {
     
     this.ws.onopen = () => {
       this.connected = true;
-      if (this.handlers['connect']) this.handlers['connect']();
+      if (this.handlers['connect']) {
+        this.handlers['connect'].forEach(h => h());
+      }
       for (const pending of this.emitQueue) {
          this.ws!.send(encodePacketClient(pending.event, pending.args));
       }
@@ -39,14 +41,19 @@ class FakeClientSocket {
           if (decoded.event === 'set_id') {
               this._id = decoded.args[0];
           } else if (this.handlers[decoded.event]) {
-              this.handlers[decoded.event](...decoded.args);
+              const handlersCopy = [...this.handlers[decoded.event]];
+              for (const h of handlersCopy) {
+                  h(...decoded.args);
+              }
           }
       }
     };
 
     this.ws.onclose = () => {
       this.connected = false;
-      if (this.handlers['disconnect']) this.handlers['disconnect']();
+      if (this.handlers['disconnect']) {
+        this.handlers['disconnect'].forEach(h => h());
+      }
       if (this.reconnectCallback) {
         this.reconnectCallback();
       }
@@ -56,14 +63,18 @@ class FakeClientSocket {
   get id() { return this._id; }
 
   on(event: string, handler: Function) {
-    this.handlers[event] = handler;
+    if (!this.handlers[event]) this.handlers[event] = [];
+    this.handlers[event].push(handler);
   }
 
   off(event: string, handler?: Function) {
-    if (handler && this.handlers[event] === handler) {
-       delete this.handlers[event];
-    } else if (!handler) {
-       delete this.handlers[event];
+    if (this.handlers[event]) {
+      if (handler) {
+        this.handlers[event] = this.handlers[event].filter(h => h !== handler);
+        if (this.handlers[event].length === 0) delete this.handlers[event];
+      } else {
+        delete this.handlers[event];
+      }
     }
   }
 
@@ -671,7 +682,21 @@ export class NetworkManager {
     });
 
     this.socket.on("blockChanged", (data) => {
-      if (this.onBlockChanged) this.onBlockChanged(data);
+      let parsedData = data;
+      if (data instanceof ArrayBuffer || (data && typeof data.byteLength === 'number')) {
+         const buf = data instanceof ArrayBuffer ? data : data.buffer;
+         const offset = data instanceof ArrayBuffer ? 0 : data.byteOffset;
+         const len = data.byteLength;
+         const f32 = new Float32Array(buf, offset, Math.floor(len / 4));
+         parsedData = {
+           x: f32[0],
+           y: f32[1],
+           z: f32[2],
+           type: f32[3],
+           force: f32[4] > 0.5
+         };
+      }
+      if (this.onBlockChanged) this.onBlockChanged(parsedData);
     });
 
     this.socket.on("chatMessage", (data) => {
