@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { ItemType } from './Inventory';
 import { ITEM_COLORS } from './Constants';
+import { settingsManager } from './Settings';
 
 export const animatedItems: { mesh: THREE.Object3D, update: (time: number) => void }[] = [];
 
@@ -81,24 +82,33 @@ export function createItemModel(type: ItemType): THREE.Group {
   const isHose = type === ItemType.FLUID_CHOCOLATE_HOSE || type === ItemType.WASHING_HOSE;
   
   if (isHose) {
+    const isPerf = settingsManager.getSettings().performanceMode;
+    const MatClass = isPerf ? THREE.MeshBasicMaterial : THREE.MeshStandardMaterial;
+
     // Hose model: A vibrant colored cylinder with a shiny nozzle at the end
-    const hoseMat = new THREE.MeshStandardMaterial({
+    const hoseMat = new MatClass({
       color: type === ItemType.WASHING_HOSE ? 0x3889f0 : 0xFF5500, // blue for washer, orange for chocolate
-      emissive: type === ItemType.WASHING_HOSE ? 0x3889f0 : 0xFF5500, // slight glow
-      emissiveIntensity: 0.2,
-      roughness: 0.4,
-      metalness: 0.1
+      ...(isPerf ? {} : {
+        emissive: type === ItemType.WASHING_HOSE ? 0x3889f0 : 0xFF5500, // slight glow
+        emissiveIntensity: 0.2,
+        roughness: 0.4,
+        metalness: 0.1
+      })
     });
-    const darkMat = new THREE.MeshStandardMaterial({
+    const darkMat = new MatClass({
       color: 0x333333, // dark plastic
-      roughness: 0.8,
-      metalness: 0.2
+      ...(isPerf ? {} : {
+        roughness: 0.8,
+        metalness: 0.2
+      })
     });
-    const nozzleMat = new THREE.MeshStandardMaterial({
+    const nozzleMat = new MatClass({
       color: 0xDDDDDD, // shiny metal
-      roughness: 0.2,
-      metalness: 1.0,
-      emissive: 0x222222
+      ...(isPerf ? {} : {
+        roughness: 0.2,
+        metalness: 1.0,
+        emissive: 0x222222
+      })
     });
 
     // Main body tube
