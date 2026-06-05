@@ -205,7 +205,7 @@ export function GameHUD({ game, isMobile, showDebug, setPauseMenuOpen }: any) {
       {isHUDVisible && <FirstPersonEmojiOverlay game={game} />}
 
       {/* Mobile Controls */}
-      {isHUDVisible && isMobile && <MobileControlsUI />}
+      {isHUDVisible && isMobile && <MobileControlsUI game={game} />}
 
       {/* Sidebars */}
       {/* {isHUDVisible && currentMode === 'skybridge' && <SkyBridgeSidebar isMobile={isMobile} />} */}

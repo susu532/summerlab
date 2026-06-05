@@ -43,9 +43,10 @@ window.mobileInputs = window.mobileInputs || {
   zoomJoystickY: 0,
 };
 
-import { Menu, Backpack, MessageSquare, Camera, ScanEye, Sword, ArrowDown, ChevronsUp, Trophy } from 'lucide-react';
+import { HexColorPicker } from 'react-colorful';
+import { Menu, Backpack, MessageSquare, Camera, ScanEye, Sword, ArrowDown, ChevronsUp, Trophy, Palette } from 'lucide-react';
 
-export const MobileControlsUI: React.FC = () => {
+export const MobileControlsUI: React.FC<{game?: any}> = ({ game }) => {
   const isInventoryOpen = useUI(state => state.isInventoryOpen);
   const setInventoryOpen = useUI(state => state.setInventoryOpen);
   const isShopOpen = useUI(state => state.isShopOpen);
@@ -61,7 +62,22 @@ export const MobileControlsUI: React.FC = () => {
   const showLeaderboard = useGameStore(state => state.showLeaderboard);
   const setShowLeaderboard = useGameStore(state => state.setShowLeaderboard);
 
+  const hotbarIndex = useGameStore(state => state.hotbarIndex);
+  const inventoryVersion = useGameStore(state => state.inventoryVersion);
+  const fluidColor = useGameStore(state => state.fluidColor);
+  const setFluidColor = useGameStore(state => state.setFluidColor);
+
+  const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
+
+  // Check if holding hose using the magical number 521 for ItemType.FLUID_CHOCOLATE_HOSE
+  const hasHose = game?.player?.inventory?.slots[hotbarIndex]?.type === 521;
   const isAnyMenuOpen = isInventoryOpen || isShopOpen || isSettingsOpen || isPauseMenuOpen || isServerJoinOpen || isLaunchMenuOpen || isTyping || showLeaderboard;
+
+  useEffect(() => {
+    if (!hasHose && isColorPickerOpen) {
+      setIsColorPickerOpen(false);
+    }
+  }, [hasHose, isColorPickerOpen]);
 
 
   const baseRef = useRef<HTMLDivElement>(null);
@@ -392,7 +408,54 @@ export const MobileControlsUI: React.FC = () => {
         >
           <Menu size={20} />
         </button>
+        {hasHose && (
+          <button 
+            className={`hidden landscape:flex w-12 h-12 rounded-full border border-white/20 items-center justify-center text-white mobile-button pointer-events-auto shadow-md transition-colors ${isColorPickerOpen ? 'bg-white/40 shadow-[0_0_15px_rgba(255,255,255,0.5)]' : 'bg-black/40 active:bg-white/40'}`}
+            onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setIsColorPickerOpen(!isColorPickerOpen); }}
+            onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); setIsColorPickerOpen(!isColorPickerOpen); }}
+          >
+            <Palette size={20} className="drop-shadow-md" style={{ color: fluidColor }} />
+          </button>
+        )}
       </div>
+
+      {hasHose && isColorPickerOpen && (
+        <div 
+          className="hidden landscape:flex absolute pointer-events-auto z-50 animate-in fade-in slide-in-from-top-4 duration-200 bg-black/70 backdrop-blur-xl rounded-3xl p-5 border border-white/20 shadow-2xl flex-col items-center mx-auto"
+          style={{
+            top: 'calc(4rem + env(safe-area-inset-top))',
+            right: 'calc(0.5rem + env(safe-area-inset-right))'
+          }}
+          onTouchMove={(e) => e.stopPropagation()}
+        >
+          <div className="mb-3 text-xs font-bold text-white/50 uppercase tracking-widest">Fluid Color</div>
+          <HexColorPicker color={fluidColor} onChange={setFluidColor} />
+          <div className="mt-5 grid grid-cols-4 gap-3 w-full max-w-[200px]">
+            {[
+              '#3d1c04', // Chocolate
+              '#1e90ff', // Water
+              '#ff4500', // Lava
+              '#32cd32', // Slime
+              '#a24cbf', // Poison
+              '#ffcc00', // Honey
+              '#ffffff', // Base white
+              '#000000', // Base black
+            ].map((preset) => (
+              <button
+                key={preset}
+                className="w-10 h-10 rounded-full border-[3px] transition-transform shadow-lg mx-auto"
+                style={{ 
+                  backgroundColor: preset, 
+                  borderColor: fluidColor === preset ? '#ffffff' : 'rgba(255,255,255,0.1)',
+                  transform: fluidColor === preset ? 'scale(1.2)' : 'scale(1)'
+                }}
+                onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setFluidColor(preset); }}
+                onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); setFluidColor(preset); }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Target Crosshair */}
       <div className="absolute top-1/2 left-1/2 min-w-4 min-h-4 -translate-x-1/2 -translate-y-1/2 pointer-events-none text-white/50">
