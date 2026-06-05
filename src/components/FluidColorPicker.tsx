@@ -37,7 +37,7 @@ export function FluidColorPicker({ game }: { game?: any }) {
 
   return (
     <div 
-      className="absolute top-20 right-4 pointer-events-auto hidden sm:block portrait:block"
+      className="absolute top-20 right-4 pointer-events-auto"
       onPointerDown={(e) => e.stopPropagation()}
     >
       <div className="relative">
