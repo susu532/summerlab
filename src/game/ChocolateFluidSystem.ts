@@ -114,6 +114,7 @@ export class ChocolateFluidSystem {
     this.projectileMesh.geometry.setAttribute('instanceAlpha', alphaAttrib);
     
     this.projectileMesh.frustumCulled = false;
+    this.projectileMesh.renderOrder = 2; // rendered after splats
     
     // Hide them initially
     const hiddenMatrix = new THREE.Matrix4().makeScale(0, 0, 0);
@@ -194,12 +195,14 @@ export class ChocolateFluidSystem {
     this.splatMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(this.maxSplats * 3), 3);
     this.splatMesh.instanceColor.setUsage(THREE.DynamicDrawUsage);
     this.splatMesh.frustumCulled = false;
+    this.splatMesh.renderOrder = 1;
 
     this.squareSplatMesh = new THREE.InstancedMesh(geo, squareMat, this.maxSplats);
     this.squareSplatMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.squareSplatMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(this.maxSplats * 3), 3);
     this.squareSplatMesh.instanceColor.setUsage(THREE.DynamicDrawUsage);
     this.squareSplatMesh.frustumCulled = false;
+    this.squareSplatMesh.renderOrder = 1;
     
     this.splatKeys = new Array<string>(this.maxSplats).fill('');
     

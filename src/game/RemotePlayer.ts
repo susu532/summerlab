@@ -229,8 +229,8 @@ export class RemotePlayer {
       new THREE.MeshBasicMaterial({ map: skinTexture }) :
       new THREE.MeshStandardMaterial({ 
         map: skinTexture,
-        roughness: 0.8,
-        metalness: 0.1
+        roughness: 0.4,
+        metalness: 0.2
       });
     const outerMaterial = isPerformance ?
       new THREE.MeshBasicMaterial({ 
@@ -244,8 +244,8 @@ export class RemotePlayer {
         transparent: true, 
         alphaTest: 0.1, 
         side: THREE.DoubleSide,
-        roughness: 0.8,
-        metalness: 0.1
+        roughness: 0.4,
+        metalness: 0.2
       });
 
     // Body (The central pivot for the upper body)

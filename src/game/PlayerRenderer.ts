@@ -166,8 +166,8 @@ export class PlayerRenderer {
       new THREE.MeshBasicMaterial({ map: skinTexture }) :
       new THREE.MeshStandardMaterial({ 
         map: skinTexture,
-        roughness: 0.8,
-        metalness: 0.1
+        roughness: 0.4,
+        metalness: 0.2
       });
     const outerMaterial = isPerformance ?
       new THREE.MeshBasicMaterial({ 
@@ -181,8 +181,8 @@ export class PlayerRenderer {
         transparent: true, 
         alphaTest: 0.1, 
         side: THREE.DoubleSide,
-        roughness: 0.8,
-        metalness: 0.1
+        roughness: 0.4,
+        metalness: 0.2
       });
 
     if (this.headMesh) {
@@ -227,8 +227,8 @@ export class PlayerRenderer {
       new THREE.MeshBasicMaterial({ map: skinTexture }) :
       new THREE.MeshStandardMaterial({ 
         map: skinTexture,
-        roughness: 0.8,
-        metalness: 0.1
+        roughness: 0.4,
+        metalness: 0.2
       });
     const outerMaterial = isPerformance ?
       new THREE.MeshBasicMaterial({ 
@@ -242,8 +242,8 @@ export class PlayerRenderer {
         transparent: true, 
         alphaTest: 0.1, 
         side: THREE.DoubleSide,
-        roughness: 0.8,
-        metalness: 0.1
+        roughness: 0.4,
+        metalness: 0.2
       });
 
     // Body
@@ -624,8 +624,8 @@ export class PlayerRenderer {
       new THREE.MeshBasicMaterial({ map: skinTexture }) :
       new THREE.MeshStandardMaterial({ 
         map: skinTexture,
-        roughness: 0.8,
-        metalness: 0.1
+        roughness: 0.4,
+        metalness: 0.2
       });
     
     const armGeo = new THREE.BoxGeometry(0.24, 0.24, 0.7); // Robust arm
@@ -663,8 +663,8 @@ export class PlayerRenderer {
       new THREE.MeshBasicMaterial({ map: skinTexture }) :
       new THREE.MeshStandardMaterial({ 
         map: skinTexture,
-        roughness: 0.8,
-        metalness: 0.1
+        roughness: 0.4,
+        metalness: 0.2
       });
     
     // Position arm in the lower left corner

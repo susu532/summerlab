@@ -102,8 +102,8 @@ class SettingsManager {
     
     if (isMobileDevice) {
       this.settings.premiumShaders = false;
-      this.settings.renderDistance = Math.min(this.settings.renderDistance, 3); // lowering default render distance for mobile
-      this.settings.sensitivity = 0.005; // 50 in UI
+      this.settings.renderDistance = Math.min(this.settings.renderDistance, 1); // lowering default render distance for mobile
+       this.settings.sensitivity = 0.005; // 50 in UI
     }
 
     try {
@@ -115,7 +115,7 @@ class SettingsManager {
           this.settings = { ...this.settings, ...parsed };
           
           if (isMobileDevice) {
-             this.settings.renderDistance = Math.min(this.settings.renderDistance, 3);
+             this.settings.renderDistance = Math.min(this.settings.renderDistance, 1);
           }
           
           // Fix for returning mobile users who had performanceMode forced to true by default previously
@@ -147,7 +147,7 @@ class SettingsManager {
                this.settings = { ...this.settings, ...parsed };
                
                if (isMobileDevice) {
-                  this.settings.renderDistance = Math.min(this.settings.renderDistance, 3);
+                  this.settings.renderDistance = Math.min(this.settings.renderDistance, 1);
                }
                
                if (isMobileDevice && !localStorage.getItem('v2_perf_reset_v3_cg')) {
