@@ -53,6 +53,7 @@ export function MapLoadingScreen() {
           exit={{ opacity: 0, transition: { duration: showTapToPlay ? 0 : 0.5 } }}
           className="fixed inset-0 z-[100] flex items-center justify-center mc-font cursor-pointer"
           onClick={handleTapToPlay}
+          onTouchEnd={handleTapToPlay}
           style={showTapToPlay ? { backgroundColor: 'rgba(0, 0, 0, 0.8)' } : {
             backgroundColor: '#1E1E24',
             backgroundImage: 'repeating-linear-gradient(45deg, #2A2A35 25%, transparent 25%, transparent 75%, #2A2A35 75%, #2A2A35), repeating-linear-gradient(45deg, #2A2A35 25%, #1E1E24 25%, #1E1E24 75%, #2A2A35 75%, #2A2A35)',

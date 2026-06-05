@@ -158,7 +158,7 @@ export class Game {
 
   applySettings(settings: GameSettings) {
     const isMobile = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
-    this.world.renderDistance = settings.performanceMode ? (isMobile ? Math.min(settings.renderDistance, 2) : Math.min(settings.renderDistance, 3)) : settings.renderDistance;
+    this.world.renderDistance = settings.performanceMode ? (isMobile ? Math.min(settings.renderDistance, 1) : Math.min(settings.renderDistance, 3)) : settings.renderDistance;
     this.player.sensitivity = settings.sensitivity;
     this.player.baseFOV = settings.fov;
 

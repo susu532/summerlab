@@ -16,7 +16,7 @@ export class PostProcessingManager {
     const usePremiumShaders = settingsManager.getSettings().premiumShaders;
     const isPerformanceMode = settingsManager.getSettings().performanceMode;
     const isMobile = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
-    const disableComposer = isPerformanceMode || isMobile;
+    const disableComposer = isPerformanceMode && isMobile;
     
     if (!disableComposer && (this.game.world.isSummerLab || usePremiumShaders)) {
       if (usePremiumShaders) {
