@@ -373,6 +373,19 @@ export const MobileControlsUI: React.FC<{game?: any}> = ({ game }) => {
         >
           <ScanEye size={20} className="text-white drop-shadow-md" />
         </button>
+        {hasHose && (
+          <button 
+            className={`hidden landscape:flex w-12 h-12 rounded-full border-[2px] items-center justify-center text-white mobile-button pointer-events-auto shadow-md transition-colors ${isColorPickerOpen ? 'shadow-[0_0_15px_rgba(255,255,255,0.5)]' : 'bg-black/40 active:bg-white/40'}`}
+            style={{ 
+              borderColor: fluidColor,
+              backgroundColor: isColorPickerOpen ? fluidColor : undefined
+            }}
+            onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setIsColorPickerOpen(!isColorPickerOpen); }}
+            onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); setIsColorPickerOpen(!isColorPickerOpen); }}
+          >
+            <Palette size={20} className="drop-shadow-md mix-blend-difference text-white" />
+          </button>
+        )}
         <button 
           className="w-12 h-12 rounded-full bg-black/40 border border-white/20 flex items-center justify-center text-white active:bg-white/40 mobile-button pointer-events-auto touch-none"
           onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); window.mobileInputs.triggerPerspective = true; }}
@@ -408,29 +421,22 @@ export const MobileControlsUI: React.FC<{game?: any}> = ({ game }) => {
         >
           <Menu size={20} />
         </button>
-        {hasHose && (
-          <button 
-            className={`hidden landscape:flex w-12 h-12 rounded-full border border-white/20 items-center justify-center text-white mobile-button pointer-events-auto shadow-md transition-colors ${isColorPickerOpen ? 'bg-white/40 shadow-[0_0_15px_rgba(255,255,255,0.5)]' : 'bg-black/40 active:bg-white/40'}`}
-            onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setIsColorPickerOpen(!isColorPickerOpen); }}
-            onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); setIsColorPickerOpen(!isColorPickerOpen); }}
-          >
-            <Palette size={20} className="drop-shadow-md" style={{ color: fluidColor }} />
-          </button>
-        )}
       </div>
 
       {hasHose && isColorPickerOpen && (
         <div 
-          className="hidden landscape:flex absolute pointer-events-auto z-50 animate-in fade-in slide-in-from-top-4 duration-200 bg-black/70 backdrop-blur-xl rounded-3xl p-5 border border-white/20 shadow-2xl flex-col items-center mx-auto"
+          className="hidden landscape:flex absolute pointer-events-auto z-50 animate-in fade-in slide-in-from-top-4 duration-200 bg-black/70 backdrop-blur-xl rounded-3xl p-5 border border-white/20 shadow-2xl flex-row items-center gap-6"
           style={{
             top: 'calc(4rem + env(safe-area-inset-top))',
             right: 'calc(0.5rem + env(safe-area-inset-right))'
           }}
           onTouchMove={(e) => e.stopPropagation()}
         >
-          <div className="mb-3 text-xs font-bold text-white/50 uppercase tracking-widest">Fluid Color</div>
-          <HexColorPicker color={fluidColor} onChange={setFluidColor} />
-          <div className="mt-5 grid grid-cols-4 gap-3 w-full max-w-[200px]">
+          <div className="flex flex-col items-center">
+            <div className="mb-3 text-xs font-bold text-white/50 uppercase tracking-widest">Fluid Color</div>
+            <HexColorPicker color={fluidColor} onChange={setFluidColor} style={{ width: '160px', height: '160px' }} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             {[
               '#3d1c04', // Chocolate
               '#1e90ff', // Water
@@ -443,11 +449,11 @@ export const MobileControlsUI: React.FC<{game?: any}> = ({ game }) => {
             ].map((preset) => (
               <button
                 key={preset}
-                className="w-10 h-10 rounded-full border-[3px] transition-transform shadow-lg mx-auto"
+                className="w-12 h-12 rounded-full border-[3px] transition-transform shadow-lg"
                 style={{ 
                   backgroundColor: preset, 
                   borderColor: fluidColor === preset ? '#ffffff' : 'rgba(255,255,255,0.1)',
-                  transform: fluidColor === preset ? 'scale(1.2)' : 'scale(1)'
+                  transform: fluidColor === preset ? 'scale(1.15)' : 'scale(1)'
                 }}
                 onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setFluidColor(preset); }}
                 onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); setFluidColor(preset); }}
