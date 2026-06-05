@@ -35,8 +35,10 @@ export function MapLoadingScreen() {
     }
   }, [isMapLoading, loadingProgress]);
 
-  const handleTapToPlay = () => {
+  const handleTapToPlay = (e: React.SyntheticEvent) => {
     if (showTapToPlay) {
+      e.preventDefault();
+      e.stopPropagation();
       setIsMapLoading(false);
       document.body.requestPointerLock?.();
     }
@@ -50,7 +52,6 @@ export function MapLoadingScreen() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, transition: { duration: showTapToPlay ? 0 : 0.5 } }}
           className="fixed inset-0 z-[100] flex items-center justify-center mc-font cursor-pointer"
-          onPointerDown={handleTapToPlay}
           onClick={handleTapToPlay}
           style={showTapToPlay ? { backgroundColor: 'rgba(0, 0, 0, 0.8)' } : {
             backgroundColor: '#1E1E24',

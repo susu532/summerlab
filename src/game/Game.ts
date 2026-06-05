@@ -79,8 +79,8 @@ export class Game {
   private getResolvedDpr(perfMode: boolean) {
     const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     if (perfMode) {
-      // Extremely aggressive scaling on mobile to save fill rate
-      return isMobile ? Math.min(0.5, window.devicePixelRatio) : Math.min(0.8, window.devicePixelRatio);
+      // Aggressive scaling on mobile to save fill rate, but not too pixelated
+      return isMobile ? Math.min(0.8, window.devicePixelRatio) : Math.min(0.8, window.devicePixelRatio);
     } else {
       return isMobile ? Math.min(1.0, window.devicePixelRatio) : Math.min(1.0, window.devicePixelRatio); // Let desktop use standard, mobile 1.0
     }

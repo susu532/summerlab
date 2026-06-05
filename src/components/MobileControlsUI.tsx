@@ -91,10 +91,10 @@ export const MobileControlsUI: React.FC = () => {
 
   useEffect(() => {
     const isTablet = window.innerWidth >= 768;
-    maxRadius.current = isTablet ? 140 : 90;
+    maxRadius.current = isTablet ? 100 : 60;
 
     const handleResize = () => {
-      maxRadius.current = window.innerWidth >= 768 ? 140 : 90;
+      maxRadius.current = window.innerWidth >= 768 ? 100 : 60;
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -411,14 +411,14 @@ export const MobileControlsUI: React.FC = () => {
       >
         {!joystickOrigin && (
           <div 
-            className="absolute w-44 h-44 sm:w-48 sm:h-48 md:w-56 md:h-56 landscape:w-[20vw] landscape:h-[20vw] landscape:min-w-[120px] landscape:min-h-[120px] max-w-[240px] max-h-[240px] bg-white/5 border-2 border-white/10 rounded-full flex items-center justify-center pointer-events-none -translate-x-1/2 -translate-y-1/2 left-[30%] top-[60%] landscape:left-[22%] landscape:top-[65%]"
+            className="absolute w-36 h-36 sm:w-40 sm:h-40 md:w-48 md:h-48 landscape:w-[15vw] landscape:h-[15vw] landscape:min-w-[100px] landscape:min-h-[100px] max-w-[200px] max-h-[200px] bg-white/5 border-2 border-white/10 rounded-full flex items-center justify-center pointer-events-none -translate-x-1/2 -translate-y-1/2 left-[30%] top-[60%] landscape:left-[22%] landscape:top-[65%]"
           >
              <div className="w-[40%] h-[40%] border-2 border-white/20 bg-white/10 rounded-full shadow-lg pointer-events-none" />
           </div>
         )}
         {joystickOrigin && (
           <div 
-            className="absolute w-44 h-44 sm:w-48 sm:h-48 md:w-56 md:h-56 landscape:w-[20vw] landscape:h-[20vw] landscape:min-w-[120px] landscape:min-h-[120px] max-w-[240px] max-h-[240px] bg-black/20 border border-white/20 rounded-full flex items-center justify-center p-2 pointer-events-none -translate-x-1/2 -translate-y-1/2"
+            className="absolute w-36 h-36 sm:w-40 sm:h-40 md:w-48 md:h-48 landscape:w-[15vw] landscape:h-[15vw] landscape:min-w-[100px] landscape:min-h-[100px] max-w-[200px] max-h-[200px] bg-black/20 border border-white/20 rounded-full flex items-center justify-center p-2 pointer-events-none -translate-x-1/2 -translate-y-1/2"
             style={{ left: joystickOrigin.x, top: joystickOrigin.y }}
           >
              <div 
@@ -442,7 +442,7 @@ export const MobileControlsUI: React.FC = () => {
       <div 
         className="absolute pointer-events-none w-64 h-64 transform origin-bottom-right scale-[1.0] sm:scale-[1.2] landscape:scale-[0.9] md:landscape:scale-[1.0] lg:landscape:scale-[1.1]"
         style={{
-          bottom: 'calc(0.5rem + env(safe-area-inset-bottom))',
+          bottom: 'calc(3rem + env(safe-area-inset-bottom))',
           right: 'calc(0.5rem + env(safe-area-inset-right))'
         }}
       >

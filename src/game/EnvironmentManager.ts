@@ -679,7 +679,7 @@ export class EnvironmentManager implements ISystem {
       
       let targetIntensity = isDay ? Math.max(0, sunY) * 2.5 + 0.5 : Math.max(0, Math.abs(sunY)) * 0.8;
       if (this.game.world.isSummerLab) {
-       targetIntensity = isDay ? targetIntensity * 0.1 : targetIntensity * 0.2;
+       targetIntensity = isDay ? targetIntensity * 0.8 : Math.max(0.4, targetIntensity * 0.5);
       } else if (isPremium) {
        // RTX Style: much brighter direct sunlight
        targetIntensity = isDay ? targetIntensity * 1.5 : targetIntensity * 1.2;
@@ -709,7 +709,7 @@ export class EnvironmentManager implements ISystem {
             const downBlend = this.game.world.isSummerLab ? new THREE.Color(0xddeeff) : new THREE.Color(0x556633);
             hemiLight.color.copy(skyColor).lerp(upBlend, 0.5);
             hemiLight.groundColor.copy(downBlend).lerp(new THREE.Color(0x111111), isDay ? 0.0 : 0.8);
-            hemiLight.intensity = isDay ? (this.game.world.isSummerLab ? 1.0 : 0.8) : (this.game.world.isSummerLab ? 0.5 : 0.3);
+            hemiLight.intensity = isDay ? (this.game.world.isSummerLab ? 1.2 : 0.8) : (this.game.world.isSummerLab ? 0.8 : 0.3);
             if (isPremium && !this.game.world.isSummerLab) {
                 // Stronger GI bounce feel
                 hemiLight.intensity *= 1.4;
@@ -720,11 +720,12 @@ export class EnvironmentManager implements ISystem {
     const ambientLight = this.game.scene.getObjectByName('ambient') as THREE.AmbientLight;
     if (ambientLight) {
       let ambientIntensity = isDay ? (Math.max(0, sunY) * 0.4 + 0.4) : (Math.abs(sunY) * 0.2 + 0.2);
-      if (this.game.world.isSummerLab) ambientIntensity *= 1.3;
+      if (this.game.world.isSummerLab) ambientIntensity *= 2.0; // Increased to brighten characters
       if (this.game.world.isDungeonDelver) ambientIntensity = 0.01;
 
       if (this.globalWeatherIntensity > 0) {
-        ambientIntensity = THREE.MathUtils.lerp(ambientIntensity, ambientIntensity * 0.6, this.globalWeatherIntensity);
+        const dropFactor = this.game.world.isSummerLab ? 0.8 : 0.6;
+        ambientIntensity = THREE.MathUtils.lerp(ambientIntensity, ambientIntensity * dropFactor, this.globalWeatherIntensity);
       }
       if (isPremium && !this.game.world.isSummerLab) {
          // RTX style: lower flat ambient, rely on directional + hemi + reflections
