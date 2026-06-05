@@ -303,7 +303,7 @@ export const HotbarUI: React.FC<{ game: Game | null }> = ({ game }) => {
         
         {/* Separated Emoji Button */}
         <button
-         
+          className="relative flex justify-center items-center flex-shrink-0 transition-all w-12 h-12 bg-[#8B8B8B] border-[3px] border-l-white border-t-white border-r-[#373737] border-b-[#373737] hover:bg-[#A0A0A0] shadow-xl pointer-events-auto"
           onClick={(e) => {
              e.stopPropagation();
              const newState = !isEmojiWheelOpen;
