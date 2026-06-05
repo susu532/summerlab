@@ -177,19 +177,7 @@ export const HotbarUI: React.FC<{ game: Game | null }> = ({ game }) => {
                         }
                         setEmojiWheelOpen(false);
                      }}
-                     onPointerDown={(e) => {
-                        e.stopPropagation();
-                        if (game) {
-                           game.player.currentEmoji = emoji;
-                           // clear emoji after 4 seconds
-                           setTimeout(() => {
-                               if (game.player.currentEmoji === emoji) {
-                                   game.player.currentEmoji = undefined;
-                               }
-                           }, 4000);
-                        }
-                        setEmojiWheelOpen(false);
-                     }}
+               onPointerDown={(e) => e.stopPropagation()}
                   >
                      <span className="text-3xl">{emoji}</span>
                   </button>
