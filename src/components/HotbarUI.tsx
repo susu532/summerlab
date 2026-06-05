@@ -5,14 +5,10 @@ import { useUIStore } from '../store/uiStore';
 import { Game } from '../game/Game';
 import { ITEM_NAMES } from '../game/Constants';
 import { ItemIcon } from './inventory/Slot';
-import { Mail, X,  Send } from 'lucide-react';
+import { Mail, X, Smile, Send } from 'lucide-react';
 import { settingsManager } from '../game/Settings';
 import { getSecureBackendUrl } from '../utils/security';
 import { motion, AnimatePresence } from 'motion/react';
-
-import { ItemType } from '../game/Inventory';
-import { Smile, Palette } from 'lucide-react';
-import { HexColorPicker } from 'react-colorful';
 
 const EMOJIS = ['👋', '🤣', '😭', '❤️', '🔥', '💀', '👍', '👎'];
 
@@ -23,13 +19,6 @@ export const HotbarUI: React.FC<{ game: Game | null }> = ({ game }) => {
   const isEmojiWheelOpen = useUIStore(state => state.isEmojiWheelOpen);
   const setEmojiWheelOpen = useUIStore(state => state.setEmojiWheelOpen);
   
-  const fluidColor = useGameStore((state) => state.fluidColor);
-  const setFluidColor = useGameStore((state) => state.setFluidColor);
-  const isFluidColorPickerOpen = useGameStore((state) => state.isFluidColorPickerOpen);
-  const setIsFluidColorPickerOpen = useGameStore((state) => state.setIsFluidColorPickerOpen);
-
-  const hasHose = game?.player.inventory.slots[globalHotbarIndex]?.type === ItemType.FLUID_CHOCOLATE_HOSE;
-
   const [hotbarItems, setHotbarItems] = useState<(any | null)[]>(new Array(9).fill(null));
 
   const [dropProgress, setDropProgress] = useState<{ index: number, progress: number } | null>(null);
@@ -177,19 +166,7 @@ export const HotbarUI: React.FC<{ game: Game | null }> = ({ game }) => {
                         }
                         setEmojiWheelOpen(false);
                      }}
-                     onPointerDown={(e) => {
-                        e.stopPropagation();
-                        if (game) {
-                           game.player.currentEmoji = emoji;
-                           // clear emoji after 4 seconds
-                           setTimeout(() => {
-                               if (game.player.currentEmoji === emoji) {
-                                   game.player.currentEmoji = undefined;
-                               }
-                           }, 4000);
-                        }
-                        setEmojiWheelOpen(false);
-                     }}
+                     onPointerDown={(e) => e.stopPropagation()}
                   >
                      <span className="text-3xl">{emoji}</span>
                   </button>
@@ -199,49 +176,6 @@ export const HotbarUI: React.FC<{ game: Game | null }> = ({ game }) => {
       )}
 
       <div className="flex items-end gap-2">
-        {hasHose && (
-          <div className="relative hidden max-md:landscape:flex focus-within:z-[100]">
-            {isFluidColorPickerOpen && (
-              <div 
-                className="absolute bottom-full mb-2 left-0 z-50 bg-gray-900 rounded-xl p-3 flex flex-col gap-2 shadow-2xl border border-white/10 pointer-events-auto"
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <HexColorPicker color={fluidColor} onChange={setFluidColor} style={{ width: '120px', height: '120px' }} />
-                <div className="mt-2 flex gap-1 flex-wrap w-[120px]">
-                  {[
-                    '#3d1c04', // Chocolate
-                    '#1e90ff', // Water
-                    '#ff4500', // Lava
-                    '#32cd32', // Slime
-                    '#a24cbf', // Poison
-                    '#ffcc00', // Honey
-                  ].map((preset) => (
-                    <button
-                      key={preset}
-                      className="w-5 h-5 rounded-full border border-white/20"
-                      style={{ backgroundColor: preset }}
-                      onClick={(e) => { e.stopPropagation(); setFluidColor(preset); }}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-            <button
-               className="relative flex justify-center items-center flex-shrink-0 transition-all w-12 h-12 bg-[#8B8B8B] border-[3px] border-l-white border-t-white border-r-[#373737] border-b-[#373737] hover:bg-[#A0A0A0] shadow-xl pointer-events-auto"
-               onClick={(e) => {
-                 e.stopPropagation();
-                 setIsFluidColorPickerOpen(!isFluidColorPickerOpen);
-               }}
-               onPointerDown={(e) => {
-                 e.stopPropagation();
-                 setIsFluidColorPickerOpen(!isFluidColorPickerOpen);
-               }}
-            >
-              <Palette size={24} color={fluidColor} className="text-white" />
-            </button>
-          </div>
-        )}
         <div 
           className="flex items-center gap-0.5 sm:gap-0 p-1 bg-[#C6C6C6] border-t-2 border-l-2 border-white border-b-2 border-r-2 border-[#555555] shadow-2xl pointer-events-auto max-w-[100vw] sm:max-w-none overflow-x-auto custom-scrollbar rounded-sm"
           onPointerDown={(e) => e.stopPropagation()}
@@ -303,7 +237,6 @@ export const HotbarUI: React.FC<{ game: Game | null }> = ({ game }) => {
         
         {/* Separated Emoji Button */}
         <button
-          className="relative flex justify-center items-center flex-shrink-0 transition-all w-12 h-12 bg-[#8B8B8B] border-[3px] border-l-white border-t-white border-r-[#373737] border-b-[#373737] hover:bg-[#A0A0A0] shadow-xl pointer-events-auto"
           onClick={(e) => {
              e.stopPropagation();
              const newState = !isEmojiWheelOpen;
