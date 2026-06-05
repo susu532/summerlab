@@ -16,7 +16,7 @@ export class ChocolateFluidSystem {
   game: Game;
   
   // Projectiles (air particles)
-  maxProjectiles = 3000;
+  maxProjectiles: number;
   projectileMesh!: THREE.InstancedMesh;
   projectilePositions: THREE.Vector3[] = [];
   projectileVelocities: THREE.Vector3[] = [];
@@ -26,20 +26,20 @@ export class ChocolateFluidSystem {
   projectileColors: THREE.Color[] = [];
   
   // Splats (painted decays)
-  maxSplats = 100000;
+  maxSplats: number;
   splatCount = 0;
   splatMesh!: THREE.InstancedMesh;
   squareSplatMesh!: THREE.InstancedMesh;
   splatDummy = new THREE.Object3D();
   
   splatUpdated = false;
-  minSplatIdx = 100000;
+  minSplatIdx = 0; // Will be set to maxSplats in constructor
   maxSplatIdx = -1;
   lastSplatEmitTime = 0;
   lastCleanEmitTime = 0;
   
   projectileUpdated = false;
-  minProjIdx = 3000;
+  minProjIdx = 0; // Will be set to maxProjectiles in constructor
   maxProjIdx = -1;
 
   emitRequests: { origin: THREE.Vector3, dir: THREE.Vector3, isSpray: boolean, color: THREE.Color, velocity: THREE.Vector3, lastOrigin?: THREE.Vector3 }[] = [];
@@ -63,6 +63,13 @@ export class ChocolateFluidSystem {
 
   constructor(game: Game) {
     this.game = game;
+    const isMobile = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+    this.maxProjectiles = isMobile ? 500 : 3000;
+    this.maxSplats = isMobile ? 15000 : 100000;
+    
+    this.minProjIdx = this.maxProjectiles;
+    this.minSplatIdx = this.maxSplats;
+
     this.initProjectiles();
     this.initSplats();
   }

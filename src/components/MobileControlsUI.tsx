@@ -411,14 +411,14 @@ export const MobileControlsUI: React.FC = () => {
       >
         {!joystickOrigin && (
           <div 
-            className="absolute w-44 h-44 sm:w-48 sm:h-48 md:w-56 md:h-56 landscape:w-[25vw] landscape:h-[25vw] landscape:min-w-[160px] landscape:min-h-[160px] max-w-[240px] max-h-[240px] bg-white/5 border-2 border-white/10 rounded-full flex items-center justify-center pointer-events-none -translate-x-1/2 -translate-y-1/2 left-[30%] top-[60%] landscape:left-[25%] landscape:top-[70%]"
+            className="absolute w-44 h-44 sm:w-48 sm:h-48 md:w-56 md:h-56 landscape:w-[20vw] landscape:h-[20vw] landscape:min-w-[120px] landscape:min-h-[120px] max-w-[240px] max-h-[240px] bg-white/5 border-2 border-white/10 rounded-full flex items-center justify-center pointer-events-none -translate-x-1/2 -translate-y-1/2 left-[30%] top-[60%] landscape:left-[22%] landscape:top-[65%]"
           >
              <div className="w-[40%] h-[40%] border-2 border-white/20 bg-white/10 rounded-full shadow-lg pointer-events-none" />
           </div>
         )}
         {joystickOrigin && (
           <div 
-            className="absolute w-44 h-44 sm:w-48 sm:h-48 md:w-56 md:h-56 landscape:w-[25vw] landscape:h-[25vw] landscape:min-w-[160px] landscape:min-h-[160px] max-w-[240px] max-h-[240px] bg-black/20 border border-white/20 rounded-full flex items-center justify-center p-2 pointer-events-none -translate-x-1/2 -translate-y-1/2"
+            className="absolute w-44 h-44 sm:w-48 sm:h-48 md:w-56 md:h-56 landscape:w-[20vw] landscape:h-[20vw] landscape:min-w-[120px] landscape:min-h-[120px] max-w-[240px] max-h-[240px] bg-black/20 border border-white/20 rounded-full flex items-center justify-center p-2 pointer-events-none -translate-x-1/2 -translate-y-1/2"
             style={{ left: joystickOrigin.x, top: joystickOrigin.y }}
           >
              <div 
@@ -440,7 +440,7 @@ export const MobileControlsUI: React.FC = () => {
 
       {/* Action Buttons (Right side - Diamond layout for thumbs) */}
       <div 
-        className="absolute pointer-events-none w-64 h-64 transform origin-bottom-right scale-[1.2] sm:scale-[1.4] landscape:scale-[1.4] md:landscape:scale-[1.6] lg:landscape:scale-[1.6]"
+        className="absolute pointer-events-none w-64 h-64 transform origin-bottom-right scale-[1.0] sm:scale-[1.2] landscape:scale-[0.9] md:landscape:scale-[1.0] lg:landscape:scale-[1.1]"
         style={{
           bottom: 'calc(0.5rem + env(safe-area-inset-bottom))',
           right: 'calc(0.5rem + env(safe-area-inset-right))'
