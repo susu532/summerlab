@@ -242,18 +242,18 @@ export const ChestUI = React.memo<{
   useEffect(() => {
     const updateScale = () => {
       const w = window.innerWidth;
-      const isLandscape = window.innerWidth > window.innerHeight;
-      let scale = 1;
+      const h = window.innerHeight;
       
-      if (isLandscape) {
-        if (w >= 1280) scale = 1;      // xl
-        else if (w >= 768) scale = 0.8; // md
-        else scale = 0.55;
-      } else {
-        if (w >= 768) scale = 1;       // md
-        else if (w >= 640) scale = 0.8; // sm
-        else scale = 0.6;
-      }
+      // Calculate a flexible scale based on both width and height to always fit the screen
+      // The default chest UI size is roughly 420px wide and 580px high.
+      const maxScaleX = w / 440;
+      const maxScaleY = h / 640;
+      
+      let scale = Math.min(maxScaleX, maxScaleY, 1.2);
+      
+      // Floor it so it doesn't get ridiculously small
+      scale = Math.max(0.3, scale);
+      
       setContainerScale(scale);
     };
 
@@ -291,7 +291,10 @@ export const ChestUI = React.memo<{
         }
       }}
     >
-      <div className="transform scale-[0.6] sm:scale-[0.8] md:scale-100 landscape:scale-[0.55] md:landscape:scale-[0.8] xl:landscape:scale-100 origin-center pointer-events-none w-full h-full flex items-center justify-center">
+      <div 
+        className="transform origin-center pointer-events-none w-full h-full flex items-center justify-center transition-transform duration-100 ease-out"
+        style={{ transform: `scale(${containerScale})` }}
+      >
         <div className="pointer-events-auto flex items-center justify-center w-full" onPointerDown={(e) => e.stopPropagation()}>
           <AnimatePresence>
             <motion.div

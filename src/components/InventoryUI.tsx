@@ -461,19 +461,18 @@ export const InventoryUI = React.memo<InventoryUIProps>(({ inventory, isOpen, on
   useEffect(() => {
     const updateScale = () => {
       const w = window.innerWidth;
-      const isLandscape = window.innerWidth > window.innerHeight;
-      let scale = 1;
+      const h = window.innerHeight;
       
-      if (isLandscape) {
-        if (w >= 1280) scale = 1;      // xl
-        else if (w >= 768) scale = 0.7; // md
-        else if (w >= 640) scale = 0.45; // sm
-        else scale = 0.4;
-      } else {
-        if (w >= 768) scale = 1;       // md
-        else if (w >= 640) scale = 0.8; // sm
-        else scale = 0.6;
-      }
+      // Calculate a flexible scale based on both width and height to always fit the screen
+      // The default inventory UI size is roughly 400px wide and 580px high.
+      const maxScaleX = w / 420;
+      const maxScaleY = h / 620;
+      
+      let scale = Math.min(maxScaleX, maxScaleY, 1.2);
+      
+      // Floor it so it doesn't get ridiculously small, but mobile landscape needs small scale.
+      scale = Math.max(0.3, scale);
+      
       setContainerScale(scale);
     };
 
@@ -499,7 +498,8 @@ export const InventoryUI = React.memo<InventoryUIProps>(({ inventory, isOpen, on
       }}
     >
       <div 
-        className="transform scale-[0.6] sm:scale-[0.8] md:scale-[0.9] lg:scale-100 landscape:scale-[0.4] sm:landscape:scale-[0.45] md:landscape:scale-[0.7] lg:landscape:scale-[0.85] xl:landscape:scale-100 origin-center pointer-events-none"
+        className="transform origin-center pointer-events-none flex items-center justify-center transition-transform duration-100 ease-out"
+        style={{ transform: `scale(${containerScale})` }}
       >
         <div className="pointer-events-auto flex items-center justify-center" onPointerDown={(e) => e.stopPropagation()}>
           <motion.div 

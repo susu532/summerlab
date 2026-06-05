@@ -92,7 +92,7 @@ export function LoadoutUI({ game }: { game: Game | null }) {
       <div className="mc-panel p-6 flex flex-col items-center gap-6 animate-[slideUpFade_0.3s_ease-out_reverse]">
         <h2 className="text-2xl mc-font text-white mc-text-shadow">Choose Your Role</h2>
         
-        <div className="flex gap-6">
+        <div className="flex flex-wrap items-center justify-center gap-6">
           <button
             onClick={() => selectLoadout('painter')}
             className="flex flex-col items-center gap-4 bg-[#7B7B7B] border-[3px] border-t-white border-l-white border-b-[#555555] border-r-[#555555] p-6 hover:brightness-110 active:mc-button-shadow transition-all"

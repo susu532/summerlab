@@ -229,8 +229,8 @@ export class RemotePlayer {
       new THREE.MeshBasicMaterial({ map: skinTexture }) :
       new THREE.MeshStandardMaterial({ 
         map: skinTexture,
-        roughness: 0.4,
-        metalness: 0.2
+        roughness: 0.3,
+        metalness: 0.0
       });
     const outerMaterial = isPerformance ?
       new THREE.MeshBasicMaterial({ 
@@ -244,8 +244,8 @@ export class RemotePlayer {
         transparent: true, 
         alphaTest: 0.1, 
         side: THREE.DoubleSide,
-        roughness: 0.4,
-        metalness: 0.2
+        roughness: 0.3,
+        metalness: 0.0
       });
 
     // Body (The central pivot for the upper body)
@@ -517,22 +517,27 @@ export class RemotePlayer {
       accentEmissive = 0x5959b6;
     }
 
-    const wingMat = new THREE.MeshStandardMaterial({ 
-      color: baseColor, 
-      roughness: 0.3,
-      metalness: 0.8,
-      emissive: emissiveColor,
-      emissiveIntensity: 0.6
-    });
+    const isPerformance = settingsManager.getSettings().performanceMode;
+    const wingMat = isPerformance ?
+      new THREE.MeshBasicMaterial({ color: baseColor }) :
+      new THREE.MeshStandardMaterial({ 
+        color: baseColor, 
+        roughness: 0.3,
+        metalness: 0.8,
+        emissive: emissiveColor,
+        emissiveIntensity: 0.6
+      });
 
     // Glowing accent lines
     const accentGeo = new THREE.BoxGeometry(0.04, 0.04, 0.06);
-    const accentMat = new THREE.MeshStandardMaterial({
-      color: accentColor,
-      emissive: accentEmissive,
-      emissiveIntensity: 2.5,
-      roughness: 0.2
-    });
+    const accentMat = isPerformance ?
+      new THREE.MeshBasicMaterial({ color: accentColor }) :
+      new THREE.MeshStandardMaterial({
+        color: accentColor,
+        emissive: accentEmissive,
+        emissiveIntensity: 2.5,
+        roughness: 0.2
+      });
 
     const createWing = () => {
       const g = new THREE.Group() as any;
@@ -578,7 +583,10 @@ export class RemotePlayer {
   }
 
   private createArmor() {
-    const armorMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, side: THREE.DoubleSide });
+    const isPerformance = settingsManager.getSettings().performanceMode;
+    const armorMat = isPerformance ?
+      new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide }) :
+      new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, side: THREE.DoubleSide });
 
     const createArmorMesh = (geo: THREE.BufferGeometry) => {
       const mesh = new THREE.Mesh(geo, armorMat);

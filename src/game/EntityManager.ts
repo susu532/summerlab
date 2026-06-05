@@ -732,15 +732,16 @@ export class EntityManager {
   }
 
   shootArrow(shooterId: string, startPos: THREE.Vector3, velocity: THREE.Vector3, power: number, isLocalPlayer: boolean) {
+    const isPerformance = settingsManager.getSettings().performanceMode;
     const arrowGroup = new THREE.Group();
     // Shaft
     const shaftGeo = new THREE.BoxGeometry(0.05, 0.05, 0.6);
-    const shaftMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
+    const shaftMat = isPerformance ? new THREE.MeshBasicMaterial({ color: 0x8b4513 }) : new THREE.MeshStandardMaterial({ color: 0x8b4513 });
     const shaft = new THREE.Mesh(shaftGeo, shaftMat);
     arrowGroup.add(shaft);
     // Head
     const headGeo = new THREE.BoxGeometry(0.08, 0.08, 0.1);
-    const headMat = new THREE.MeshStandardMaterial({ color: 0xaabbcc });
+    const headMat = isPerformance ? new THREE.MeshBasicMaterial({ color: 0xaabbcc }) : new THREE.MeshStandardMaterial({ color: 0xaabbcc });
     const head = new THREE.Mesh(headGeo, headMat);
     head.position.z = -0.3;
     arrowGroup.add(head);

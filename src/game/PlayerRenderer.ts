@@ -166,8 +166,8 @@ export class PlayerRenderer {
       new THREE.MeshBasicMaterial({ map: skinTexture }) :
       new THREE.MeshStandardMaterial({ 
         map: skinTexture,
-        roughness: 0.4,
-        metalness: 0.2
+        roughness: 0.3,
+        metalness: 0.0
       });
     const outerMaterial = isPerformance ?
       new THREE.MeshBasicMaterial({ 
@@ -181,8 +181,8 @@ export class PlayerRenderer {
         transparent: true, 
         alphaTest: 0.1, 
         side: THREE.DoubleSide,
-        roughness: 0.4,
-        metalness: 0.2
+        roughness: 0.3,
+        metalness: 0.0
       });
 
     if (this.headMesh) {
@@ -227,8 +227,8 @@ export class PlayerRenderer {
       new THREE.MeshBasicMaterial({ map: skinTexture }) :
       new THREE.MeshStandardMaterial({ 
         map: skinTexture,
-        roughness: 0.4,
-        metalness: 0.2
+        roughness: 0.3,
+        metalness: 0.0
       });
     const outerMaterial = isPerformance ?
       new THREE.MeshBasicMaterial({ 
@@ -242,8 +242,8 @@ export class PlayerRenderer {
         transparent: true, 
         alphaTest: 0.1, 
         side: THREE.DoubleSide,
-        roughness: 0.4,
-        metalness: 0.2
+        roughness: 0.3,
+        metalness: 0.0
       });
 
     // Body
@@ -262,7 +262,8 @@ export class PlayerRenderer {
     
     // Backpack
     const packGeo = new THREE.BoxGeometry(0.3, 0.4, 0.15);
-    const packMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.9 }); 
+    const packMat = isPerformance ? new THREE.MeshBasicMaterial({ color: 0x5c4033 }) 
+                                  : new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.9 }); 
     const backpack = new THREE.Mesh(packGeo, packMat);
     backpack.position.set(0, 0, 0.18);
     backpack.castShadow = true;
@@ -354,7 +355,8 @@ export class PlayerRenderer {
 
     // Cape
     const capeGeo = new THREE.BoxGeometry(0.4, 1.0, 0.05);
-    const capeMat = new THREE.MeshStandardMaterial({ color: 0xcc3333, roughness: 0.7 });
+    const capeMat = isPerformance ? new THREE.MeshBasicMaterial({ color: 0xcc3333 })
+                                  : new THREE.MeshStandardMaterial({ color: 0xcc3333, roughness: 0.7 });
     this.capeMesh = new THREE.Mesh(capeGeo, capeMat);
     this.capeMesh.position.set(0, 0.3, 0.1); 
     this.capeMesh.geometry.translate(0, -0.5, 0);
@@ -370,11 +372,9 @@ export class PlayerRenderer {
 
     // Held Item (3rd Person)
     const itemGeo = new THREE.BoxGeometry(0.25, 0.25, 0.25);
-    const itemMat = new THREE.MeshStandardMaterial({ 
-      transparent: true, 
-      alphaTest: 0.5,
-      roughness: 0.8
-    });
+    const itemMat = isPerformance ? 
+      new THREE.MeshBasicMaterial({ transparent: true, alphaTest: 0.5 }) :
+      new THREE.MeshStandardMaterial({ transparent: true, alphaTest: 0.5, roughness: 0.8 });
     this.heldItemMesh = new THREE.Mesh(itemGeo, itemMat);
     this.heldItemMesh.position.set(0, -0.45, -0.15);
     this.heldItemMesh.visible = false;
@@ -396,6 +396,7 @@ export class PlayerRenderer {
   }
 
   private createGlider() {
+    const isPerformance = settingsManager.getSettings().performanceMode;
     this.gliderGroup = new THREE.Group();
     // Positioned at the upper back
     this.gliderGroup.position.set(0, 0.55, 0.25);
@@ -426,22 +427,26 @@ export class PlayerRenderer {
     wingGeo.translate(0, 0, -0.02);
 
     // Sleek dark grey with a purple sheen
-    const wingMat = new THREE.MeshStandardMaterial({ 
-      color: 0x1f1f2e, 
-      roughness: 0.3,
-      metalness: 0.8,
-      emissive: 0x2a1b4d, // subtle purple/indigo glow
-      emissiveIntensity: 0.6
-    });
+    const wingMat = isPerformance ?
+      new THREE.MeshBasicMaterial({ color: 0x1f1f2e }) :
+      new THREE.MeshStandardMaterial({ 
+        color: 0x1f1f2e, 
+        roughness: 0.3,
+        metalness: 0.8,
+        emissive: 0x2a1b4d, // subtle purple/indigo glow
+        emissiveIntensity: 0.6
+      });
 
     // Glowing accent lines
     const accentGeo = new THREE.BoxGeometry(0.04, 0.04, 0.06);
-    const accentMat = new THREE.MeshStandardMaterial({
-      color: 0x8a2be2, // Blue-violet
-      emissive: 0x9b59b6,
-      emissiveIntensity: 2.5,
-      roughness: 0.2
-    });
+    const accentMat = isPerformance ? 
+      new THREE.MeshBasicMaterial({ color: 0x8a2be2 }) :
+      new THREE.MeshStandardMaterial({
+        color: 0x8a2be2, // Blue-violet
+        emissive: 0x9b59b6,
+        emissiveIntensity: 2.5,
+        roughness: 0.2
+      });
 
     const createWing = () => {
       const g = new THREE.Group() as any;
@@ -487,8 +492,11 @@ export class PlayerRenderer {
   }
 
   private createArmor() {
+    const isPerformance = settingsManager.getSettings().performanceMode;
     // Hidden by default, updated on team change
-    const armorMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, side: THREE.DoubleSide });
+    const armorMat = isPerformance ?
+      new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide }) :
+      new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, side: THREE.DoubleSide });
 
     const createArmorMesh = (w: number, h: number, d: number) => {
       const geo = new THREE.BoxGeometry(w, h, d);
@@ -624,8 +632,8 @@ export class PlayerRenderer {
       new THREE.MeshBasicMaterial({ map: skinTexture }) :
       new THREE.MeshStandardMaterial({ 
         map: skinTexture,
-        roughness: 0.4,
-        metalness: 0.2
+        roughness: 0.3,
+        metalness: 0.0
       });
     
     const armGeo = new THREE.BoxGeometry(0.24, 0.24, 0.7); // Robust arm
@@ -663,8 +671,8 @@ export class PlayerRenderer {
       new THREE.MeshBasicMaterial({ map: skinTexture }) :
       new THREE.MeshStandardMaterial({ 
         map: skinTexture,
-        roughness: 0.4,
-        metalness: 0.2
+        roughness: 0.3,
+        metalness: 0.0
       });
     
     // Position arm in the lower left corner

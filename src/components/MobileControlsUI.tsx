@@ -442,7 +442,7 @@ export const MobileControlsUI: React.FC = () => {
       <div 
         className="absolute pointer-events-none w-64 h-64 transform origin-bottom-right scale-[1.0] sm:scale-[1.2] landscape:scale-[0.9] md:landscape:scale-[1.0] lg:landscape:scale-[1.1]"
         style={{
-          bottom: 'calc(3rem + env(safe-area-inset-bottom))',
+          bottom: 'calc(5rem + env(safe-area-inset-bottom))',
           right: 'calc(0.5rem + env(safe-area-inset-right))'
         }}
       >

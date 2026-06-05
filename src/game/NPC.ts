@@ -190,10 +190,10 @@ export class NPC {
     const skinTexture = generateSkin(this.id);
     const skinMaterial = isPerformance ?
       new THREE.MeshBasicMaterial({ map: skinTexture }) :
-      new THREE.MeshStandardMaterial({ map: skinTexture, roughness: 0.9, metalness: 0.1 });
+      new THREE.MeshStandardMaterial({ map: skinTexture, roughness: 0.9, metalness: 0.0 });
     const outerMaterial = isPerformance ?
       new THREE.MeshBasicMaterial({ map: skinTexture, transparent: true, alphaTest: 0.1, side: THREE.DoubleSide }) :
-      new THREE.MeshStandardMaterial({ map: skinTexture, transparent: true, alphaTest: 0.1, side: THREE.DoubleSide, roughness: 0.9, metalness: 0.1 });
+      new THREE.MeshStandardMaterial({ map: skinTexture, transparent: true, alphaTest: 0.1, side: THREE.DoubleSide, roughness: 0.9, metalness: 0.0 });
 
     // Head
     const headGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
