@@ -72,6 +72,8 @@ export const MobileControlsUI: React.FC = () => {
 
   const lookTouchId = useRef<number | null>(null);
   const lastLookPos = useRef<{ x: number, y: number } | null>(null);
+  const lookTouchStartPos = useRef<{ x: number, y: number } | null>(null);
+  const lookHasMoved = useRef<boolean>(false);
   
   const lastZoomLookPos = useRef<{ x: number, y: number } | null>(null);
 
@@ -89,10 +91,10 @@ export const MobileControlsUI: React.FC = () => {
 
   useEffect(() => {
     const isTablet = window.innerWidth >= 768;
-    maxRadius.current = isTablet ? 96 : 56;
+    maxRadius.current = isTablet ? 140 : 90;
 
     const handleResize = () => {
-      maxRadius.current = window.innerWidth >= 768 ? 96 : 56;
+      maxRadius.current = window.innerWidth >= 768 ? 140 : 90;
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -110,20 +112,36 @@ export const MobileControlsUI: React.FC = () => {
       for (let i = 0; i < e.changedTouches.length; i++) {
         const touch = e.changedTouches[i];
         
-        if (target && target.closest('.mobile-button')) continue;
+        const target = e.target as HTMLElement;
+        const isButton = target && target.closest('.mobile-button');
+        const isPassThrough = target && target.closest('.pass-through-button');
 
         const isBottomLeft = touch.clientX < window.innerWidth * 0.5 && touch.clientY > window.innerHeight * 0.2;
         
-        if (isBottomLeft && joystickTouchId.current === null) {
+        if (isBottomLeft && joystickTouchId.current === null && !isButton) {
             joystickTouchId.current = touch.identifier;
             joystickOriginRef.current = { x: touch.clientX, y: touch.clientY };
             setJoystickOrigin({ x: touch.clientX, y: touch.clientY });
             continue; // Dedicated joystick touch
         }
 
+        if (isButton && isPassThrough) {
+             if (lookTouchId.current === null && joystickTouchId.current !== touch.identifier) {
+                 lookTouchId.current = touch.identifier;
+                 lastLookPos.current = { x: touch.clientX, y: touch.clientY };
+                 lookTouchStartPos.current = { x: touch.clientX, y: touch.clientY };
+                 lookHasMoved.current = false;
+             }
+             continue;
+        }
+
+        if (isButton) continue;
+
         if (lookTouchId.current === null && joystickTouchId.current !== touch.identifier) {
             lookTouchId.current = touch.identifier;
             lastLookPos.current = { x: touch.clientX, y: touch.clientY };
+            lookTouchStartPos.current = { x: touch.clientX, y: touch.clientY };
+            lookHasMoved.current = false;
         }
 
         if (joystickTouchId.current !== touch.identifier) {
@@ -199,10 +217,21 @@ export const MobileControlsUI: React.FC = () => {
           const dx = touch.clientX - lastLookPos.current.x;
           const dy = touch.clientY - lastLookPos.current.y;
           
-          const isLandscape = window.innerWidth > window.innerHeight;
-          const scale = window.innerWidth >= 768 ? 1.0 : (isLandscape ? 2.5 : 1.5);
-          window.mobileInputs.lookDeltaX += dx * scale;
-          window.mobileInputs.lookDeltaY += dy * scale;
+          if (lookTouchStartPos.current) {
+            const totalDx = touch.clientX - lookTouchStartPos.current.x;
+            const totalDy = touch.clientY - lookTouchStartPos.current.y;
+            
+            if (!lookHasMoved.current && (Math.abs(totalDx) > 5 || Math.abs(totalDy) > 5)) {
+                lookHasMoved.current = true;
+            }
+          }
+
+          if (lookHasMoved.current) {
+            const isLandscape = window.innerWidth > window.innerHeight;
+            const scale = window.innerWidth >= 768 ? 1.0 : (isLandscape ? 2.5 : 1.5);
+            window.mobileInputs.lookDeltaX += dx * scale;
+            window.mobileInputs.lookDeltaY += dy * scale;
+          }
           lastLookPos.current = { x: touch.clientX, y: touch.clientY };
         }
       }
@@ -238,6 +267,8 @@ export const MobileControlsUI: React.FC = () => {
         if (touch.identifier === lookTouchId.current) {
           lookTouchId.current = null;
           lastLookPos.current = null;
+          lookTouchStartPos.current = null;
+          lookHasMoved.current = false;
         }
       }
       
@@ -285,7 +316,7 @@ export const MobileControlsUI: React.FC = () => {
     <div className="absolute inset-0 pointer-events-none z-40 overflow-hidden touch-none">
       {/* Top HUD Buttons */}
       <div 
-        className="absolute flex gap-2 pointer-events-auto transform origin-top-right scale-[0.8] landscape:scale-[0.8]"
+        className="absolute flex gap-2 pointer-events-auto transform origin-top-right scale-[0.8] landscape:scale-[1.0] md:landscape:scale-[1.1]"
         style={{ 
           top: 'calc(0.5rem + env(safe-area-inset-top))', 
           right: 'calc(0.5rem + env(safe-area-inset-right))' 
@@ -380,18 +411,18 @@ export const MobileControlsUI: React.FC = () => {
       >
         {!joystickOrigin && (
           <div 
-            className="absolute w-32 h-32 md:w-36 md:h-36 bg-white/5 border-2 border-white/10 rounded-full flex items-center justify-center pointer-events-none -translate-x-1/2 -translate-y-1/2 left-[30%] top-[60%] landscape:left-[25%] landscape:top-[75%]"
+            className="absolute w-44 h-44 sm:w-48 sm:h-48 md:w-56 md:h-56 landscape:w-[25vw] landscape:h-[25vw] landscape:min-w-[160px] landscape:min-h-[160px] max-w-[240px] max-h-[240px] bg-white/5 border-2 border-white/10 rounded-full flex items-center justify-center pointer-events-none -translate-x-1/2 -translate-y-1/2 left-[30%] top-[60%] landscape:left-[25%] landscape:top-[70%]"
           >
-             <div className="w-12 h-12 md:w-16 md:h-16 border-2 border-white/20 bg-white/10 rounded-full shadow-lg pointer-events-none" />
+             <div className="w-[40%] h-[40%] border-2 border-white/20 bg-white/10 rounded-full shadow-lg pointer-events-none" />
           </div>
         )}
         {joystickOrigin && (
           <div 
-            className="absolute w-32 h-32 md:w-36 md:h-36 bg-black/20 border border-white/20 rounded-full flex items-center justify-center p-2 pointer-events-none -translate-x-1/2 -translate-y-1/2"
+            className="absolute w-44 h-44 sm:w-48 sm:h-48 md:w-56 md:h-56 landscape:w-[25vw] landscape:h-[25vw] landscape:min-w-[160px] landscape:min-h-[160px] max-w-[240px] max-h-[240px] bg-black/20 border border-white/20 rounded-full flex items-center justify-center p-2 pointer-events-none -translate-x-1/2 -translate-y-1/2"
             style={{ left: joystickOrigin.x, top: joystickOrigin.y }}
           >
              <div 
-                className={`w-12 h-12 md:w-16 md:h-16 border-2 rounded-full shadow-lg pointer-events-none flex items-center justify-center transition-colors ${window.mobileInputs.isSprinting ? 'bg-white/60 border-white/80' : 'bg-white/40 border-white/60'}`}
+                className={`w-[45%] h-[45%] border-2 rounded-full shadow-lg pointer-events-none flex items-center justify-center transition-colors ${window.mobileInputs.isSprinting ? 'bg-white/60 border-white/80' : 'bg-white/40 border-white/60'}`}
                 style={{ 
                    transform: `translate(${joystick.x * 125}%, ${joystick.y * 125}%)`,
                    transition: joystickPointerId.current === null ? 'transform 0.15s ease-out' : 'none'
@@ -409,7 +440,7 @@ export const MobileControlsUI: React.FC = () => {
 
       {/* Action Buttons (Right side - Diamond layout for thumbs) */}
       <div 
-        className="absolute pointer-events-none w-44 h-44 landscape:w-36 landscape:h-36 transform origin-bottom-right scale-[0.75] sm:scale-90 landscape:scale-[0.65] md:landscape:scale-[0.8] lg:landscape:scale-[0.75]"
+        className="absolute pointer-events-none w-64 h-64 transform origin-bottom-right scale-[1.2] sm:scale-[1.4] landscape:scale-[1.4] md:landscape:scale-[1.6] lg:landscape:scale-[1.6]"
         style={{
           bottom: 'calc(0.5rem + env(safe-area-inset-bottom))',
           right: 'calc(0.5rem + env(safe-area-inset-right))'
@@ -417,68 +448,32 @@ export const MobileControlsUI: React.FC = () => {
       >
         {/* Jump Button (Top) */}
         <button 
-          className="absolute top-0 left-1/2 -translate-x-1/2 mobile-button w-14 h-14 landscape:w-12 landscape:h-12 rounded-full bg-white/20 border-[3px] border-white/50 flex items-center justify-center active:bg-white/40 pointer-events-auto shadow-lg"
-          onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); window.mobileInputs.isJumping = true; e.currentTarget.setPointerCapture?.(e.pointerId); }}
-          onPointerUp={(e) => { e.preventDefault(); e.stopPropagation(); window.mobileInputs.isJumping = false; e.currentTarget.releasePointerCapture?.(e.pointerId); }}
-          onPointerCancel={(e) => { e.stopPropagation(); window.mobileInputs.isJumping = false; e.currentTarget.releasePointerCapture?.(e.pointerId); }}
-          onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); window.mobileInputs.isJumping = true; }}
-          onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); window.mobileInputs.isJumping = false; }}
-          onTouchCancel={(e) => { e.stopPropagation(); window.mobileInputs.isJumping = false; }}
+          className="absolute top-0 left-1/2 -translate-x-1/2 mobile-button pass-through-button w-18 h-18 rounded-full bg-white/20 border-[3px] border-white/50 flex items-center justify-center active:bg-white/40 pointer-events-auto shadow-lg"
+          onTouchStart={(e) => { window.mobileInputs.isJumping = true; }}
+          onTouchEnd={(e) => { window.mobileInputs.isJumping = false; }}
+          onTouchCancel={(e) => { window.mobileInputs.isJumping = false; }}
         >
-          <ArrowUp size={24} className="text-white drop-shadow-md" />
+          <ArrowUp size={30} className="text-white drop-shadow-md" />
         </button>
 
         {/* Interact Button (Left) */}
         <button 
-          className="absolute top-1/2 left-0 -translate-y-1/2 mobile-button w-14 h-14 landscape:w-12 landscape:h-12 rounded-full bg-white/20 border-[3px] border-white/50 flex items-center justify-center active:bg-white/40 pointer-events-auto shadow-lg"
-          onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); window.mobileInputs.isInteracting = true; e.currentTarget.setPointerCapture?.(e.pointerId); }}
-          onPointerUp={(e) => { e.preventDefault(); e.stopPropagation(); window.mobileInputs.isInteracting = false; e.currentTarget.releasePointerCapture?.(e.pointerId); }}
-          onPointerCancel={(e) => { e.stopPropagation(); window.mobileInputs.isInteracting = false; e.currentTarget.releasePointerCapture?.(e.pointerId); }}
-          onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); window.mobileInputs.isInteracting = true; }}
-          onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); window.mobileInputs.isInteracting = false; }}
-          onTouchCancel={(e) => { e.stopPropagation(); window.mobileInputs.isInteracting = false; }}
+          className="absolute top-1/2 left-0 -translate-y-1/2 mobile-button pass-through-button w-18 h-18 rounded-full bg-white/20 border-[3px] border-white/50 flex items-center justify-center active:bg-white/40 pointer-events-auto shadow-lg"
+          onTouchStart={(e) => { window.mobileInputs.isInteracting = true; }}
+          onTouchEnd={(e) => { window.mobileInputs.isInteracting = false; }}
+          onTouchCancel={(e) => { window.mobileInputs.isInteracting = false; }}
         >
-          <Hand size={24} className="text-white drop-shadow-md" />
+          <Hand size={30} className="text-white drop-shadow-md" />
         </button>
         
         {/* Attack/Mine Button (Right) */}
         <button 
-          className="absolute top-1/2 right-0 -translate-y-1/2 mobile-button w-16 h-16 landscape:w-14 landscape:h-14 rounded-full bg-white/20 border-[3px] border-white/50 flex items-center justify-center active:bg-white/40 pointer-events-auto shadow-lg"
-          onPointerDown={(e) => { 
-            e.preventDefault(); 
-            e.stopPropagation();
-            isButtonAttacking.current = true;
-            window.mobileInputs.isAttacking = true;
-            e.currentTarget.setPointerCapture?.(e.pointerId); 
-          }}
-          onPointerUp={(e) => { 
-            e.preventDefault(); 
-            e.stopPropagation();
-            isButtonAttacking.current = false;
-            
-            let anyHolding = false;
-            activeTaps.current.forEach(t => { if (t.isHolding) anyHolding = true; });
-            window.mobileInputs.isAttacking = isButtonAttacking.current || anyHolding;
-            
-            e.currentTarget.releasePointerCapture?.(e.pointerId); 
-          }}
-          onPointerCancel={(e) => { 
-            e.stopPropagation();
-            isButtonAttacking.current = false;
-            let anyHolding = false;
-            activeTaps.current.forEach(t => { if (t.isHolding) anyHolding = true; });
-            window.mobileInputs.isAttacking = isButtonAttacking.current || anyHolding;
-            e.currentTarget.releasePointerCapture?.(e.pointerId); 
-          }}
+          className="absolute top-1/2 right-0 -translate-y-1/2 mobile-button pass-through-button w-22 h-22 rounded-full bg-white/20 border-[3px] border-white/50 flex items-center justify-center active:bg-white/40 pointer-events-auto shadow-lg"
           onTouchStart={(e) => { 
-            e.preventDefault(); 
-            e.stopPropagation();
             isButtonAttacking.current = true;
             window.mobileInputs.isAttacking = true;
           }}
           onTouchEnd={(e) => { 
-            e.preventDefault(); 
-            e.stopPropagation();
             isButtonAttacking.current = false;
             
             let anyHolding = false;
@@ -486,27 +481,23 @@ export const MobileControlsUI: React.FC = () => {
             window.mobileInputs.isAttacking = isButtonAttacking.current || anyHolding;
           }}
           onTouchCancel={(e) => { 
-            e.stopPropagation();
             isButtonAttacking.current = false;
             let anyHolding = false;
             activeTaps.current.forEach(t => { if (t.isHolding) anyHolding = true; });
             window.mobileInputs.isAttacking = isButtonAttacking.current || anyHolding;
           }}
         >
-          <Sword size={28} className="text-white drop-shadow-md" />
+          <Sword size={36} className="text-white drop-shadow-md" />
         </button>
 
         {/* Crouch Button (Bottom) */}
         <button 
-          className="absolute bottom-0 left-1/2 -translate-x-1/2 mobile-button w-12 h-12 landscape:w-10 landscape:h-10 rounded-full bg-white/20 border-[3px] border-white/40 flex items-center justify-center active:bg-white/40 opacity-80 pointer-events-auto shadow-md"
-          onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); window.mobileInputs.isCrouching = true; e.currentTarget.setPointerCapture?.(e.pointerId); }}
-          onPointerUp={(e) => { e.preventDefault(); e.stopPropagation(); window.mobileInputs.isCrouching = false; e.currentTarget.releasePointerCapture?.(e.pointerId); }}
-          onPointerCancel={(e) => { e.stopPropagation(); window.mobileInputs.isCrouching = false; e.currentTarget.releasePointerCapture?.(e.pointerId); }}
-          onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); window.mobileInputs.isCrouching = true; }}
-          onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); window.mobileInputs.isCrouching = false; }}
-          onTouchCancel={(e) => { e.stopPropagation(); window.mobileInputs.isCrouching = false; }}
+          className="absolute bottom-0 left-1/2 -translate-x-1/2 mobile-button pass-through-button w-16 h-16 rounded-full bg-white/20 border-[3px] border-white/40 flex items-center justify-center active:bg-white/40 opacity-80 pointer-events-auto shadow-md"
+          onTouchStart={(e) => { window.mobileInputs.isCrouching = true; }}
+          onTouchEnd={(e) => { window.mobileInputs.isCrouching = false; }}
+          onTouchCancel={(e) => { window.mobileInputs.isCrouching = false; }}
         >
-          <ArrowDown size={20} className="text-white drop-shadow-md" />
+          <ArrowDown size={26} className="text-white drop-shadow-md" />
         </button>
       </div>
     </div>

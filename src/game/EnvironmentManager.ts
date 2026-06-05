@@ -49,12 +49,14 @@ export class EnvironmentManager implements ISystem {
     dirLight.shadow.camera.right = shadowSize / 2;
     dirLight.shadow.camera.near = 0.5;
     dirLight.shadow.camera.far = 300;
-    dirLight.shadow.mapSize.width = 4096;
-    dirLight.shadow.mapSize.height = 4096;
+    const isMobile = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+    const shadowRes = isMobile ? 1024 : 4096;
+    dirLight.shadow.mapSize.width = shadowRes;
+    dirLight.shadow.mapSize.height = shadowRes;
     dirLight.shadow.bias = this.game.world.isSummerLab ? -0.0005 : 0.0015; // Adjust based on mode
     dirLight.shadow.normalBias = this.game.world.isSummerLab ? 0.02 : 0.12; // Lower normal bias for summerlab
     dirLight.shadow.autoUpdate = true;
-    dirLight.shadow.radius = this.game.world.isSummerLab ? 6 : 1; // Super soft shadow for summerlab
+    dirLight.shadow.radius = this.game.world.isSummerLab && !isMobile ? 6 : (this.game.world.isSummerLab ? 2 : 1); // Super soft shadow for summerlab on desktop
     
     // Add VSM or PCF softness if needed through renderer? Three handles radius based on map type.
     
