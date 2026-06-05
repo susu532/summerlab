@@ -1,14 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { useGameStore } from '../store/gameStore';
 import { useUIStore } from '../store/uiStore';
 import { Game } from '../game/Game';
 import { ITEM_NAMES } from '../game/Constants';
 import { ItemIcon } from './inventory/Slot';
-import { Mail, X, Smile, Send } from 'lucide-react';
 import { settingsManager } from '../game/Settings';
-import { getSecureBackendUrl } from '../utils/security';
-import { motion, AnimatePresence } from 'motion/react';
+import { ItemType } from '../game/Inventory';
+import { Smile, Palette } from 'lucide-react';
+import { HexColorPicker } from 'react-colorful';
 
 const EMOJIS = ['👋', '🤣', '😭', '❤️', '🔥', '💀', '👍', '👎'];
 
@@ -19,49 +18,24 @@ export const HotbarUI: React.FC<{ game: Game | null }> = ({ game }) => {
   const isEmojiWheelOpen = useUIStore(state => state.isEmojiWheelOpen);
   const setEmojiWheelOpen = useUIStore(state => state.setEmojiWheelOpen);
   
+  const fluidColor = useGameStore((state) => state.fluidColor);
+  const setFluidColor = useGameStore((state) => state.setFluidColor);
+  const isFluidColorPickerOpen = useGameStore((state) => state.isFluidColorPickerOpen);
+  const setIsFluidColorPickerOpen = useGameStore((state) => state.setIsFluidColorPickerOpen);
+
+  const hasHose = game?.player.inventory.slots[globalHotbarIndex]?.type === ItemType.FLUID_CHOCOLATE_HOSE;
+
   const [hotbarItems, setHotbarItems] = useState<(any | null)[]>(new Array(9).fill(null));
 
   const [dropProgress, setDropProgress] = useState<{ index: number, progress: number } | null>(null);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const progressInterval = useRef<NodeJS.Timeout | null>(null);
 
-  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
-  const [feedbackText, setFeedbackText] = useState("");
-  const [feedbackKeybind, setFeedbackKeybind] = useState(() => settingsManager.getSettings().keybinds.feedback || 'KeyG');
-
-  useEffect(() => {
-    return settingsManager.subscribe((settings) => {
-      if (settings.keybinds.feedback) {
-        setFeedbackKeybind(settings.keybinds.feedback);
-      }
-    });
-  }, []);
-
   useEffect(() => {
     if (game) {
       setHotbarItems([...game.player.inventory.slots.slice(0, 9)]);
     }
   }, [game, inventoryVersion]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
-      if (e.code === feedbackKeybind) {
-        setShowFeedbackModal(prev => {
-          const next = !prev;
-          if (next) {
-            document.exitPointerLock();
-            if (game && game.controls) {
-              game.controls.unlock();
-            }
-          }
-          return next;
-        });
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [game, feedbackKeybind]);
 
   const handlePointerDown = (e: React.PointerEvent, i: number) => {
     e.stopPropagation();
@@ -102,33 +76,9 @@ export const HotbarUI: React.FC<{ game: Game | null }> = ({ game }) => {
     };
   }, []);
 
-  const sendFeedback = async () => {
-    if (!feedbackText.trim()) return;
-    try {
-      const baseUrl = getSecureBackendUrl(import.meta.env.VITE_BACKEND_URL as string);
-      const resp = await fetch(`${baseUrl}/api/feedback`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: feedbackText })
-      });
-      const data = await resp.json();
-      if (data.warning) {
-        alert("Feedback left locally.\nNotice: " + data.warning + "\n(To forward to Discord, set up a proper Webhook URL in AI Studio variables.)");
-      } else {
-        alert("Feedback sent successfully!");
-      }
-    } catch (e) {
-      console.error('Failed to send feedback', e);
-      alert("Failed to send feedback.");
-    }
-    setShowFeedbackModal(false);
-    setFeedbackText("");
-  };
-
   if (!game) return null;
 
   return (
-    
     <div className="absolute bottom-0 sm:bottom-2 md:bottom-4 left-1/2 -translate-x-1/2 pointer-events-none safe-mb z-[60] scale-[0.65] sm:scale-85 md:scale-100 landscape:scale-[0.65] sm:landscape:scale-85 md:landscape:scale-90 lg:landscape:scale-100 origin-bottom">
       
       {/* Emoji Wheel */}
@@ -166,7 +116,19 @@ export const HotbarUI: React.FC<{ game: Game | null }> = ({ game }) => {
                         }
                         setEmojiWheelOpen(false);
                      }}
-                     onPointerDown={(e) => e.stopPropagation()}
+                     onPointerDown={(e) => {
+                        e.stopPropagation();
+                        if (game) {
+                           game.player.currentEmoji = emoji;
+                           // clear emoji after 4 seconds
+                           setTimeout(() => {
+                               if (game.player.currentEmoji === emoji) {
+                                   game.player.currentEmoji = undefined;
+                               }
+                           }, 4000);
+                        }
+                        setEmojiWheelOpen(false);
+                     }}
                   >
                      <span className="text-3xl">{emoji}</span>
                   </button>
@@ -176,6 +138,49 @@ export const HotbarUI: React.FC<{ game: Game | null }> = ({ game }) => {
       )}
 
       <div className="flex items-end gap-2">
+        {hasHose && (
+          <div className="relative hidden max-md:landscape:flex focus-within:z-[100]">
+            {isFluidColorPickerOpen && (
+              <div 
+                className="absolute bottom-full mb-2 left-0 z-50 bg-gray-900 rounded-xl p-3 flex flex-col gap-2 shadow-2xl border border-white/10 pointer-events-auto"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <HexColorPicker color={fluidColor} onChange={setFluidColor} style={{ width: '120px', height: '120px' }} />
+                <div className="mt-2 flex gap-1 flex-wrap w-[120px]">
+                  {[
+                    '#3d1c04', // Chocolate
+                    '#1e90ff', // Water
+                    '#ff4500', // Lava
+                    '#32cd32', // Slime
+                    '#a24cbf', // Poison
+                    '#ffcc00', // Honey
+                  ].map((preset) => (
+                    <button
+                      key={preset}
+                      className="w-5 h-5 rounded-full border border-white/20"
+                      style={{ backgroundColor: preset }}
+                      onClick={(e) => { e.stopPropagation(); setFluidColor(preset); }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            <button
+               className="relative flex justify-center items-center flex-shrink-0 transition-all w-12 h-12 bg-[#8B8B8B] border-[3px] border-l-white border-t-white border-r-[#373737] border-b-[#373737] hover:bg-[#A0A0A0] shadow-xl pointer-events-auto"
+               onClick={(e) => {
+                 e.stopPropagation();
+                 setIsFluidColorPickerOpen(!isFluidColorPickerOpen);
+               }}
+               onPointerDown={(e) => {
+                 e.stopPropagation();
+                 setIsFluidColorPickerOpen(!isFluidColorPickerOpen);
+               }}
+            >
+              <Palette size={24} color={fluidColor} className="text-white" />
+            </button>
+          </div>
+        )}
         <div 
           className="flex items-center gap-0.5 sm:gap-0 p-1 bg-[#C6C6C6] border-t-2 border-l-2 border-white border-b-2 border-r-2 border-[#555555] shadow-2xl pointer-events-auto max-w-[100vw] sm:max-w-none overflow-x-auto custom-scrollbar rounded-sm"
           onPointerDown={(e) => e.stopPropagation()}
@@ -237,107 +242,30 @@ export const HotbarUI: React.FC<{ game: Game | null }> = ({ game }) => {
         
         {/* Separated Emoji Button */}
         <button
+          className="relative flex justify-center items-center flex-shrink-0 transition-all w-12 h-12 bg-[#8B8B8B] border-[3px] border-l-white border-t-white border-r-[#373737] border-b-[#373737] hover:bg-[#A0A0A0] shadow-xl pointer-events-auto"
           onClick={(e) => {
              e.stopPropagation();
              const newState = !isEmojiWheelOpen;
              setEmojiWheelOpen(newState);
              if (newState && document.pointerLockElement) {
-                 (window as any).suppressPauseMenu = true;
                  document.exitPointerLock();
              }
           }}
-          onPointerDown={(e) => e.stopPropagation()}
-          className="pointer-events-auto bg-[#C6C6C6] border-t-2 border-l-2 border-white border-b-2 border-r-2 border-[#555555] p-2 hover:bg-[#8B8B8B] transition-colors rounded-sm group relative flex-shrink-0 h-12 w-12 sm:h-14 sm:w-14 flex items-center justify-center"
-          title="Open Emoji Wheel (Key: H)"
-        >
-           <Smile className="w-6 h-6 sm:w-8 sm:h-8 text-[#555555] group-hover:text-white" />
-           <span className="absolute -top-3 right-0 bg-black/60 text-white text-[10px] px-1 rounded">H</span>
-        </button>
-
-        <button
-          onClick={(e) => {
+          onPointerDown={(e) => {
              e.stopPropagation();
-             setShowFeedbackModal(true);
-             (window as any).suppressPauseMenu = true;
-             document.exitPointerLock();
-             if (game && game.controls) game.controls.unlock();
+             const newState = !isEmojiWheelOpen;
+             setEmojiWheelOpen(newState);
+             if (newState && document.pointerLockElement) {
+                 document.exitPointerLock();
+             }
           }}
-          onPointerDown={(e) => e.stopPropagation()}
-          className="pointer-events-auto bg-[#C6C6C6] border-t-2 border-l-2 border-white border-b-2 border-r-2 border-[#555555] p-2 hover:bg-[#8B8B8B] transition-colors rounded-sm group relative flex-shrink-0 h-12 w-12 sm:h-14 sm:w-14 flex items-center justify-center"
-          title={`Send suggestions (Key: ${feedbackKeybind.replace('Key', '')})`}
         >
-          <Mail className="w-6 h-6 sm:w-8 sm:h-8 text-[#555555] group-hover:text-white" />
-          <span className="absolute -top-3 right-0 bg-black/60 text-white text-[10px] px-1 rounded">{feedbackKeybind.replace('Key', '')}</span>
+           <Smile size={24} className="text-white" />
+           <span className="absolute -top-3 -right-2 text-xs font-bold text-white bg-black/50 px-1 py-0.5 rounded shadow">
+              [H]
+           </span>
         </button>
       </div>
-
-      {createPortal(
-        <AnimatePresence>
-          {showFeedbackModal && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] backdrop-blur-sm p-4 pointer-events-auto cursor-default"
-              onPointerDown={(e) => {
-                e.stopPropagation();
-                setShowFeedbackModal(false);
-              }}
-            >
-              <motion.div 
-                initial={{ scale: 0.9, y: 20 }}
-                animate={{ scale: 1, y: 0 }}
-                exit={{ scale: 0.9, y: 20 }}
-                className="bg-[#C6C6C6] border-t-4 border-l-4 border-white border-b-4 border-r-4 border-[#555555] max-w-md w-full relative shadow-2xl overflow-hidden"
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={(e) => e.stopPropagation()}
-              >
-                {/* Header */}
-                <div className="bg-[#8B8B8B] p-4 flex items-center justify-between border-b-4 border-[#555555]">
-                  <div className="flex items-center gap-3">
-                    <Mail className="w-6 h-6 text-white drop-shadow-[2px_2px_0_rgba(0,0,0,1)]" />
-                    <h2 className="text-xl font-bold text-white drop-shadow-[2px_2px_0_rgba(0,0,0,1)] uppercase tracking-wider">
-                      Feedback
-                    </h2>
-                  </div>
-                  <button 
-                    onClick={() => setShowFeedbackModal(false)}
-                    className="p-1 hover:bg-white/20 transition-colors rounded"
-                  >
-                    <X className="w-6 h-6 text-white drop-shadow-[2px_2px_0_rgba(0,0,0,1)]" />
-                  </button>
-                </div>
-
-                <div className="p-6 space-y-4">
-                  <p className="text-[#333] text-sm font-bold uppercase tracking-wide">
-                    Have ideas or found a bug? Let us know!
-                  </p>
-                  
-                  <div className="relative group">
-                    <textarea
-                      className="w-full h-32 bg-[#A0A0A0] border-2 border-[#555555] p-3 text-black font-bold resize-none focus:outline-none focus:border-white focus:bg-[#C6C6C6] transition-colors shadow-inner placeholder:text-[#555555] custom-scrollbar"
-                      placeholder="Type your suggestions here..."
-                      value={feedbackText}
-                      onChange={(e) => setFeedbackText(e.target.value)}
-                      onPointerDown={(e) => e.stopPropagation()}
-                      onKeyDown={(e) => e.stopPropagation()}
-                    />
-                  </div>
-                  
-                  <button 
-                    onClick={sendFeedback}
-                    className="w-full flex items-center justify-center gap-2 bg-[#8B8B8B] hover:bg-[#A0A0A0] text-white font-bold py-3 border-t-2 border-l-2 border-white border-b-2 border-r-2 border-[#555555] active:border-t-2 active:border-l-2 active:border-[#555555] active:border-b-white active:border-r-white transition-all uppercase tracking-widest shadow-lg"
-                  >
-                    <Send className="w-5 h-5 drop-shadow-[2px_2px_0_rgba(0,0,0,0.5)]" />
-                    <span className="drop-shadow-[2px_2px_0_rgba(0,0,0,0.5)]">Submit</span>
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>,
-        document.body
-      )}
     </div>
   );
 };
