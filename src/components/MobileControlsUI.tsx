@@ -121,7 +121,7 @@ export const MobileControlsUI: React.FC<{game?: any}> = ({ game }) => {
       if (isAnyMenuOpen) return;
       
       const target = e.target as HTMLElement;
-      if (target && target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA' && !target.closest('button')) {
+      if (target && target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA' && !target.closest('button') && !target.closest('.no-prevent')) {
         e.preventDefault();
       }
       
@@ -131,6 +131,9 @@ export const MobileControlsUI: React.FC<{game?: any}> = ({ game }) => {
         const target = e.target as HTMLElement;
         const isButton = target && target.closest('.mobile-button');
         const isPassThrough = target && target.closest('.pass-through-button');
+        const isNoPrevent = target && target.closest('.no-prevent');
+
+        if (isNoPrevent) continue;
 
         const isBottomLeft = touch.clientX < window.innerWidth * 0.5 && touch.clientY > window.innerHeight * 0.2;
         
@@ -183,7 +186,10 @@ export const MobileControlsUI: React.FC<{game?: any}> = ({ game }) => {
 
     const handleTouchMove = (e: TouchEvent) => {
       if (isAnyMenuOpen) return;
-      e.preventDefault();
+      const target = e.target as HTMLElement;
+      if (!target || !target.closest('.no-prevent')) {
+        e.preventDefault();
+      }
       
       for (let i = 0; i < e.changedTouches.length; i++) {
         const touch = e.changedTouches[i];
@@ -378,12 +384,11 @@ export const MobileControlsUI: React.FC<{game?: any}> = ({ game }) => {
             className={`hidden landscape:flex w-12 h-12 rounded-full border-[2px] items-center justify-center text-white mobile-button pointer-events-auto shadow-md transition-colors ${isColorPickerOpen ? 'shadow-[0_0_15px_rgba(255,255,255,0.5)]' : 'bg-black/40 active:bg-white/40'}`}
             style={{ 
               borderColor: fluidColor,
-              backgroundColor: isColorPickerOpen ? fluidColor : undefined
+              background: isColorPickerOpen ? fluidColor : 'conic-gradient(from 90deg, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)'
             }}
             onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setIsColorPickerOpen(!isColorPickerOpen); }}
-            onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); setIsColorPickerOpen(!isColorPickerOpen); }}
           >
-            <Palette size={20} className="drop-shadow-md mix-blend-difference text-white" />
+            <Palette size={24} className="text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" />
           </button>
         )}
         <button 
@@ -425,12 +430,13 @@ export const MobileControlsUI: React.FC<{game?: any}> = ({ game }) => {
 
       {hasHose && isColorPickerOpen && (
         <div 
-          className="hidden landscape:flex absolute pointer-events-auto z-50 animate-in fade-in slide-in-from-top-4 duration-200 bg-black/70 backdrop-blur-xl rounded-3xl p-5 border border-white/20 shadow-2xl flex-row items-center gap-6"
+          className="hidden landscape:flex absolute pointer-events-auto z-50 animate-in fade-in slide-in-from-top-4 duration-200 bg-black/70 backdrop-blur-xl rounded-3xl p-5 border border-white/20 shadow-2xl flex-row items-center gap-6 no-prevent"
           style={{
             top: 'calc(4rem + env(safe-area-inset-top))',
             right: 'calc(0.5rem + env(safe-area-inset-right))'
           }}
           onTouchMove={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
         >
           <div className="flex flex-col items-center">
             <div className="mb-3 text-xs font-bold text-white/50 uppercase tracking-widest">Fluid Color</div>
@@ -456,7 +462,6 @@ export const MobileControlsUI: React.FC<{game?: any}> = ({ game }) => {
                   transform: fluidColor === preset ? 'scale(1.15)' : 'scale(1)'
                 }}
                 onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setFluidColor(preset); }}
-                onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); setFluidColor(preset); }}
               />
             ))}
           </div>
