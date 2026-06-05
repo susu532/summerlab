@@ -11,6 +11,7 @@ import { PlayerGrid } from './inventory/PlayerGrid';
 import { HotbarGrid } from './inventory/HotbarGrid';
 import { PlayerPreview } from './inventory/PlayerPreview';
 import { ItemCategory, getItemCategory } from '../game/Categories';
+import { MobileLandscapeInventoryUI } from './MobileLandscapeInventoryUI';
 
 import { useGameStore } from '../store/gameStore';
 
@@ -82,7 +83,7 @@ export const InventoryUI = React.memo<InventoryUIProps>(({ inventory, isOpen, on
   }, [isOpen, inventory]);
 
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
+    const handleMouseMove = (e: PointerEvent) => {
       if (heldItemRef.current) {
         heldItemRef.current.style.left = `${e.clientX}px`;
         heldItemRef.current.style.top = `${e.clientY}px`;
@@ -95,11 +96,11 @@ export const InventoryUI = React.memo<InventoryUIProps>(({ inventory, isOpen, on
 
     if (isOpen) {
       audioManager.play('click', 0.5, 0.8);
-      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('pointermove', handleMouseMove as any);
     } else {
       audioManager.play('click', 0.5, 0.6);
     }
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('pointermove', handleMouseMove as any);
   }, [isOpen]);
 
   useEffect(() => {
@@ -457,6 +458,7 @@ export const InventoryUI = React.memo<InventoryUIProps>(({ inventory, isOpen, on
   });
 
   const [containerScale, setContainerScale] = useState(1);
+  const [isMobileLandscape, setIsMobileLandscape] = useState(false);
 
   useEffect(() => {
     const updateScale = () => {
@@ -474,6 +476,10 @@ export const InventoryUI = React.memo<InventoryUIProps>(({ inventory, isOpen, on
       scale = Math.max(0.3, scale);
       
       setContainerScale(scale);
+
+      // Check if it's mobile and in landscape mode
+      const isMobileDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      setIsMobileLandscape(isMobileDevice && w > h);
     };
 
     updateScale();
@@ -499,17 +505,33 @@ export const InventoryUI = React.memo<InventoryUIProps>(({ inventory, isOpen, on
     >
       <div 
         className="transform origin-center pointer-events-none flex items-center justify-center transition-transform duration-100 ease-out"
-        style={{ transform: `scale(${containerScale})` }}
+        style={{ transform: isMobileLandscape ? 'none' : `scale(${containerScale})` }}
       >
         <div className="pointer-events-auto flex items-center justify-center" onPointerDown={(e) => e.stopPropagation()}>
-          <motion.div 
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            className="mc-panel p-2 md:p-4 shadow-2xl relative mc-font max-w-[98vw] overflow-y-auto overflow-x-hidden custom-scrollbar"
-            style={{ maxHeight: `calc(96vh / ${containerScale})` }}
-          >
-        <div className="flex flex-wrap items-center gap-2 md:gap-4 mb-4 border-b-2 border-[#373737]/30 pb-2">
+          {isMobileLandscape ? (
+            <MobileLandscapeInventoryUI
+              inventory={inventory}
+              onClose={onClose}
+              craftingGrid={craftingGrid}
+              craftingResult={craftingResult}
+              heldItem={heldItem}
+              hoveredItem={hoveredItem}
+              setHoveredItem={setHoveredItem}
+              dragState={dragState}
+              handleSlotInteraction={handleSlotInteraction}
+              handleResultClick={handleResultClick}
+              handleDoubleClick={handleDoubleClick}
+              skycoins={skycoins}
+            />
+          ) : (
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="mc-panel p-2 md:p-4 shadow-2xl relative mc-font max-w-[98vw] overflow-y-auto overflow-x-hidden custom-scrollbar"
+              style={{ maxHeight: `calc(96vh / ${containerScale})` }}
+            >
+          <div className="flex flex-wrap items-center gap-2 md:gap-4 mb-4 border-b-2 border-[#373737]/30 pb-2">
           <span className="font-bold text-sm md:text-lg px-2 md:px-3 py-1 text-[#373737]">
             Survival Inventory
           </span>
@@ -567,12 +589,13 @@ export const InventoryUI = React.memo<InventoryUIProps>(({ inventory, isOpen, on
           dragState={dragState}
         />
 
-      </motion.div>
+            </motion.div>
+          )}
         </div>
       </div>
 
       {/* Tooltip (Moved outside scaled wrapper for mouse alignment) */}
-      {hoveredItem && !heldItem && (
+      {hoveredItem && !heldItem && !isMobileLandscape && (
         <div 
           ref={tooltipRef}
           className="fixed z-[200] px-3 py-2 bg-[#100010]/95 border-2 border-[#25015b] text-white text-sm pointer-events-none shadow-xl min-w-[150px] mc-font scale-75 sm:scale-100 origin-top-left"

@@ -166,7 +166,7 @@ export class PlayerRenderer {
       new THREE.MeshBasicMaterial({ map: skinTexture }) :
       new THREE.MeshStandardMaterial({ 
         map: skinTexture,
-        roughness: 0.3,
+        roughness: 0.2,
         metalness: 0.0
       });
     const outerMaterial = isPerformance ?
@@ -181,7 +181,7 @@ export class PlayerRenderer {
         transparent: true, 
         alphaTest: 0.1, 
         side: THREE.DoubleSide,
-        roughness: 0.3,
+        roughness: 0.2,
         metalness: 0.0
       });
 
@@ -227,7 +227,7 @@ export class PlayerRenderer {
       new THREE.MeshBasicMaterial({ map: skinTexture }) :
       new THREE.MeshStandardMaterial({ 
         map: skinTexture,
-        roughness: 0.3,
+        roughness: 0.2,
         metalness: 0.0
       });
     const outerMaterial = isPerformance ?
@@ -242,7 +242,7 @@ export class PlayerRenderer {
         transparent: true, 
         alphaTest: 0.1, 
         side: THREE.DoubleSide,
-        roughness: 0.3,
+        roughness: 0.2,
         metalness: 0.0
       });
 
@@ -632,7 +632,7 @@ export class PlayerRenderer {
       new THREE.MeshBasicMaterial({ map: skinTexture }) :
       new THREE.MeshStandardMaterial({ 
         map: skinTexture,
-        roughness: 0.3,
+        roughness: 0.2,
         metalness: 0.0
       });
     
@@ -671,7 +671,7 @@ export class PlayerRenderer {
       new THREE.MeshBasicMaterial({ map: skinTexture }) :
       new THREE.MeshStandardMaterial({ 
         map: skinTexture,
-        roughness: 0.3,
+        roughness: 0.2,
         metalness: 0.0
       });
     

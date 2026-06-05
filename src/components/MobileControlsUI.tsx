@@ -442,13 +442,13 @@ export const MobileControlsUI: React.FC = () => {
       <div 
         className="absolute pointer-events-none w-64 h-64 transform origin-bottom-right scale-[1.0] sm:scale-[1.2] landscape:scale-[0.9] md:landscape:scale-[1.0] lg:landscape:scale-[1.1]"
         style={{
-          bottom: 'calc(5rem + env(safe-area-inset-bottom))',
+          bottom: 'calc(3.5rem + env(safe-area-inset-bottom))',
           right: 'calc(0.5rem + env(safe-area-inset-right))'
         }}
       >
         {/* Jump Button (Top) */}
         <button 
-          className="absolute top-0 left-1/2 -translate-x-1/2 mobile-button pass-through-button w-18 h-18 rounded-full bg-white/20 border-[3px] border-white/50 flex items-center justify-center active:bg-white/40 pointer-events-auto shadow-lg"
+          className="absolute top-0 landscape:top-6 left-1/2 -translate-x-1/2 mobile-button pass-through-button w-18 h-18 rounded-full bg-white/20 border-[3px] border-white/50 flex items-center justify-center active:bg-white/40 pointer-events-auto shadow-lg"
           onTouchStart={(e) => { window.mobileInputs.isJumping = true; }}
           onTouchEnd={(e) => { window.mobileInputs.isJumping = false; }}
           onTouchCancel={(e) => { window.mobileInputs.isJumping = false; }}
@@ -492,7 +492,7 @@ export const MobileControlsUI: React.FC = () => {
 
         {/* Crouch Button (Bottom) */}
         <button 
-          className="absolute bottom-0 left-1/2 -translate-x-1/2 mobile-button pass-through-button w-16 h-16 rounded-full bg-white/20 border-[3px] border-white/40 flex items-center justify-center active:bg-white/40 opacity-80 pointer-events-auto shadow-md"
+          className="absolute bottom-0 landscape:bottom-6 left-1/2 -translate-x-1/2 mobile-button pass-through-button w-16 h-16 rounded-full bg-white/20 border-[3px] border-white/40 flex items-center justify-center active:bg-white/40 opacity-80 pointer-events-auto shadow-md"
           onTouchStart={(e) => { window.mobileInputs.isCrouching = true; }}
           onTouchEnd={(e) => { window.mobileInputs.isCrouching = false; }}
           onTouchCancel={(e) => { window.mobileInputs.isCrouching = false; }}
