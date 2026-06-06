@@ -3,6 +3,7 @@ import { useUI } from '../store/uiStore';
 import { useGameStore } from '../store/gameStore';
 import { InventoryUI } from './InventoryUI';
 import { ChestUI } from './ChestUI';
+import { ItemType } from '../game/Inventory';
 
 const ShopUI = lazy(() => import('./ShopUI').then(m => ({ default: m.ShopUI })));
 const SettingsUI = lazy(() => import('./SettingsUI').then(m => ({ default: m.SettingsUI })));
@@ -44,6 +45,12 @@ export function GameMenus({ game, targetServer, handleStart, setGameKey, isMobil
             isOpen={isInventoryOpen} 
             onClose={() => setInventoryOpen(false)} 
             onDropItem={(type: any, count: number) => {
+               if (currentMode === 'summerlab' && (type === ItemType.FLUID_CHOCOLATE_HOSE || type === ItemType.WASHING_HOSE || type === ItemType.BOW)) {
+                 useGameStore.getState().addMessage("You cannot drop your role's essential tool!", "#FF5555");
+                 game.player.inventory.addItem(type, count);
+                 useGameStore.getState().incrementInventoryVersion();
+                 return;
+               }
                const direction = new THREE.Vector3();
                game.camera.getWorldDirection(direction);
                const dropPos = game.player.playerHeadPos.clone().add(direction.multiplyScalar(1.5));
@@ -62,6 +69,12 @@ export function GameMenus({ game, targetServer, handleStart, setGameKey, isMobil
             isOpen={isChestOpen}
             onClose={() => setChestOpen(false)}
             onDropItem={(type: any, count: number) => {
+              if (currentMode === 'summerlab' && (type === ItemType.FLUID_CHOCOLATE_HOSE || type === ItemType.WASHING_HOSE || type === ItemType.BOW)) {
+                useGameStore.getState().addMessage("You cannot drop your role's essential tool!", "#FF5555");
+                game.player.inventory.addItem(type, count);
+                useGameStore.getState().incrementInventoryVersion();
+                return;
+              }
               const direction = new THREE.Vector3();
               game.camera.getWorldDirection(direction);
               const dropPos = game.player.playerHeadPos.clone().add(direction.multiplyScalar(1.5));

@@ -121,17 +121,16 @@ export const MobileControlsUI: React.FC<{game?: any}> = ({ game }) => {
       if (isAnyMenuOpen) return;
       
       const target = e.target as HTMLElement;
-      if (target && target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA' && !target.closest('button') && !target.closest('.no-prevent')) {
+      if (target && target.closest && target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA' && !target.closest('button') && !target.closest('.no-prevent')) {
         e.preventDefault();
       }
       
       for (let i = 0; i < e.changedTouches.length; i++) {
         const touch = e.changedTouches[i];
         
-        const target = e.target as HTMLElement;
-        const isButton = target && target.closest('.mobile-button');
-        const isPassThrough = target && target.closest('.pass-through-button');
-        const isNoPrevent = target && target.closest('.no-prevent');
+        const isButton = target && target.closest && target.closest('.mobile-button');
+        const isPassThrough = target && target.closest && target.closest('.pass-through-button');
+        const isNoPrevent = target && target.closest && target.closest('.no-prevent');
 
         if (isNoPrevent) continue;
 
@@ -187,7 +186,7 @@ export const MobileControlsUI: React.FC<{game?: any}> = ({ game }) => {
     const handleTouchMove = (e: TouchEvent) => {
       if (isAnyMenuOpen) return;
       const target = e.target as HTMLElement;
-      if (!target || !target.closest('.no-prevent')) {
+      if (!target || !target.closest || !target.closest('.no-prevent')) {
         e.preventDefault();
       }
       

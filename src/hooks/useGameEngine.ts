@@ -37,8 +37,9 @@ export function useGameEngine() {
     const checkPointer = () => {
       const touchCapable = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
       const isActuallyMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      const isMacTouch = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1; // iPad on iOS 13+
-      setIsMobile(isActuallyMobile || isMacTouch || (touchCapable && window.innerWidth < 1024));
+      // Modern iPad detection (Safari on iPadOS 13+ requests desktop site by default)
+      const isIPad = /iPad/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      setIsMobile(isActuallyMobile || isIPad || (touchCapable && window.innerWidth < 1024));
     };
 
     checkPointer();
@@ -454,6 +455,11 @@ export function useGameEngine() {
   const handleStart = async (e: any) => {
     if (e) e.stopPropagation();
 
+    // Call resume synchronously BEFORE any awaits, otherwise iOS Safari will block it
+    try {
+      audioManager.resume();
+    } catch (err) {}
+
     if (isMobile) {
       try {
         if (!document.fullscreenElement) {
@@ -474,11 +480,11 @@ export function useGameEngine() {
     const uiState = useUIStore.getState();
     const isMapLoading = useGameStore.getState().isMapLoading;
     if (game && !game.controls.isLocked && !isMapLoading && !uiState.isInventoryOpen && !uiState.isShopOpen && !uiState.isSettingsOpen && !uiState.isPauseMenuOpen && !uiState.isServerJoinOpen && !uiState.isLoadoutOpen && !uiState.isEmojiWheelOpen) {
-      const isTouch = e && e.pointerType === 'touch';
-      if (isTouch) {
-        try {
-          audioManager.resume();
-        } catch (err) {}
+      // If we are on mobile/tablet, never attempt to lock the pointer, even if
+      // the user tapped with a connected mouse (e.g. iPad Magic Keyboard), 
+      // because iOS Safari doesn't support the Pointer Lock API.
+      const isTouchOrMobile = isMobile || (e && e.pointerType === 'touch');
+      if (isTouchOrMobile) {
         return;
       }
 
@@ -488,7 +494,6 @@ export function useGameEngine() {
 
       try {
         game.controls.lock();
-        audioManager.resume();
       } catch (err) {
         console.warn('Pointer lock request failed:', err);
       }

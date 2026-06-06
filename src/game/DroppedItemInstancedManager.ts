@@ -4,6 +4,40 @@ import { ATLAS_TILES, getBlockUVs, isSolidBlock, isPlant, isFlatItem } from './T
 import { World } from './World';
 import { settingsManager } from './Settings';
 
+function mergeBufferGeometries(geometries: THREE.BufferGeometry[]): THREE.BufferGeometry {
+  const mergedPosition: number[] = [];
+  const mergedNormal: number[] = [];
+  const mergedUv: number[] = [];
+  
+  for (const geom of geometries) {
+    const posAttr = geom.attributes.position;
+    const normAttr = geom.attributes.normal;
+    const uvAttr = geom.attributes.uv;
+    
+    if (posAttr) {
+      for (let i = 0; i < posAttr.count; i++) {
+        mergedPosition.push(posAttr.getX(i), posAttr.getY(i), posAttr.getZ(i));
+        if (normAttr) {
+          mergedNormal.push(normAttr.getX(i), normAttr.getY(i), normAttr.getZ(i));
+        } else {
+          mergedNormal.push(0, 1, 0);
+        }
+        if (uvAttr) {
+          mergedUv.push(uvAttr.getX(i), uvAttr.getY(i));
+        } else {
+          mergedUv.push(0, 0);
+        }
+      }
+    }
+  }
+  
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(mergedPosition, 3));
+  geometry.setAttribute('normal', new THREE.Float32BufferAttribute(mergedNormal, 3));
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(mergedUv, 2));
+  return geometry;
+}
+
 export interface DroppedItemData {
   id: string;
   type: ItemType;
@@ -71,7 +105,24 @@ export class DroppedItemInstancedManager {
 
     if (!this.instancedMeshes.has(type)) {
       let geometry;
-      if (isFlatItem(type as unknown as number)) {
+      const isHose = type === ItemType.FLUID_CHOCOLATE_HOSE || type === ItemType.WASHING_HOSE;
+
+      if (isHose) {
+        // Build a detailed compound geometry for the dropped hose:
+        const bodyGeo = new THREE.CylinderGeometry(0.032, 0.032, 0.22, 8).toNonIndexed();
+        
+        const nozzleGeo = new THREE.CylinderGeometry(0.045, 0.034, 0.05, 8).toNonIndexed();
+        nozzleGeo.translate(0, 0.11, 0);
+        
+        const backRingGeo = new THREE.CylinderGeometry(0.048, 0.048, 0.05, 8).toNonIndexed();
+        backRingGeo.translate(0, -0.11, 0);
+        
+        const handleGripGeo = new THREE.BoxGeometry(0.024, 0.09, 0.024).toNonIndexed();
+        handleGripGeo.translate(0, -0.05, 0.05).rotateX(-Math.PI / 8);
+
+        geometry = mergeBufferGeometries([bodyGeo, nozzleGeo, backRingGeo, handleGripGeo]);
+        geometry.rotateX(Math.PI / 2); // Lay it flat
+      } else if (isFlatItem(type as unknown as number)) {
         geometry = new THREE.BoxGeometry(0.3, 0.3, 0.05); // Thin item
       } else if (isPlant(type as unknown as number)) {
         // use plane geometry or thin box for plants, to avoid 6 thick faces
@@ -79,46 +130,58 @@ export class DroppedItemInstancedManager {
       } else {
         geometry = new THREE.BoxGeometry(0.3, 0.3, 0.3); // Block
       }
-      const uvs = getBlockUVs(type as unknown as number);
-      const uvAttribute = geometry.attributes.uv;
-      const size = 1 / ATLAS_TILES;
-      const pad = 0.005;
 
-      for (let i = 0; i < 6; i++) {
-        const [tx, ty] = uvs[i];
-        const uMin = tx * size + pad;
-        const uMax = (tx + 1) * size - pad;
-        const vMin = 1.0 - (ty + 1) * size + pad;
-        const vMax = 1.0 - ty * size - pad;
+      if (!isHose) {
+        const uvs = getBlockUVs(type as unknown as number);
+        const uvAttribute = geometry.attributes.uv;
+        const size = 1 / ATLAS_TILES;
+        const pad = 0.005;
 
-        const idx = i * 4;
-        uvAttribute.setXY(idx, uMin, vMax);
-        uvAttribute.setXY(idx + 1, uMax, vMax);
-        uvAttribute.setXY(idx + 2, uMin, vMin);
-        uvAttribute.setXY(idx + 3, uMax, vMin);
+        for (let i = 0; i < 6; i++) {
+          const [tx, ty] = uvs[i];
+          const uMin = tx * size + pad;
+          const uMax = (tx + 1) * size - pad;
+          const vMin = 1.0 - (ty + 1) * size + pad;
+          const vMax = 1.0 - ty * size - pad;
+
+          const idx = i * 4;
+          uvAttribute.setXY(idx, uMin, vMax);
+          uvAttribute.setXY(idx + 1, uMax, vMax);
+          uvAttribute.setXY(idx + 2, uMin, vMin);
+          uvAttribute.setXY(idx + 3, uMax, vMin);
+        }
+        uvAttribute.needsUpdate = true;
       }
-      uvAttribute.needsUpdate = true;
 
       const isAlphaFlat = isFlatItem(type as unknown as number) || isPlant(type as unknown as number);
       const isGlass = type === ItemType.GLASS;
       const isWaterTypes = type >= ItemType.WATER && type <= ItemType.WATER_7;
 
       const isPerformance = settingsManager.getSettings().performanceMode;
-      const material = isPerformance ?
-        new THREE.MeshBasicMaterial({ 
-          map: this.textureAtlas,
-          transparent: isGlass || isWaterTypes || isAlphaFlat,
-          opacity: isWaterTypes ? 0.6 : 1.0,
-          alphaTest: (isGlass || isAlphaFlat) ? 0.5 : 0
-        }) :
-        new THREE.MeshStandardMaterial({ 
-          map: this.textureAtlas,
-          transparent: isGlass || isWaterTypes || isAlphaFlat,
-          opacity: isWaterTypes ? 0.6 : 1.0,
-          alphaTest: (isGlass || isAlphaFlat) ? 0.5 : 0,
-          roughness: 0.8,
-          metalness: 0.1
-        });
+      
+      let material;
+      if (isHose) {
+        const hoseColor = type === ItemType.WASHING_HOSE ? 0x3889f0 : 0xFF5500;
+        material = isPerformance ?
+          new THREE.MeshBasicMaterial({ color: hoseColor }) :
+          new THREE.MeshStandardMaterial({ color: hoseColor, roughness: 0.4, metalness: 0.1 });
+      } else {
+        material = isPerformance ?
+          new THREE.MeshBasicMaterial({ 
+            map: this.textureAtlas,
+            transparent: isGlass || isWaterTypes || isAlphaFlat,
+            opacity: isWaterTypes ? 0.6 : 1.0,
+            alphaTest: (isGlass || isAlphaFlat) ? 0.5 : 0
+          }) :
+          new THREE.MeshStandardMaterial({ 
+            map: this.textureAtlas,
+            transparent: isGlass || isWaterTypes || isAlphaFlat,
+            opacity: isWaterTypes ? 0.6 : 1.0,
+            alphaTest: (isGlass || isAlphaFlat) ? 0.5 : 0,
+            roughness: 0.8,
+            metalness: 0.1
+          });
+      }
 
       const mesh = new THREE.InstancedMesh(geometry, material, this.MAX_INSTANCES);
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);

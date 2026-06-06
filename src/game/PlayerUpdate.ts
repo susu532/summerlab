@@ -76,6 +76,30 @@ export function updatePlayer(player: Player, delta: number) {
       // Don't pick up items that were just dropped
       if (currentTime - item.createdAt < item.pickupDelay) continue;
 
+      if (player.world.isSummerLab) {
+        const isSpecialHoseItem = item.type === ItemType.FLUID_CHOCOLATE_HOSE || 
+                                  item.type === ItemType.WASHING_HOSE || 
+                                  item.type === ItemType.BOW;
+        if (isSpecialHoseItem) {
+          const checkInventoryCount = (t: ItemType) => {
+            let cnt = 0;
+            for (const slot of player.inventory.slots) {
+              if (slot && slot.type === t) cnt += slot.count;
+            }
+            return cnt;
+          };
+
+          const hasThisSpecialItem = checkInventoryCount(item.type) > 0;
+          const hasAnySpecialItem = checkInventoryCount(ItemType.FLUID_CHOCOLATE_HOSE) > 0 || 
+                                    checkInventoryCount(ItemType.WASHING_HOSE) > 0 || 
+                                    checkInventoryCount(ItemType.BOW) > 0;
+          // If they already hold a different role item, don't let them pick this one up
+          if (hasAnySpecialItem && !hasThisSpecialItem) {
+            continue;
+          }
+        }
+      }
+
       const dist = player.worldPosition.distanceTo(item.position);
       if (dist < 2.2) {
         // Optimistically remove visually

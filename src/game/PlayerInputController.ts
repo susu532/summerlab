@@ -372,8 +372,17 @@ export class PlayerInputController {
   dropItem(dropStack: boolean = false) {
     const stack = this.player.inventory.slots[this.player.hotbarIndex];
     if (stack && stack.count > 0) {
-      const amount = dropStack ? stack.count : 1;
       const itemType = stack.type;
+      
+      const isRoleItem = itemType === ItemType.FLUID_CHOCOLATE_HOSE || 
+                         itemType === ItemType.WASHING_HOSE || 
+                         itemType === ItemType.BOW;
+      if (isRoleItem && this.player.world.isSummerLab) {
+        useGameStore.getState().addMessage("You cannot drop your role's essential tool!", "#FF5555");
+        return;
+      }
+
+      const amount = dropStack ? stack.count : 1;
       this.player.inventory.removeItemFromSlot(this.player.hotbarIndex, amount);
       
       const direction = _dirAux.set(

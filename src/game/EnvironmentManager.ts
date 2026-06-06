@@ -70,6 +70,11 @@ export class EnvironmentManager implements ISystem {
   }
 
   setupSky() {
+    const isMobileDevice = typeof window !== 'undefined' && 
+      (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+      ('ontouchstart' in window) || 
+      (navigator.maxTouchPoints > 0));
+
     // Sun
     const sunGeo = new THREE.PlaneGeometry(200, 200);
     const sunMat = new THREE.ShaderMaterial({
@@ -84,7 +89,29 @@ export class EnvironmentManager implements ISystem {
           gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }
       `,
-      fragmentShader: `
+      fragmentShader: isMobileDevice ? `
+        varying vec2 vUv;
+        uniform float time;
+        uniform vec3 color;
+        
+        void main() {
+          vec2 p = vUv - 0.5;
+          float dist = length(p);
+          
+          float core = 1.0 - smoothstep(0.08, 0.1, dist);
+          float innerGlow = pow(1.0 - smoothstep(0.08, 0.2, dist), 2.0);
+          float outerGlow = pow(1.0 - smoothstep(0.1, 0.5, dist), 3.0);
+          
+          float alpha = clamp(core + innerGlow + outerGlow, 0.0, 1.0);
+          if (alpha < 0.01) discard;
+          
+          float pulse = sin(time * 1.5) * 0.05 + 0.95;
+          vec3 tintColor = color * vec3(1.0, 0.9, 0.5) * pulse;
+          vec3 finalColor = mix(tintColor * (innerGlow + outerGlow), mix(vec3(1.0, 0.9, 0.6), vec3(1.0, 1.0, 0.9), 0.5), core);
+          
+          gl_FragColor = vec4(finalColor, alpha);
+        }
+      ` : `
         varying vec2 vUv;
         uniform float time;
         uniform vec3 color;
@@ -114,7 +141,7 @@ export class EnvironmentManager implements ISystem {
             float value = 0.0;
             float amplitude = 0.5;
             float frequency = 0.0;
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0; i < 3; i++) { // reduce from 5 to 3 for performance
                 value += amplitude * noise(st);
                 st *= 2.0;
                 amplitude *= 0.5;
@@ -257,38 +284,40 @@ export class EnvironmentManager implements ISystem {
     this.game.scene.add(this.moonMesh);
 
     // Clouds
-    this.clouds = new THREE.Group();
-    const cloudColor = this.game.world.isSummerLab ? 0xffeef5 : 0xffffff;
-    const cloudOpacity = this.game.world.isSummerLab ? 0.95 : 0.8;
-    const cloudMat = new THREE.MeshLambertMaterial({ color: cloudColor, transparent: true, opacity: cloudOpacity });
-    for (let i = 0; i < 40; i++) {
-      const cloud = new THREE.Group();
-      const blocks = 3 + Math.floor(Math.random() * 5);
-      for (let j = 0; j < blocks; j++) {
-        // If summerlab, we could use rounded corners... but BoxGeometry is fine if we stick to voxels.
-        // We'll make them taller and chunkier.
-        const width = 10 + Math.random() * 10;
-        const height = this.game.world.isSummerLab ? 8 + Math.random() * 8 : 4 + Math.random() * 4;
-        const depth = 10 + Math.random() * 10;
-        const blockGeo = new THREE.BoxGeometry(width, height, depth);
-        const block = new THREE.Mesh(blockGeo, cloudMat);
-        block.castShadow = false;
-        block.receiveShadow = false;
-        block.position.set(
-          (Math.random() - 0.5) * 20,
-          (Math.random() - 0.5) * 5,
-          (Math.random() - 0.5) * 20
+    if (!isMobileDevice) {
+      this.clouds = new THREE.Group();
+      const cloudColor = this.game.world.isSummerLab ? 0xffeef5 : 0xffffff;
+      const cloudOpacity = this.game.world.isSummerLab ? 0.95 : 0.8;
+      const cloudMat = new THREE.MeshLambertMaterial({ color: cloudColor, transparent: true, opacity: cloudOpacity });
+      for (let i = 0; i < 40; i++) {
+        const cloud = new THREE.Group();
+        const blocks = 3 + Math.floor(Math.random() * 5);
+        for (let j = 0; j < blocks; j++) {
+          // If summerlab, we could use rounded corners... but BoxGeometry is fine if we stick to voxels.
+          // We'll make them taller and chunkier.
+          const width = 10 + Math.random() * 10;
+          const height = this.game.world.isSummerLab ? 8 + Math.random() * 8 : 4 + Math.random() * 4;
+          const depth = 10 + Math.random() * 10;
+          const blockGeo = new THREE.BoxGeometry(width, height, depth);
+          const block = new THREE.Mesh(blockGeo, cloudMat);
+          block.castShadow = false;
+          block.receiveShadow = false;
+          block.position.set(
+            (Math.random() - 0.5) * 20,
+            (Math.random() - 0.5) * 5,
+            (Math.random() - 0.5) * 20
+          );
+          cloud.add(block);
+        }
+        cloud.position.set(
+          (Math.random() - 0.5) * 1000,
+          100 + Math.random() * 20,
+          (Math.random() - 0.5) * 1000
         );
-        cloud.add(block);
+        this.clouds.add(cloud);
       }
-      cloud.position.set(
-        (Math.random() - 0.5) * 1000,
-        100 + Math.random() * 20,
-        (Math.random() - 0.5) * 1000
-      );
-      this.clouds.add(cloud);
+      this.game.scene.add(this.clouds);
     }
-    this.game.scene.add(this.clouds);
   }
 
   setupWeather() {

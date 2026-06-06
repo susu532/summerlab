@@ -353,9 +353,8 @@ export class ChocolateFluidSystem {
                     this.spawnSplat(hitInfo.hitPoint, hitNorm, this.projectileColors[i]);
                     
                     hideNow = true;
-                } else if (nextPos.y <= 0.05) { // Floor collision backup
+                } else if (nextPos.y <= -50) { 
                     this.projectileLifetimes[i] = 0;
-                    this.spawnSplat(new THREE.Vector3(nextPos.x, 0.05, nextPos.z), new THREE.Vector3(0, 1, 0), this.projectileColors[i]);
                     hideNow = true;
                 }
             }

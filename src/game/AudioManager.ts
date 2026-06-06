@@ -8,6 +8,7 @@ class AudioManager {
   private audioLoader: THREE.AudioLoader;
   private initialized: boolean = false;
   private ambientSounds: Map<string, THREE.Audio> = new Map();
+  private canPlayOgg: boolean = true;
 
   // Background Music (BGM) management
   private currentMusic: HTMLAudioElement | null = null;
@@ -18,6 +19,17 @@ class AudioManager {
 
   constructor() {
     this.audioLoader = new THREE.AudioLoader();
+    
+    // Detect Ogg Vorbis support — iOS Safari cannot decode .ogg at all
+    try {
+      const testAudio = new Audio();
+      this.canPlayOgg = testAudio.canPlayType('audio/ogg; codecs="vorbis"') !== '';
+    } catch {
+      this.canPlayOgg = false;
+    }
+    if (!this.canPlayOgg) {
+      console.warn('[AudioManager] Ogg Vorbis not supported (iOS Safari). All .ogg sounds will be skipped. Host .mp3 alternatives for full audio support.');
+    }
     
     if (typeof window !== 'undefined') {
       this.listener = new THREE.AudioListener();
@@ -139,6 +151,8 @@ class AudioManager {
   public playMusic(key: keyof typeof SOUND_URLS) {
     const url = SOUND_URLS[key];
     if (!url) return;
+    // Skip .ogg music on browsers that don't support it
+    if (!this.canPlayOgg && url.endsWith('.ogg')) return;
 
     if (this.currentMusic) {
       if (this.currentMusic.src === url) return; // Already playing
@@ -161,6 +175,9 @@ class AudioManager {
   }
 
   private loadSound(name: string, url: string) {
+    // Skip .ogg files on browsers that don't support them (iOS Safari)
+    if (!this.canPlayOgg && url.endsWith('.ogg')) return;
+    
     const sound = new THREE.Audio(this.listener);
     this.audioLoader.load(url, (buffer) => {
       sound.setBuffer(buffer);
@@ -172,6 +189,9 @@ class AudioManager {
   }
 
   private loadAmbient(name: string, url: string, volume: number = 0.1) {
+    // Skip .ogg files on browsers that don't support them (iOS Safari)
+    if (!this.canPlayOgg && url.endsWith('.ogg')) return;
+    
     const sound = new THREE.Audio(this.listener);
     this.audioLoader.load(url, (buffer) => {
       sound.setBuffer(buffer);

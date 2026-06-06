@@ -6,6 +6,7 @@ import { audioManager } from '../game/AudioManager';
 import { networkManager } from '../game/NetworkManager';
 import { CommunitySidebar } from './CommunitySidebar';
 import { CrazyGamesManager } from '../game/CrazyGamesManager';
+import { useGameStore } from '../store/gameStore';
 
 interface PauseMenuUIProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ export const PauseMenuUI: React.FC<PauseMenuUIProps> = ({
   isMobile
 }) => {
   const [copied, setCopied] = useState(false);
+  const currentMode = useGameStore(state => state.currentMode);
 
   if (!isOpen) return null;
 
@@ -36,6 +38,8 @@ export const PauseMenuUI: React.FC<PauseMenuUIProps> = ({
     }
   };
 
+  const showChangeRole = currentMode !== 'hub' && currentMode !== 'dungeondelver';
+
   const menuItems = [
     { 
       label: 'Back to Game', 
@@ -49,29 +53,19 @@ export const PauseMenuUI: React.FC<PauseMenuUIProps> = ({
       onClick: handleInvite,
       primary: false 
     },
-    { 
+    ...(showChangeRole ? [{ 
       label: 'Change Role', 
       icon: <RefreshCw className="w-5 h-5" />, 
       onClick: () => {
-        networkManager.initMatchmaking(networkManager.serverName || 'hub');
-        window.dispatchEvent(new CustomEvent('requestGameRestart'));
+        onClose();
+        window.dispatchEvent(new CustomEvent('triggerChooseRole'));
       }
-    },
+    }] : []),
     { 
       label: 'Settings', 
       icon: <Settings className="w-5 h-5" />, 
       onClick: onOpenSettings 
     },
-    /*
-    { 
-      label: 'Quit Game', 
-      icon: <LogOut className="w-5 h-5" />, 
-      onClick: () => {
-        networkManager.initMatchmaking('dungeondelver');
-        window.dispatchEvent(new CustomEvent('requestGameRestart'));
-      }
-    },
-    */
   ];
 
   return (

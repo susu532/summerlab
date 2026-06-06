@@ -64,7 +64,7 @@ export default function App() {
       {/* Force Landscape Overlay for Mobile Phones */}
       {isMobile && (
         <div 
-          className="hidden portrait:flex md:portrait:hidden fixed inset-0 z-[99999] bg-zinc-950 text-white flex-col items-center justify-center text-center p-8 select-none touch-none cursor-pointer"
+          className="hidden portrait:flex fixed inset-0 z-[99999] bg-zinc-950 text-white flex-col items-center justify-center text-center p-8 select-none touch-none cursor-pointer"
           onPointerDown={() => {
              const docEl = document.documentElement as any;
              const requestFullscreen = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
@@ -124,7 +124,7 @@ export default function App() {
           </div>
           <h2 className="text-3xl font-bold mb-3 font-sans tracking-tight text-white">Tap screen x2 times</h2>
           <p className="text-zinc-400 text-lg max-w-[280px] mx-auto leading-relaxed">
-            Please double Tap screen or rotate your device horizontally to play.
+            Please double Tap screen or rotate your device to landscape mode to play.
           </p>
         </div>
       )}
