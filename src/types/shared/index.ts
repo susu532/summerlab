@@ -68,6 +68,7 @@ export interface IPlayerUpdate {
 export interface IServerPlayer extends IPlayerUpdate {
   position: { x: number; y: number; z: number };
   velocity?: { x: number; y: number; z: number };
+  knockbackVelocity?: { x: number; y: number; z: number };
   rotation: { x: number; y: number; z?: number };
   health: number;
   maxHealth?: number;
