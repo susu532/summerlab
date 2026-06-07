@@ -1,14 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import { useGameStore } from '../store/gameStore';
-import { motion, AnimatePresence } from 'motion/react';
-import { Loader2 } from 'lucide-react';
-import { CrazyGamesManager } from '../game/CrazyGamesManager';
+import React, { useEffect, useState } from "react";
+import { useGameStore } from "../store/gameStore";
+import { motion, AnimatePresence } from "motion/react";
+import { Loader2 } from "lucide-react";
+import { CrazyGamesManager } from "../game/CrazyGamesManager";
 
 export function MapLoadingScreen() {
-  const isMapLoading = useGameStore(state => state.isMapLoading);
-  const loadingProgress = useGameStore(state => state.loadingProgress);
-  const loadingMessage = useGameStore(state => state.loadingMessage);
-  const setIsMapLoading = useGameStore(state => state.setIsMapLoading);
+  const isMapLoading = useGameStore((state) => state.isMapLoading);
+  const loadingProgress = useGameStore((state) => state.loadingProgress);
+  const loadingMessage = useGameStore((state) => state.loadingMessage);
+  const setIsMapLoading = useGameStore((state) => state.setIsMapLoading);
 
   const [showTapToPlay, setShowTapToPlay] = useState(false);
 
@@ -16,7 +16,7 @@ export function MapLoadingScreen() {
     if (isMapLoading) {
       CrazyGamesManager.loadingStart();
       document.exitPointerLock?.();
-      
+
       let timer: any;
       if (loadingProgress >= 1) {
         setShowTapToPlay(true);
@@ -47,31 +47,39 @@ export function MapLoadingScreen() {
   return (
     <AnimatePresence>
       {isMapLoading && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0, transition: { duration: showTapToPlay ? 0 : 0.5 } }}
+          exit={{
+            opacity: 0,
+            transition: { duration: showTapToPlay ? 0 : 0.5 },
+          }}
           className="fixed inset-0 z-[100] flex items-center justify-center mc-font cursor-pointer"
           onClick={handleTapToPlay}
           onTouchEnd={handleTapToPlay}
-          style={showTapToPlay ? { backgroundColor: 'rgba(0, 0, 0, 0.8)' } : {
-            backgroundColor: '#1E1E24',
-            backgroundImage: 'repeating-linear-gradient(45deg, #2A2A35 25%, transparent 25%, transparent 75%, #2A2A35 75%, #2A2A35), repeating-linear-gradient(45deg, #2A2A35 25%, #1E1E24 25%, #1E1E24 75%, #2A2A35 75%, #2A2A35)',
-            backgroundPosition: '0 0, 20px 20px',
-            backgroundSize: '40px 40px'
-          }}
+          style={
+            showTapToPlay
+              ? { backgroundColor: "rgba(0, 0, 0, 0.8)" }
+              : {
+                  backgroundColor: "#1E1E24",
+                  backgroundImage:
+                    'url("https://raw.githubusercontent.com/susu532/sounds/main/minecraft/landscape.png")',
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                  backgroundRepeat: "no-repeat",
+                }
+          }
         >
           {showTapToPlay ? (
             <div className="flex flex-col items-center justify-center gap-4 landscape:gap-2 sm:gap-10 max-w-lg w-[90%] text-center pointer-events-none">
               {/* Logo Area */}
               <div className="flex flex-col items-center gap-4">
-                <img 
-                  src="https://raw.githubusercontent.com/susu532/sounds/main/minecraft/favicon.png" 
-                  alt="Starplex Logo" 
+                <img
+                  src="https://raw.githubusercontent.com/susu532/sounds/main/minecraft/favicon.png"
+                  alt="Starplex Logo"
                   className="w-[40vh] h-[40vh] min-w-[120px] min-h-[120px] max-w-[384px] max-h-[384px] drop-shadow-[0_16px_32px_rgba(0,0,0,0.8)] select-none pointer-events-none object-contain landscape:w-[25vh] landscape:h-[25vh]"
-                  style={{ imageRendering: 'pixelated' }}
+                  style={{ imageRendering: "pixelated" }}
                 />
-               
               </div>
 
               {/* Tap to Play Button */}
@@ -99,9 +107,9 @@ export function MapLoadingScreen() {
                 <h1 className="text-xl landscape:text-lg sm:text-2xl md:text-3xl text-white font-bold drop-shadow-md text-center">
                   Entering World
                 </h1>
-                
+
                 <div className="w-full bg-[#111] h-4 rounded-full overflow-hidden border border-[#333] mt-2 relative">
-                  <div 
+                  <div
                     className="h-full bg-[#55FFFF] transition-all duration-300 ease-out"
                     style={{ width: `${Math.max(5, loadingProgress * 100)}%` }}
                   />

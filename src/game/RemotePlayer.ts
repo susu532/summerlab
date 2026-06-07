@@ -1,12 +1,21 @@
-import * as THREE from 'three';
-import { generateSkin, applySkinUVs } from './SkinManager';
-import { createItemModel } from './ItemModels';
-import { getBlockUVs, createTextureAtlas, ATLAS_TILES, isPlant, isFlatItem, isLightEmitting, isSolidBlock, isSlab } from './TextureAtlas';
-import { createSummerLabTextureAtlas } from './SummerLabTextureAtlas';
-import { settingsManager } from './Settings';
-import { ItemType } from './Inventory';
-import { audioManager } from './AudioManager';
-import { useGameStore } from '../store/gameStore';
+import * as THREE from "three";
+import { generateSkin, applySkinUVs } from "./SkinManager";
+import { createItemModel } from "./ItemModels";
+import {
+  getBlockUVs,
+  createTextureAtlas,
+  ATLAS_TILES,
+  isPlant,
+  isFlatItem,
+  isLightEmitting,
+  isSolidBlock,
+  isSlab,
+} from "./TextureAtlas";
+import { createSummerLabTextureAtlas } from "./SummerLabTextureAtlas";
+import { settingsManager } from "./Settings";
+import { ItemType } from "./Inventory";
+import { audioManager } from "./AudioManager";
+import { useGameStore } from "../store/gameStore";
 
 const _zeroVec = new THREE.Vector3(0, 0, 0);
 
@@ -36,23 +45,23 @@ const SHARED_GEOS = {
 };
 
 // Pre-apply UVs to shared geometries
-applySkinUVs(SHARED_GEOS.body, 'body');
-applySkinUVs(SHARED_GEOS.bodyOuter, 'body', true);
-applySkinUVs(SHARED_GEOS.neck, 'head', false, 'neck');
-applySkinUVs(SHARED_GEOS.head, 'head');
-applySkinUVs(SHARED_GEOS.headOuter, 'head', true);
-applySkinUVs(SHARED_GEOS.armL, 'armL');
+applySkinUVs(SHARED_GEOS.body, "body");
+applySkinUVs(SHARED_GEOS.bodyOuter, "body", true);
+applySkinUVs(SHARED_GEOS.neck, "head", false, "neck");
+applySkinUVs(SHARED_GEOS.head, "head");
+applySkinUVs(SHARED_GEOS.headOuter, "head", true);
+applySkinUVs(SHARED_GEOS.armL, "armL");
 SHARED_GEOS.armL.translate(0, -0.3, 0);
-applySkinUVs(SHARED_GEOS.armOuterL, 'armL', true);
-applySkinUVs(SHARED_GEOS.armR, 'armR');
+applySkinUVs(SHARED_GEOS.armOuterL, "armL", true);
+applySkinUVs(SHARED_GEOS.armR, "armR");
 SHARED_GEOS.armR.translate(0, -0.3, 0);
-applySkinUVs(SHARED_GEOS.armOuterR, 'armR', true);
-applySkinUVs(SHARED_GEOS.legL, 'legL');
+applySkinUVs(SHARED_GEOS.armOuterR, "armR", true);
+applySkinUVs(SHARED_GEOS.legL, "legL");
 SHARED_GEOS.legL.translate(0, -0.3, 0);
-applySkinUVs(SHARED_GEOS.legOuterL, 'legL', true);
-applySkinUVs(SHARED_GEOS.legR, 'legR');
+applySkinUVs(SHARED_GEOS.legOuterL, "legL", true);
+applySkinUVs(SHARED_GEOS.legR, "legR");
 SHARED_GEOS.legR.translate(0, -0.3, 0);
-applySkinUVs(SHARED_GEOS.legOuterR, 'legR', true);
+applySkinUVs(SHARED_GEOS.legOuterR, "legR", true);
 SHARED_GEOS.cape.translate(0, -0.5, 0.025);
 
 export interface PlayerSnapshot {
@@ -64,7 +73,7 @@ export interface PlayerSnapshot {
 export class RemotePlayer {
   id: string;
   group: THREE.Group;
-  
+
   headMesh!: THREE.Mesh;
   neckMesh!: THREE.Mesh;
   bodyMesh!: THREE.Mesh;
@@ -77,7 +86,7 @@ export class RemotePlayer {
   heldItemModel: THREE.Group | null = null;
   offHandItemMesh: THREE.Mesh | null = null;
   offHandItemModel: THREE.Group | null = null;
-  
+
   armorMeshes: THREE.Mesh[] = [];
   heldItemType: number = 0;
   offHandItemType: number = 0;
@@ -87,17 +96,16 @@ export class RemotePlayer {
   currentOffHandModelType: number | null = null;
   currentEmoji?: string;
 
-
   targetPosition: THREE.Vector3;
   targetRotation: THREE.Euler;
   lastNetPos: THREE.Vector3;
   snapshots: PlayerSnapshot[] = [];
   interpolationTimer: number = 0;
-  
+
   lastKnockbackTime: number = 0;
   predictionOffset = new THREE.Vector3();
   knockbackCorrection = new THREE.Vector3();
-  
+
   isFlying = false;
   isSwimming = false;
   isCrouching = false;
@@ -110,11 +118,11 @@ export class RemotePlayer {
   isGrounded = true;
   swingSpeed = 15;
   fluidColor: number | undefined;
-  
+
   skills: any = {};
   isDead: boolean = false;
   isSpectator: boolean = false;
-  
+
   walkCycle = 0;
   swingTimer = 0;
   idleTime = 0;
@@ -125,31 +133,31 @@ export class RemotePlayer {
   blockTransition = 0;
   climbTransition = 0;
   gliderOpenAmount = 0;
-  
+
   gliderGroup: THREE.Group | null = null;
   gliderLeftWing: THREE.Mesh | null = null;
   gliderRightWing: THREE.Mesh | null = null;
-  
+
   health: number = 100;
   team?: string;
-  
+
   // Head and body rotation tracking
   name: string;
   skinSeed: string = "";
-  
+
   headYaw = 0;
   headPitch = 0;
   bodyYaw = 0;
-  
+
   velocity = new THREE.Vector3();
   animVelocity = new THREE.Vector3();
   knockbackVelocity = new THREE.Vector3();
   lastPos = new THREE.Vector3();
   groundedTimer = 0;
-  
+
   hitFlailTarget = 0;
   hitFlailValue = 0;
-  
+
   // Pre-allocated vectors for math
   private _instantVelocity = new THREE.Vector3();
   private _recoilDir = new THREE.Vector3();
@@ -159,8 +167,14 @@ export class RemotePlayer {
   damageRotateTarget = 0;
   damageRotate = 0;
   damageRotateAxis = new THREE.Vector3(1, 0, 0);
-  
-  constructor(id: string, skinSeed: string, name: string, scene: THREE.Scene, team?: string) {
+
+  constructor(
+    id: string,
+    skinSeed: string,
+    name: string,
+    scene: THREE.Scene,
+    team?: string,
+  ) {
     this.id = id;
     this.group = new THREE.Group();
     this.targetPosition = new THREE.Vector3();
@@ -168,7 +182,7 @@ export class RemotePlayer {
     this.lastNetPos = new THREE.Vector3();
     this.name = name;
     this.team = team;
-    
+
     this.createModel(skinSeed, team);
     this.group.userData = { isPlayer: true, playerId: id };
     scene.add(this.group);
@@ -180,7 +194,7 @@ export class RemotePlayer {
     this.snapshots.push({
       time: Date.now(),
       position: position.clone(),
-      rotation: rotation.clone()
+      rotation: rotation.clone(),
     });
     // Keep only last 4 snapshots
     if (this.snapshots.length > 4) {
@@ -192,18 +206,10 @@ export class RemotePlayer {
     const width = 0.6;
     const height = 1.8;
     const pos = this.group.position;
-    
-    _hitMin.set(
-      pos.x - width / 2,
-      pos.y,
-      pos.z - width / 2
-    );
-    _hitMax.set(
-      pos.x + width / 2,
-      pos.y + height,
-      pos.z + width / 2
-    );
-    
+
+    _hitMin.set(pos.x - width / 2, pos.y, pos.z - width / 2);
+    _hitMax.set(pos.x + width / 2, pos.y + height, pos.z + width / 2);
+
     return _hitBox.set(_hitMin, _hitMax);
   }
 
@@ -211,9 +217,14 @@ export class RemotePlayer {
     this.skinSeed = newSkinSeed;
     const skinTexture = generateSkin(newSkinSeed);
     this.group.traverse((child: any) => {
-      if (child.isMesh && child.material && child.material.map && child.material.map.name !== 'cosmetic') {
-         child.material.map = skinTexture;
-         child.material.needsUpdate = true;
+      if (
+        child.isMesh &&
+        child.material &&
+        child.material.map &&
+        child.material.map.name !== "cosmetic"
+      ) {
+        child.material.map = skinTexture;
+        child.material.needsUpdate = true;
       }
     });
   }
@@ -225,28 +236,28 @@ export class RemotePlayer {
   private createModel(skinSeed: string, team?: string) {
     const isPerformance = settingsManager.getSettings().performanceMode;
     const skinTexture = generateSkin(skinSeed);
-    const skinMaterial = isPerformance ?
-      new THREE.MeshBasicMaterial({ map: skinTexture }) :
-      new THREE.MeshStandardMaterial({ 
-        map: skinTexture,
-        roughness: 0.1,
-        metalness: 0.0
-      });
-    const outerMaterial = isPerformance ?
-      new THREE.MeshBasicMaterial({ 
-        map: skinTexture, 
-        transparent: true, 
-        alphaTest: 0.1, 
-        side: THREE.DoubleSide
-      }) :
-      new THREE.MeshStandardMaterial({ 
-        map: skinTexture, 
-        transparent: true, 
-        alphaTest: 0.1, 
-        side: THREE.DoubleSide,
-        roughness: 0.1,
-        metalness: 0.0
-      });
+    const skinMaterial = isPerformance
+      ? new THREE.MeshBasicMaterial({ map: skinTexture })
+      : new THREE.MeshStandardMaterial({
+          map: skinTexture,
+          roughness: 1.0,
+          metalness: 0.0,
+        });
+    const outerMaterial = isPerformance
+      ? new THREE.MeshBasicMaterial({
+          map: skinTexture,
+          transparent: true,
+          alphaTest: 0.1,
+          side: THREE.DoubleSide,
+        })
+      : new THREE.MeshStandardMaterial({
+          map: skinTexture,
+          transparent: true,
+          alphaTest: 0.1,
+          side: THREE.DoubleSide,
+          roughness: 1.0,
+          metalness: 0.0,
+        });
 
     // Body (The central pivot for the upper body)
     this.bodyMesh = new THREE.Mesh(SHARED_GEOS.body, skinMaterial);
@@ -257,11 +268,11 @@ export class RemotePlayer {
 
     const bodyOuter = new THREE.Mesh(SHARED_GEOS.bodyOuter, outerMaterial);
     this.bodyMesh.add(bodyOuter);
-    
+
     // Backpack
-    const packMat = isPerformance ?
-      new THREE.MeshBasicMaterial({ color: 0x5c4033 }) :
-      new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.9 });
+    const packMat = isPerformance
+      ? new THREE.MeshBasicMaterial({ color: 0x5c4033 })
+      : new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.9 });
     const backpack = new THREE.Mesh(SHARED_GEOS.pack, packMat);
     backpack.position.set(0, 0, 0.18);
     backpack.castShadow = true;
@@ -280,7 +291,7 @@ export class RemotePlayer {
     this.headMesh.castShadow = true;
     this.headMesh.receiveShadow = true;
     this.bodyMesh.add(this.headMesh);
-    
+
     const headOuter = new THREE.Mesh(SHARED_GEOS.headOuter, outerMaterial);
     this.headMesh.add(headOuter);
 
@@ -311,7 +322,7 @@ export class RemotePlayer {
     this.leftLegMesh.castShadow = true;
     this.leftLegMesh.receiveShadow = true;
     this.group.add(this.leftLegMesh);
-    
+
     const legOuterL = new THREE.Mesh(SHARED_GEOS.legOuterL, outerMaterial);
     legOuterL.position.y = -0.3;
     this.leftLegMesh.add(legOuterL);
@@ -327,10 +338,11 @@ export class RemotePlayer {
     this.rightLegMesh.add(legOuterR);
 
     // Cape (Child of Body)
-    const capeColor = team === 'blue' ? 0x3366cc : (team === 'red' ? 0xcc3333 : 0xcc3333);
-    const capeMat = isPerformance ?
-      new THREE.MeshBasicMaterial({ color: capeColor }) :
-      new THREE.MeshStandardMaterial({ color: capeColor, roughness: 0.7 });
+    const capeColor =
+      team === "blue" ? 0x3366cc : team === "red" ? 0xcc3333 : 0xcc3333;
+    const capeMat = isPerformance
+      ? new THREE.MeshBasicMaterial({ color: capeColor })
+      : new THREE.MeshStandardMaterial({ color: capeColor, roughness: 0.7 });
     this.capeMesh = new THREE.Mesh(SHARED_GEOS.cape, capeMat);
     this.capeMesh.position.set(0, 0.3, 0.1); // Relative to body center
     this.capeMesh.castShadow = true;
@@ -342,16 +354,16 @@ export class RemotePlayer {
 
     // Held Item (Child of Right Arm)
     const itemGeo = new THREE.BoxGeometry(0.25, 0.25, 0.25);
-    const itemMat = isPerformance ?
-      new THREE.MeshBasicMaterial({ 
-        transparent: true, 
-        alphaTest: 0.5
-      }) :
-      new THREE.MeshStandardMaterial({ 
-        transparent: true, 
-        alphaTest: 0.5,
-        roughness: 0.8
-      });
+    const itemMat = isPerformance
+      ? new THREE.MeshBasicMaterial({
+          transparent: true,
+          alphaTest: 0.5,
+        })
+      : new THREE.MeshStandardMaterial({
+          transparent: true,
+          alphaTest: 0.5,
+          roughness: 0.8,
+        });
     this.heldItemMesh = new THREE.Mesh(itemGeo, itemMat);
     this.heldItemMesh.position.set(0, -0.45, -0.15);
     this.heldItemMesh.visible = false;
@@ -360,16 +372,16 @@ export class RemotePlayer {
     this.rightArmMesh.add(this.heldItemMesh);
 
     // Off-Hand Item (Child of Left Arm)
-    const offHandItemMat = isPerformance ?
-      new THREE.MeshBasicMaterial({ 
-        transparent: true, 
-        alphaTest: 0.5
-      }) :
-      new THREE.MeshStandardMaterial({ 
-        transparent: true, 
-        alphaTest: 0.5,
-        roughness: 0.8
-      });
+    const offHandItemMat = isPerformance
+      ? new THREE.MeshBasicMaterial({
+          transparent: true,
+          alphaTest: 0.5,
+        })
+      : new THREE.MeshStandardMaterial({
+          transparent: true,
+          alphaTest: 0.5,
+          roughness: 0.8,
+        });
     this.offHandItemMesh = new THREE.Mesh(itemGeo, offHandItemMat);
     this.offHandItemMesh.position.set(0, -0.45, -0.15);
     this.offHandItemMesh.visible = false;
@@ -384,7 +396,8 @@ export class RemotePlayer {
   public updateTeam(team?: string) {
     this.team = team;
     if (this.capeMesh && this.capeMesh.material) {
-      const capeColor = team === 'blue' ? 0x3366cc : (team === 'red' ? 0xcc3333 : 0xcc3333);
+      const capeColor =
+        team === "blue" ? 0x3366cc : team === "red" ? 0xcc3333 : 0xcc3333;
       const mat = this.capeMesh.material as any;
       if (mat.color !== undefined) {
         mat.color.setHex(capeColor);
@@ -396,16 +409,17 @@ export class RemotePlayer {
         if (origMat.color !== undefined) origMat.color.setHex(capeColor);
       }
     }
-    
+
     let hideArmor = false;
-    const currentMode = new URLSearchParams(window.location.search).get("server") || "";
+    const currentMode =
+      new URLSearchParams(window.location.search).get("server") || "";
     if (currentMode.startsWith("dungeondelver")) {
       hideArmor = true;
     }
 
-    if ((team === 'red' || team === 'blue') && !hideArmor) {
-      const teamColor = team === 'blue' ? 0x3366cc : 0xcc3333;
-      this.armorMeshes.forEach(mesh => {
+    if ((team === "red" || team === "blue") && !hideArmor) {
+      const teamColor = team === "blue" ? 0x3366cc : 0xcc3333;
+      this.armorMeshes.forEach((mesh) => {
         mesh.visible = true;
         const mat = mesh.material as any;
         mat.color.setHex(teamColor);
@@ -413,51 +427,59 @@ export class RemotePlayer {
         mat.userData.originalColor = teamColor;
       });
     } else {
-      this.armorMeshes.forEach(mesh => {
+      this.armorMeshes.forEach((mesh) => {
         mesh.visible = false;
       });
     }
-    
+
     if (this.gliderLeftWing && this.gliderRightWing) {
       let emissiveColor = 0x2a1b4d;
       let accentColor = 0x8a2be2;
       let accentEmissive = 0x9b59b6;
-      
-      if (team === 'red') {
+
+      if (team === "red") {
         emissiveColor = 0x4d1b1b;
         accentColor = 0xe22b2b;
         accentEmissive = 0xb65959;
-      } else if (team === 'blue') {
+      } else if (team === "blue") {
         emissiveColor = 0x1b1b4d;
         accentColor = 0x2b2be2;
         accentEmissive = 0x5959b6;
       }
-      
+
       const setGliderColor = (wing: THREE.Mesh | null) => {
         if (!wing) return;
-        wing.children.forEach(child => {
+        wing.children.forEach((child) => {
           if ((child as THREE.Mesh).isMesh) {
             const mesh = child as THREE.Mesh;
             const mat = mesh.material as any;
             if (mat && mat.color !== undefined && mat.emissive !== undefined) {
               if (!mat.userData) mat.userData = {};
-              if (mesh.scale.x > 10) { // Accent
+              if (mesh.scale.x > 10) {
+                // Accent
                 mat.color.setHex(accentColor);
                 mat.emissive.setHex(accentEmissive);
                 mat.userData.originalColor = accentColor;
                 mat.userData.originalEmissive = accentEmissive;
-              } else { // Base wing
+              } else {
+                // Base wing
                 mat.emissive.setHex(emissiveColor);
                 mat.userData.originalEmissive = emissiveColor;
               }
             }
             if (mesh.userData.originalMaterial) {
               const origMat = mesh.userData.originalMaterial as any;
-              if (origMat && origMat.color !== undefined && origMat.emissive !== undefined) {
-                if (mesh.scale.x > 10) { // Accent
+              if (
+                origMat &&
+                origMat.color !== undefined &&
+                origMat.emissive !== undefined
+              ) {
+                if (mesh.scale.x > 10) {
+                  // Accent
                   origMat.color.setHex(accentColor);
                   origMat.emissive.setHex(accentEmissive);
-                } else { // Base wing
+                } else {
+                  // Base wing
                   origMat.emissive.setHex(emissiveColor);
                 }
               }
@@ -465,7 +487,7 @@ export class RemotePlayer {
           }
         });
       };
-      
+
       setGliderColor(this.gliderLeftWing);
       setGliderColor(this.gliderRightWing);
     }
@@ -488,15 +510,15 @@ export class RemotePlayer {
     wingShape.lineTo(0, -0.4); // Back to root
     wingShape.lineTo(0, 0);
 
-    const extrudeSettings = { 
-      depth: 0.04, 
-      bevelEnabled: true, 
-      bevelSegments: 2, 
-      steps: 1, 
-      bevelSize: 0.015, 
-      bevelThickness: 0.015 
+    const extrudeSettings = {
+      depth: 0.04,
+      bevelEnabled: true,
+      bevelSegments: 2,
+      steps: 1,
+      bevelSize: 0.015,
+      bevelThickness: 0.015,
     };
-    
+
     const wingGeo = new THREE.ExtrudeGeometry(wingShape, extrudeSettings);
     // Center it on Z
     wingGeo.translate(0, 0, -0.02);
@@ -506,38 +528,38 @@ export class RemotePlayer {
     let emissiveColor = 0x2a1b4d; // purple default
     let accentColor = 0x8a2be2; // violet default
     let accentEmissive = 0x9b59b6;
-    
-    if (team === 'red') {
+
+    if (team === "red") {
       emissiveColor = 0x4d1b1b;
       accentColor = 0xe22b2b;
       accentEmissive = 0xb65959;
-    } else if (team === 'blue') {
+    } else if (team === "blue") {
       emissiveColor = 0x1b1b4d;
       accentColor = 0x2b2be2;
       accentEmissive = 0x5959b6;
     }
 
     const isPerformance = settingsManager.getSettings().performanceMode;
-    const wingMat = isPerformance ?
-      new THREE.MeshBasicMaterial({ color: baseColor }) :
-      new THREE.MeshStandardMaterial({ 
-        color: baseColor, 
-        roughness: 0.3,
-        metalness: 0.8,
-        emissive: emissiveColor,
-        emissiveIntensity: 0.6
-      });
+    const wingMat = isPerformance
+      ? new THREE.MeshBasicMaterial({ color: baseColor })
+      : new THREE.MeshStandardMaterial({
+          color: baseColor,
+          roughness: 0.3,
+          metalness: 0.8,
+          emissive: emissiveColor,
+          emissiveIntensity: 0.6,
+        });
 
     // Glowing accent lines
     const accentGeo = new THREE.BoxGeometry(0.04, 0.04, 0.06);
-    const accentMat = isPerformance ?
-      new THREE.MeshBasicMaterial({ color: accentColor }) :
-      new THREE.MeshStandardMaterial({
-        color: accentColor,
-        emissive: accentEmissive,
-        emissiveIntensity: 2.5,
-        roughness: 0.2
-      });
+    const accentMat = isPerformance
+      ? new THREE.MeshBasicMaterial({ color: accentColor })
+      : new THREE.MeshStandardMaterial({
+          color: accentColor,
+          emissive: accentEmissive,
+          emissiveIntensity: 2.5,
+          roughness: 0.2,
+        });
 
     const createWing = () => {
       const g = new THREE.Group() as any;
@@ -584,9 +606,13 @@ export class RemotePlayer {
 
   private createArmor() {
     const isPerformance = settingsManager.getSettings().performanceMode;
-    const armorMat = isPerformance ?
-      new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide }) :
-      new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, side: THREE.DoubleSide });
+    const armorMat = isPerformance
+      ? new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide })
+      : new THREE.MeshStandardMaterial({
+          color: 0xffffff,
+          roughness: 0.9,
+          side: THREE.DoubleSide,
+        });
 
     const createArmorMesh = (geo: THREE.BufferGeometry) => {
       const mesh = new THREE.Mesh(geo, armorMat);
@@ -633,16 +659,20 @@ export class RemotePlayer {
   }
 
   private updateItem(type: number, isOffHand: boolean) {
-    const currentType = isOffHand ? this.renderedOffHandItemType : this.renderedHeldItemType;
+    const currentType = isOffHand
+      ? this.renderedOffHandItemType
+      : this.renderedHeldItemType;
     if (currentType === type) return;
-    
+
     if (isOffHand) this.renderedOffHandItemType = type;
     else this.renderedHeldItemType = type;
-    
+
     const mesh = isOffHand ? this.offHandItemMesh : this.heldItemMesh;
     const model = isOffHand ? this.offHandItemModel : this.heldItemModel;
-    const currentModelType = isOffHand ? this.currentOffHandModelType : this.currentModelType;
-    
+    const currentModelType = isOffHand
+      ? this.currentOffHandModelType
+      : this.currentModelType;
+
     if (!mesh || !model) return;
 
     if (type === 0) {
@@ -650,21 +680,46 @@ export class RemotePlayer {
       model.visible = false;
       return;
     }
-    
-    const isPickaxe = type >= ItemType.WOODEN_PICKAXE && type <= ItemType.DIAMOND_PICKAXE;
-    const isSword = type >= ItemType.WOODEN_SWORD && type <= ItemType.DIAMOND_SWORD;
-    const isShovel = type >= ItemType.WOODEN_SHOVEL && type <= ItemType.DIAMOND_SHOVEL;
+
+    const isPickaxe =
+      type >= ItemType.WOODEN_PICKAXE && type <= ItemType.DIAMOND_PICKAXE;
+    const isSword =
+      type >= ItemType.WOODEN_SWORD && type <= ItemType.DIAMOND_SWORD;
+    const isShovel =
+      type >= ItemType.WOODEN_SHOVEL && type <= ItemType.DIAMOND_SHOVEL;
     const isAxe = type >= ItemType.WOODEN_AXE && type <= ItemType.DIAMOND_AXE;
     const isTorch = type === ItemType.TORCH;
-    const isTool = isPickaxe || isSword || isShovel || isAxe || (type >= 460 && type <= 472) || type === 54 || type === ItemType.FLUID_CHOCOLATE_HOSE || type === ItemType.WASHING_HOSE;
-    const isFood = (type >= 456 && type <= 459);
-    const isMaterial = type === 13 || (type >= 500 && type <= 509) || type === 29 || type === 303 || type === 300 || type === 319 || type === 321 || type === 43 || type === 44 || isTorch || type === ItemType.CHEST || type === ItemType.ENDER_CHEST || type === ItemType.FLUID_CHOCOLATE_HOSE || type === ItemType.WASHING_HOSE;
+    const isTool =
+      isPickaxe ||
+      isSword ||
+      isShovel ||
+      isAxe ||
+      (type >= 460 && type <= 472) ||
+      type === 54 ||
+      type === ItemType.FLUID_CHOCOLATE_HOSE ||
+      type === ItemType.WASHING_HOSE;
+    const isFood = type >= 456 && type <= 459;
+    const isMaterial =
+      type === 13 ||
+      (type >= 500 && type <= 509) ||
+      type === 29 ||
+      type === 303 ||
+      type === 300 ||
+      type === 319 ||
+      type === 321 ||
+      type === 43 ||
+      type === 44 ||
+      isTorch ||
+      type === ItemType.CHEST ||
+      type === ItemType.ENDER_CHEST ||
+      type === ItemType.FLUID_CHOCOLATE_HOSE ||
+      type === ItemType.WASHING_HOSE;
     const use3DModel = isTool || isFood || isMaterial;
 
     if (use3DModel) {
       mesh.visible = false;
       model.visible = true;
-      
+
       if (currentModelType !== type) {
         model.clear();
         const itemModel = createItemModel(type as ItemType);
@@ -685,25 +740,36 @@ export class RemotePlayer {
         } else if (isMaterial && !isTool) {
           model.position.set(0, -0.45, -0.05);
           model.scale.set(0.9, 0.9, 0.9);
-          model.rotation.set(Math.PI / 8, 0, Math.PI / 16 * side);
+          model.rotation.set(Math.PI / 8, 0, (Math.PI / 16) * side);
         } else if (type === ItemType.ARROW) {
           model.position.set(0, -0.4, -0.1);
           model.scale.set(1.1, 1.1, 1.1);
-          model.rotation.set(Math.PI - Math.PI / 4, Math.PI / 8 * side, Math.PI / 16 * side);
-        } else if (type === ItemType.FLUID_CHOCOLATE_HOSE || type === ItemType.WASHING_HOSE) {
+          model.rotation.set(
+            Math.PI - Math.PI / 4,
+            (Math.PI / 8) * side,
+            (Math.PI / 16) * side,
+          );
+        } else if (
+          type === ItemType.FLUID_CHOCOLATE_HOSE ||
+          type === ItemType.WASHING_HOSE
+        ) {
           model.position.set(0, -0.45, -0.1);
           model.scale.set(1.1, 1.1, 1.1);
-          model.rotation.set(-Math.PI/2 - 0.2, Math.PI / 8 * side, 0);
+          model.rotation.set(-Math.PI / 2 - 0.2, (Math.PI / 8) * side, 0);
         } else {
           model.position.set(0, -0.4, -0.1);
           model.scale.set(1.1, 1.1, 1.1);
-          model.rotation.set(-Math.PI / 4, Math.PI / 8 * side, Math.PI / 16 * side);
+          model.rotation.set(
+            -Math.PI / 4,
+            (Math.PI / 8) * side,
+            (Math.PI / 16) * side,
+          );
         }
       }
     } else {
       model.visible = false;
       mesh.visible = true;
-      
+
       const side = isOffHand ? -1 : 1;
       const uvs = getBlockUVs(type);
       if (uvs) {
@@ -713,7 +779,7 @@ export class RemotePlayer {
         if (isFlat) {
           mesh.scale.set(1.4, 1.4, 0.05);
           mesh.position.set(0, -0.4, -0.1);
-          mesh.rotation.set(Math.PI / 8, Math.PI / 4 * side, 0); 
+          mesh.rotation.set(Math.PI / 8, (Math.PI / 4) * side, 0);
           (mesh.material as THREE.MeshStandardMaterial).side = THREE.DoubleSide;
         } else if (plant) {
           mesh.scale.set(1, 1, 0.05);
@@ -727,15 +793,17 @@ export class RemotePlayer {
           (mesh.material as THREE.MeshStandardMaterial).side = THREE.FrontSide;
         }
 
-        const uvAttribute = mesh.geometry.getAttribute('uv') as THREE.BufferAttribute;
+        const uvAttribute = mesh.geometry.getAttribute(
+          "uv",
+        ) as THREE.BufferAttribute;
         const atlasSize = ATLAS_TILES;
         const step = 1 / atlasSize;
-        
+
         for (let i = 0; i < 6; i++) {
           const faceUVs = uvs[i];
           const u = faceUVs[0] * step;
           const v = 1.0 - (faceUVs[1] + 1) * step;
-          
+
           const startIdx = i * 4;
           uvAttribute.setXY(startIdx, u, v + step);
           uvAttribute.setXY(startIdx + 1, u + step, v + step);
@@ -743,10 +811,14 @@ export class RemotePlayer {
           uvAttribute.setXY(startIdx + 3, u + step, v);
         }
         uvAttribute.needsUpdate = true;
-        
+
         if (!(mesh.material as THREE.MeshStandardMaterial).map) {
-          const isSummerLab = new URLSearchParams(window.location.search).get("server")?.startsWith("summerlab");
-          (mesh.material as THREE.MeshStandardMaterial).map = isSummerLab ? createSummerLabTextureAtlas() : createTextureAtlas();
+          const isSummerLab = new URLSearchParams(window.location.search)
+            .get("server")
+            ?.startsWith("summerlab");
+          (mesh.material as THREE.MeshStandardMaterial).map = isSummerLab
+            ? createSummerLabTextureAtlas()
+            : createTextureAtlas();
         }
       }
     }
@@ -795,57 +867,66 @@ export class RemotePlayer {
       const distSq = this.targetPosition.distanceToSquared(localPlayerPos);
       const isPerformance = settingsManager.getSettings().performanceMode;
       const hideDistSq = isPerformance ? 4096 : 10000; // 64 blocks for performance vs 100 blocks
-      
-      if (distSq > hideDistSq || this.isDead) { // Hide geometry at distance
+
+      if (distSq > hideDistSq || this.isDead) {
+        // Hide geometry at distance
         this.group.visible = false;
         this.currentPos.copy(this.targetPosition);
         this.group.position.copy(this.currentPos);
         return;
       }
-      
+
       this.group.visible = true;
 
       // Make spectator semi-transparent
       if (this.isSpectator) {
-         this.group.traverse((child) => {
-            if ((child as THREE.Mesh).isMesh) {
-               const mesh = child as THREE.Mesh;
-               if (!mesh.userData.originalMaterial) {
-                  mesh.userData.originalMaterial = mesh.material;
-                  const newMat = Array.isArray(mesh.material) ? mesh.material.map(m => m.clone()) : (mesh.material as THREE.Material).clone();
-                  if (Array.isArray(newMat)) {
-                     newMat.forEach(m => { m.transparent = true; m.opacity = 0.3; m.alphaTest = 0.01; });
-                  } else {
-                     newMat.transparent = true; newMat.opacity = 0.3; newMat.alphaTest = 0.01;
-                  }
-                  mesh.material = newMat;
-               }
+        this.group.traverse((child) => {
+          if ((child as THREE.Mesh).isMesh) {
+            const mesh = child as THREE.Mesh;
+            if (!mesh.userData.originalMaterial) {
+              mesh.userData.originalMaterial = mesh.material;
+              const newMat = Array.isArray(mesh.material)
+                ? mesh.material.map((m) => m.clone())
+                : (mesh.material as THREE.Material).clone();
+              if (Array.isArray(newMat)) {
+                newMat.forEach((m) => {
+                  m.transparent = true;
+                  m.opacity = 0.3;
+                  m.alphaTest = 0.01;
+                });
+              } else {
+                newMat.transparent = true;
+                newMat.opacity = 0.3;
+                newMat.alphaTest = 0.01;
+              }
+              mesh.material = newMat;
             }
-         });
+          }
+        });
       } else {
-         this.group.traverse((child) => {
-            if ((child as THREE.Mesh).isMesh && child.userData.originalMaterial) {
-               const mesh = child as THREE.Mesh;
-               // dispose cloned material
-               if (Array.isArray(mesh.material)) {
-                  mesh.material.forEach(m => m.dispose());
-               } else {
-                  mesh.material.dispose();
-               }
-               mesh.material = mesh.userData.originalMaterial;
-               delete mesh.userData.originalMaterial;
+        this.group.traverse((child) => {
+          if ((child as THREE.Mesh).isMesh && child.userData.originalMaterial) {
+            const mesh = child as THREE.Mesh;
+            // dispose cloned material
+            if (Array.isArray(mesh.material)) {
+              mesh.material.forEach((m) => m.dispose());
+            } else {
+              mesh.material.dispose();
             }
-         });
+            mesh.material = mesh.userData.originalMaterial;
+            delete mesh.userData.originalMaterial;
+          }
+        });
       }
 
       // Toggle shadows based on distance to save rendering time (30 blocks)
       const shouldCastShadow = distSq < 900;
       if (this.bodyMesh.castShadow !== shouldCastShadow) {
-         this.bodyMesh.traverse((child) => {
-            child.castShadow = shouldCastShadow;
-         });
-         this.leftLegMesh.castShadow = shouldCastShadow;
-         this.rightLegMesh.castShadow = shouldCastShadow;
+        this.bodyMesh.traverse((child) => {
+          child.castShadow = shouldCastShadow;
+        });
+        this.leftLegMesh.castShadow = shouldCastShadow;
+        this.rightLegMesh.castShadow = shouldCastShadow;
       }
 
       // Stop animating limbs if > 60 blocks (3600 sq) - just teleport them smoothly
@@ -863,7 +944,11 @@ export class RemotePlayer {
       if (world) {
         // X collision
         const stepX = new THREE.Vector3(step.x, 0, 0);
-        const testPosX = this.currentPos.clone().add(this.visualOffset).add(this.predictionOffset).add(stepX);
+        const testPosX = this.currentPos
+          .clone()
+          .add(this.visualOffset)
+          .add(this.predictionOffset)
+          .add(stepX);
         if (!this.checkCollision(testPosX, world)) {
           this.predictionOffset.x += step.x;
         } else {
@@ -872,7 +957,11 @@ export class RemotePlayer {
 
         // Y collision
         const stepY = new THREE.Vector3(0, step.y, 0);
-        const testPosY = this.currentPos.clone().add(this.visualOffset).add(this.predictionOffset).add(stepY);
+        const testPosY = this.currentPos
+          .clone()
+          .add(this.visualOffset)
+          .add(this.predictionOffset)
+          .add(stepY);
         if (!this.checkCollision(testPosY, world)) {
           this.predictionOffset.y += step.y;
         } else {
@@ -881,7 +970,11 @@ export class RemotePlayer {
 
         // Z collision
         const stepZ = new THREE.Vector3(0, 0, step.z);
-        const testPosZ = this.currentPos.clone().add(this.visualOffset).add(this.predictionOffset).add(stepZ);
+        const testPosZ = this.currentPos
+          .clone()
+          .add(this.visualOffset)
+          .add(this.predictionOffset)
+          .add(stepZ);
         if (!this.checkCollision(testPosZ, world)) {
           this.predictionOffset.z += step.z;
         } else {
@@ -897,50 +990,63 @@ export class RemotePlayer {
     // Decay the prediction offset slowly as fallback (in case server misses knockback)
     const predDecay = 1.0 - Math.exp(-1.5 * delta);
     this.predictionOffset.lerp(_zeroVec, predDecay);
-    if (this.predictionOffset.lengthSq() < 0.01) this.predictionOffset.set(0, 0, 0);
+    if (this.predictionOffset.lengthSq() < 0.01)
+      this.predictionOffset.set(0, 0, 0);
 
     const oldCurrentPos = this.currentPos.clone();
 
     // Networked movement interpolation
     const renderTime = Date.now() - 50; // 50ms artificial delay
-    
+
     let snapA = null;
     let snapB = null;
-    
+
     for (let i = 0; i < this.snapshots.length - 1; i++) {
-       if (this.snapshots[i].time <= renderTime && this.snapshots[i+1].time >= renderTime) {
-          snapA = this.snapshots[i];
-          snapB = this.snapshots[i+1];
-          break;
-       }
+      if (
+        this.snapshots[i].time <= renderTime &&
+        this.snapshots[i + 1].time >= renderTime
+      ) {
+        snapA = this.snapshots[i];
+        snapB = this.snapshots[i + 1];
+        break;
+      }
     }
-    
+
     if (snapA && snapB) {
-       const duration = snapB.time - snapA.time;
-       const t = duration > 0 ? Math.max(0, Math.min(1, (renderTime - snapA.time) / duration)) : 1;
-       this.currentPos.lerpVectors(snapA.position, snapB.position, t);
+      const duration = snapB.time - snapA.time;
+      const t =
+        duration > 0
+          ? Math.max(0, Math.min(1, (renderTime - snapA.time) / duration))
+          : 1;
+      this.currentPos.lerpVectors(snapA.position, snapB.position, t);
     } else if (this.snapshots.length > 0) {
-       const latest = this.snapshots[this.snapshots.length - 1];
-       const dist = this.currentPos.distanceTo(latest.position);
-       if (dist > 10) {
-          this.currentPos.copy(latest.position);
-       } else {
-          const moveFactor = 1.0 - Math.exp(-20 * delta);
-          this.currentPos.lerp(latest.position, moveFactor);
-       }
+      const latest = this.snapshots[this.snapshots.length - 1];
+      const dist = this.currentPos.distanceTo(latest.position);
+      if (dist > 10) {
+        this.currentPos.copy(latest.position);
+      } else {
+        const moveFactor = 1.0 - Math.exp(-20 * delta);
+        this.currentPos.lerp(latest.position, moveFactor);
+      }
     } else {
-       const dist = this.currentPos.distanceTo(this.targetPosition);
-       if (dist > 10) {
-         this.currentPos.copy(this.targetPosition);
-       } else {
-         const moveFactor = 1.0 - Math.exp(-20 * delta);
-         this.currentPos.lerp(this.targetPosition, moveFactor);
-       }
+      const dist = this.currentPos.distanceTo(this.targetPosition);
+      if (dist > 10) {
+        this.currentPos.copy(this.targetPosition);
+      } else {
+        const moveFactor = 1.0 - Math.exp(-20 * delta);
+        this.currentPos.lerp(this.targetPosition, moveFactor);
+      }
     }
 
     // Blend server movement into prediction offset to seamlessly match server ground-truth
-    const posDiff = new THREE.Vector3().subVectors(this.currentPos, oldCurrentPos);
-    if (this.predictionOffset.lengthSq() > 0.001 && posDiff.lengthSq() > 0.000001) {
+    const posDiff = new THREE.Vector3().subVectors(
+      this.currentPos,
+      oldCurrentPos,
+    );
+    if (
+      this.predictionOffset.lengthSq() > 0.001 &&
+      posDiff.lengthSq() > 0.000001
+    ) {
       const predDir = this.predictionOffset.clone().normalize();
       const fulfilled = posDiff.dot(predDir);
       if (fulfilled > 0) {
@@ -955,22 +1061,35 @@ export class RemotePlayer {
 
     const corrDecay = 1.0 - Math.exp(-20 * delta); // Match snapshot buffer interpolation speed
     this.knockbackCorrection.lerp(_zeroVec, corrDecay);
-    if (this.knockbackCorrection.lengthSq() < 0.001) this.knockbackCorrection.set(0, 0, 0);
-    
+    if (this.knockbackCorrection.lengthSq() < 0.001)
+      this.knockbackCorrection.set(0, 0, 0);
+
     this.visualOffsetTarget.lerp(_zeroVec, delta * 8.0);
     this.visualOffset.lerp(this.visualOffsetTarget, delta * 15.0);
-    
-    this.damageRotateTarget = THREE.MathUtils.lerp(this.damageRotateTarget, 0, delta * 8.0);
-    this.damageRotate = THREE.MathUtils.lerp(this.damageRotate, this.damageRotateTarget, delta * 15.0);
-    
-    this.group.position.copy(this.currentPos).add(this.visualOffset).add(this.predictionOffset).add(this.knockbackCorrection);
+
+    this.damageRotateTarget = THREE.MathUtils.lerp(
+      this.damageRotateTarget,
+      0,
+      delta * 8.0,
+    );
+    this.damageRotate = THREE.MathUtils.lerp(
+      this.damageRotate,
+      this.damageRotateTarget,
+      delta * 15.0,
+    );
+
+    this.group.position
+      .copy(this.currentPos)
+      .add(this.visualOffset)
+      .add(this.predictionOffset)
+      .add(this.knockbackCorrection);
 
     const lerpFactor = 1.0 - Math.exp(-25 * delta);
-    
+
     // Minecraft-style head and body rotation sync
     // targetRotation.y is the total look yaw
     // targetRotation.x is the look pitch
-    
+
     // 1. Interpolate head look angles
     let diffYaw = this.targetRotation.y - this.headYaw;
     while (diffYaw < -Math.PI) diffYaw += Math.PI * 2;
@@ -983,28 +1102,42 @@ export class RemotePlayer {
     this.headPitch += diffPitch * lerpFactor;
 
     // Limit head vertical rotation
-    const limitUp = Math.PI * 0.40; // ~72 degrees
+    const limitUp = Math.PI * 0.4; // ~72 degrees
     const limitDown = Math.PI * 0.48; // ~86 degrees
     this.headPitch = Math.max(-limitDown, Math.min(limitUp, this.headPitch));
 
     // 2. Body yaw logic: body follows head but can lag behind
     // If moving, body faces look direction
     // If still, body only turns if head turns too far (> 50 degrees)
-    this._instantVelocity.copy(this.currentPos).sub(this.lastPos).divideScalar(delta);
+    this._instantVelocity
+      .copy(this.currentPos)
+      .sub(this.lastPos)
+      .divideScalar(delta);
     this.velocity.copy(this._instantVelocity);
-    
+
     // Smoothed velocity for animations to prevent jitter
     const animLerp = 1.0 - Math.pow(0.0001, delta);
     this.animVelocity.lerp(this._instantVelocity, animLerp);
-    
-    const horizontalVelocity = new THREE.Vector2(this.animVelocity.x, this.animVelocity.z).length();
+
+    const horizontalVelocity = new THREE.Vector2(
+      this.animVelocity.x,
+      this.animVelocity.z,
+    ).length();
     const isMoving = horizontalVelocity > 0.1;
 
     // Grounded state smoothing
     if (this.isGrounded) {
-      this.groundedTimer = THREE.MathUtils.lerp(this.groundedTimer, 1, delta * 15);
+      this.groundedTimer = THREE.MathUtils.lerp(
+        this.groundedTimer,
+        1,
+        delta * 15,
+      );
     } else {
-      this.groundedTimer = THREE.MathUtils.lerp(this.groundedTimer, 0, delta * 15);
+      this.groundedTimer = THREE.MathUtils.lerp(
+        this.groundedTimer,
+        0,
+        delta * 15,
+      );
     }
 
     if (isMoving || this.isSwinging) {
@@ -1018,29 +1151,30 @@ export class RemotePlayer {
       let diffBody = this.headYaw - this.bodyYaw;
       while (diffBody < -Math.PI) diffBody += Math.PI * 2;
       while (diffBody > Math.PI) diffBody -= Math.PI * 2;
-      
+
       const threshold = 0.8; // ~45 degrees
       if (Math.abs(diffBody) > threshold) {
-        const excess = diffBody > 0 ? diffBody - threshold : diffBody + threshold;
+        const excess =
+          diffBody > 0 ? diffBody - threshold : diffBody + threshold;
         this.bodyYaw += excess * lerpFactor;
       }
     }
 
     // Apply rotations
     this.group.rotation.set(0, this.bodyYaw, 0);
-    
+
     // Add visual damage tilt (Minecraft red-flash flinch style)
     // if (this.damageRotate > 0.01) {
     //   this.group.rotateOnWorldAxis(this.damageRotateAxis, this.damageRotate);
     // }
-    
+
     // Head Y rotation is relative to body
     let relativeHeadYaw = this.headYaw - this.bodyYaw;
     while (relativeHeadYaw < -Math.PI) relativeHeadYaw += Math.PI * 2;
     while (relativeHeadYaw > Math.PI) relativeHeadYaw -= Math.PI * 2;
-    
+
     // We'll apply these in animateModel to avoid being overwritten
-    
+
     this.lastPos.copy(this.currentPos);
 
     this.idleTime += delta;
@@ -1049,12 +1183,12 @@ export class RemotePlayer {
       if (this.isCrouching) cycleSpeed = 8; // Slower steps when crouching
       const oldWalkCycle = this.walkCycle;
       this.walkCycle += delta * cycleSpeed;
-      
+
       // Play positional footstep sound at the peak of the walk cycle
       if (Math.sin(this.walkCycle) < 0 && Math.sin(oldWalkCycle) >= 0) {
         // Just use 'grass'/'stone' interchangeably, or if we want exact surface we need world.
         // For simplicity 'grass' or default step is fine for remote players
-        audioManager.playPositionalStep('stone', this.group.position);
+        audioManager.playPositionalStep("stone", this.group.position);
       }
     } else {
       this.walkCycle = 0;
@@ -1070,45 +1204,84 @@ export class RemotePlayer {
       this.swingTimer = 0;
     }
 
-    this.crouchTransition = THREE.MathUtils.lerp(this.crouchTransition, this.isCrouching ? 1 : 0, delta * 10);
-    this.swimTransition = THREE.MathUtils.lerp(this.swimTransition, this.isSwimming ? 1 : 0, delta * 8);
-    this.blockTransition = THREE.MathUtils.lerp(this.blockTransition, this.isBlocking ? 1 : 0, delta * 12);
-    
+    this.crouchTransition = THREE.MathUtils.lerp(
+      this.crouchTransition,
+      this.isCrouching ? 1 : 0,
+      delta * 10,
+    );
+    this.swimTransition = THREE.MathUtils.lerp(
+      this.swimTransition,
+      this.isSwimming ? 1 : 0,
+      delta * 8,
+    );
+    this.blockTransition = THREE.MathUtils.lerp(
+      this.blockTransition,
+      this.isBlocking ? 1 : 0,
+      delta * 12,
+    );
+
     // Hide off-hand when charging bow
     const isChargingBow = this.heldItemType === ItemType.BOW && this.isBlocking;
     if (this.offHandItemModel && this.offHandItemMesh) {
       if (isChargingBow) {
         this.offHandItemModel.visible = false;
         this.offHandItemMesh.visible = false;
-      } else if (!this.offHandItemModel.visible && !this.offHandItemMesh.visible && this.offHandItemType !== 0) {
+      } else if (
+        !this.offHandItemModel.visible &&
+        !this.offHandItemMesh.visible &&
+        this.offHandItemType !== 0
+      ) {
         // Reset to normal rendering state if not charging
         this.renderedOffHandItemType = -1; // Force re-eval
         this.updateItem(this.offHandItemType, true);
       }
     }
-  
 
-    this.hitFlailTarget = THREE.MathUtils.lerp(this.hitFlailTarget, 0, delta * 5.0);
-    this.hitFlailValue = THREE.MathUtils.lerp(this.hitFlailValue, this.hitFlailTarget, delta * 12.0);
+    this.hitFlailTarget = THREE.MathUtils.lerp(
+      this.hitFlailTarget,
+      0,
+      delta * 5.0,
+    );
+    this.hitFlailValue = THREE.MathUtils.lerp(
+      this.hitFlailValue,
+      this.hitFlailTarget,
+      delta * 12.0,
+    );
 
-    const isClimbing = isMoving && this.animVelocity.y > 0.5 && this.groundedTimer > 0.5;
-    this.climbTransition = THREE.MathUtils.lerp(this.climbTransition, isClimbing ? 1 : 0, delta * 10);
+    const isClimbing =
+      isMoving && this.animVelocity.y > 0.5 && this.groundedTimer > 0.5;
+    this.climbTransition = THREE.MathUtils.lerp(
+      this.climbTransition,
+      isClimbing ? 1 : 0,
+      delta * 10,
+    );
 
     this.animateModel(delta, isMoving, horizontalVelocity);
     this.updateGlider(delta);
 
     // Fluid sync
-    if (this.isShooting && (this.heldItemType === ItemType.FLUID_CHOCOLATE_HOSE || this.heldItemType === ItemType.WASHING_HOSE)) {
+    if (
+      this.isShooting &&
+      (this.heldItemType === ItemType.FLUID_CHOCOLATE_HOSE ||
+        this.heldItemType === ItemType.WASHING_HOSE)
+    ) {
       if ((window as any).game && (window as any).game.chocolateFluidSystem) {
         const cs = (window as any).game.chocolateFluidSystem;
         let origin = new THREE.Vector3();
-        let emitDir = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(this.targetRotation.x, this.targetRotation.y, 0, 'YXZ'));
-        
+        let emitDir = new THREE.Vector3(0, 0, -1).applyEuler(
+          new THREE.Euler(
+            this.targetRotation.x,
+            this.targetRotation.y,
+            0,
+            "YXZ",
+          ),
+        );
+
         if (this.heldItemModel && this.heldItemModel.visible) {
-          const nozzle = this.heldItemModel.getObjectByName('hose_nozzle');
+          const nozzle = this.heldItemModel.getObjectByName("hose_nozzle");
           this.heldItemModel.updateMatrixWorld(true);
           if (nozzle) {
-            origin.set(0, 0.1, 0); 
+            origin.set(0, 0.1, 0);
             nozzle.localToWorld(origin);
           } else {
             origin.copy(new THREE.Vector3(0, 0.7, 0));
@@ -1118,32 +1291,44 @@ export class RemotePlayer {
           origin = this.currentPos.clone().add(new THREE.Vector3(0, 1.1, 0));
           origin.add(emitDir.clone().multiplyScalar(0.7));
         }
-        
-        const color = this.fluidColor !== undefined ? new THREE.Color(this.fluidColor) : new THREE.Color('#3d1c04');
+
+        const color =
+          this.fluidColor !== undefined
+            ? new THREE.Color(this.fluidColor)
+            : new THREE.Color("#3d1c04");
         cs.emit(origin, emitDir, this.isBlocking, color, this.velocity); // Pass this.velocity
       }
     }
   }
 
   private updateGlider(delta: number) {
-    if (!this.gliderGroup || !this.gliderLeftWing || !this.gliderRightWing) return;
+    if (!this.gliderGroup || !this.gliderLeftWing || !this.gliderRightWing)
+      return;
 
     const targetOpen = this.isGliding ? 1 : 0;
     this.gliderOpenAmount = THREE.MathUtils.lerp(
       this.gliderOpenAmount,
       targetOpen,
-      delta * (this.isGliding ? 8 : 4)
+      delta * (this.isGliding ? 8 : 4),
     );
 
     if (this.gliderOpenAmount > 0.01) {
       this.gliderGroup.visible = true;
-      
+
       // Aerodynamic pitch
-      this.gliderGroup.rotation.x = THREE.MathUtils.lerp(0.5, 0.2, this.gliderOpenAmount);
+      this.gliderGroup.rotation.x = THREE.MathUtils.lerp(
+        0.5,
+        0.2,
+        this.gliderOpenAmount,
+      );
 
       const openAngle = 0.15;
       const closedAngle = 1.6;
-      const angle = THREE.MathUtils.lerp(closedAngle, openAngle, this.gliderOpenAmount);
+      const angle = THREE.MathUtils.lerp(
+        closedAngle,
+        openAngle,
+        this.gliderOpenAmount,
+      );
 
       this.gliderRightWing.rotation.y = angle;
       this.gliderLeftWing.rotation.y = Math.PI - angle;
@@ -1166,25 +1351,29 @@ export class RemotePlayer {
     }
   }
 
-  private animateModel(delta: number, isMoving: boolean, horizontalVelocity: number) {
+  private animateModel(
+    delta: number,
+    isMoving: boolean,
+    horizontalVelocity: number,
+  ) {
     const isPerformanceMode = settingsManager.getSettings().performanceMode;
     const swingAngle = Math.sin(this.walkCycle) * 0.5;
     const armSwingAngle = Math.sin(this.swingTimer) * 1.5;
-    
+
     // Reset rotations
     this.leftLegMesh.rotation.set(0, 0, 0);
     this.rightLegMesh.rotation.set(0, 0, 0);
     this.leftArmMesh.rotation.set(0, 0, 0);
     this.rightArmMesh.rotation.set(0, 0, 0);
     this.bodyMesh.rotation.set(0, 0, 0);
-    
+
     // Apply synced look rotation as base
     let relativeHeadYaw = this.headYaw - this.bodyYaw;
     while (relativeHeadYaw < -Math.PI) relativeHeadYaw += Math.PI * 2;
     while (relativeHeadYaw > Math.PI) relativeHeadYaw -= Math.PI * 2;
-    
+
     this.headMesh.rotation.set(this.headPitch, relativeHeadYaw, 0);
-    
+
     if (isPerformanceMode) {
       // Minimal animations for performance mode
       if (isMoving) {
@@ -1197,12 +1386,12 @@ export class RemotePlayer {
       if (this.crouchTransition > 0.01) {
         const t = this.crouchTransition;
         this.bodyMesh.rotation.x = -0.5 * t;
-        
+
         // Lower the body mesh specifically to simulate the crouch
         const crouchDrop = 0.15 * t;
         this.bodyMesh.position.y = 0.9 - crouchDrop;
         this.bodyMesh.position.z = -0.15 * t;
-        
+
         // Squash torso
         const bodyScaleY = 1.0 - 0.2 * t;
         this.bodyMesh.scale.y = bodyScaleY;
@@ -1216,7 +1405,7 @@ export class RemotePlayer {
         this.neckMesh.position.y = 0.4 + 0.15 * t;
         this.leftArmMesh.position.y = 0.3 + 0.15 * t;
         this.rightArmMesh.position.y = 0.3 + 0.15 * t;
-        
+
         // Bend legs (simulated by rotating them forward and shifting up)
         this.leftLegMesh.rotation.x = 0.3 * t;
         this.rightLegMesh.rotation.x = 0.3 * t;
@@ -1225,13 +1414,13 @@ export class RemotePlayer {
           // Tactical sneak walk arms
           const sneakStride = this.walkCycle * 0.8;
           const sneakSwing = Math.sin(sneakStride) * 0.4 * t;
-          
+
           this.leftLegMesh.rotation.x += sneakSwing;
           this.rightLegMesh.rotation.x -= sneakSwing;
 
           const baseArmX = -0.4 * t;
           const baseArmZ = 0.15 * t;
-          
+
           this.leftArmMesh.rotation.x = baseArmX - sneakSwing * 0.3;
           this.rightArmMesh.rotation.x = baseArmX + sneakSwing * 0.3;
           this.leftArmMesh.rotation.z = baseArmZ;
@@ -1248,12 +1437,12 @@ export class RemotePlayer {
         this.bodyMesh.position.y = 0.9;
         this.bodyMesh.position.z = 0;
         this.bodyMesh.scale.y = 1.0;
-        
+
         this.headMesh.scale.y = 1.0;
         this.neckMesh.scale.y = 1.0;
         this.leftArmMesh.scale.y = 1.0;
         this.rightArmMesh.scale.y = 1.0;
-        
+
         this.headMesh.position.y = 0.5;
         this.neckMesh.position.y = 0.4;
         this.leftArmMesh.position.y = 0.3;
@@ -1261,15 +1450,20 @@ export class RemotePlayer {
       }
 
       if (this.isSwinging) {
-        this.rightArmMesh.rotation.x = Math.sin(this.swingTimer) * 2.0; 
+        this.rightArmMesh.rotation.x = Math.sin(this.swingTimer) * 2.0;
       }
 
       // Final clamp for head rotation
       const limitUpHead = Math.PI * 0.35;
-      const limitDownHead = Math.PI * 0.20; // ~86 degrees
+      const limitDownHead = Math.PI * 0.2; // ~86 degrees
       // Apply the head rotation offset after clamp
-      const headPitchOffset = this.crouchTransition > 0.01 ? (this.crouchTransition * 0.5) : 0;
-      this.headMesh.rotation.x = Math.max(-limitDownHead, Math.min(limitUpHead, this.headMesh.rotation.x)) + headPitchOffset;
+      const headPitchOffset =
+        this.crouchTransition > 0.01 ? this.crouchTransition * 0.5 : 0;
+      this.headMesh.rotation.x =
+        Math.max(
+          -limitDownHead,
+          Math.min(limitUpHead, this.headMesh.rotation.x),
+        ) + headPitchOffset;
       return;
     }
 
@@ -1295,12 +1489,15 @@ export class RemotePlayer {
     } else if (Math.abs(this.animVelocity.y) > 2) {
       targetCapeAngle = this.animVelocity.y < 0 ? -0.8 : -0.2;
     } else if (isMoving) {
-      targetCapeAngle = -0.2 - (horizontalVelocity / 10) * 0.8 - Math.sin(this.walkCycle * 2) * 0.1;
+      targetCapeAngle =
+        -0.2 -
+        (horizontalVelocity / 10) * 0.8 -
+        Math.sin(this.walkCycle * 2) * 0.1;
     } else {
       const breath = Math.sin(this.idleTime * 2) * 0.02;
       targetCapeAngle = -0.1 - breath * 0.5;
     }
-    
+
     const capeDiff = targetCapeAngle - this.capeAngle;
     this.capeVelocity += capeDiff * 0.1;
     this.capeVelocity *= 0.8;
@@ -1316,15 +1513,23 @@ export class RemotePlayer {
       const t = this.swimTransition;
       // Swimming pose: flatter body to feel like swimming (Face-down)
       this.bodyMesh.rotation.x = THREE.MathUtils.lerp(0, -1.3, t);
-      this.headMesh.rotation.x += 0.6 * t; 
+      this.headMesh.rotation.x += 0.6 * t;
       this.bodyMesh.position.y = THREE.MathUtils.lerp(0.9, 0.4, t);
-      
+
       const paddleAngle = Math.sin(this.walkCycle) * 0.5;
       this.leftArmMesh.rotation.x = THREE.MathUtils.lerp(0, -1.5, t);
       this.rightArmMesh.rotation.x = THREE.MathUtils.lerp(0, -1.5, t);
-      this.leftArmMesh.rotation.y = THREE.MathUtils.lerp(0, -0.4 + paddleAngle, t);
-      this.rightArmMesh.rotation.y = THREE.MathUtils.lerp(0, 0.4 - paddleAngle, t);
-      
+      this.leftArmMesh.rotation.y = THREE.MathUtils.lerp(
+        0,
+        -0.4 + paddleAngle,
+        t,
+      );
+      this.rightArmMesh.rotation.y = THREE.MathUtils.lerp(
+        0,
+        0.4 - paddleAngle,
+        t,
+      );
+
       const kickAngle = Math.cos(this.walkCycle * 1.5) * 0.4;
       this.leftLegMesh.rotation.x = THREE.MathUtils.lerp(0, kickAngle, t);
       this.rightLegMesh.rotation.x = THREE.MathUtils.lerp(0, -kickAngle, t);
@@ -1338,12 +1543,17 @@ export class RemotePlayer {
         const t = this.climbTransition;
         // High-knee step when climbing
         const stepLift = Math.max(0, Math.sin(this.walkCycle)) * 0.5 * t;
-        const stepLiftAlt = Math.max(0, Math.sin(this.walkCycle + Math.PI)) * 0.5 * t;
+        const stepLiftAlt =
+          Math.max(0, Math.sin(this.walkCycle + Math.PI)) * 0.5 * t;
         this.leftLegMesh.rotation.x += stepLift;
         this.rightLegMesh.rotation.x += stepLiftAlt;
-        
+
         // Lean forward into the climb
-        this.bodyMesh.rotation.x = THREE.MathUtils.lerp(this.bodyMesh.rotation.x, 0.4, t);
+        this.bodyMesh.rotation.x = THREE.MathUtils.lerp(
+          this.bodyMesh.rotation.x,
+          0.4,
+          t,
+        );
       }
 
       if (this.isSprinting) {
@@ -1364,12 +1574,12 @@ export class RemotePlayer {
 
     if (this.crouchTransition > 0.01) {
       const t = this.crouchTransition;
-      
+
       // Lower the body mesh specifically to simulate the crouch
       const crouchDrop = 0.15 * t; // Reduced to elevate torso/stomach
       this.bodyMesh.position.y -= crouchDrop;
       this.bodyMesh.position.z -= 0.15 * t; // Move torso forward
-      
+
       // Squash torso to look shorter
       const bodyScaleY = 1.0 - 0.2 * t;
       this.bodyMesh.scale.y = bodyScaleY;
@@ -1384,13 +1594,25 @@ export class RemotePlayer {
       this.neckMesh.position.y += 0.15 * t;
       this.leftArmMesh.position.y += 0.15 * t;
       this.rightArmMesh.position.y += 0.15 * t;
-      
+
       // Lean body forward (head and arms follow because they are children)
-      this.bodyMesh.rotation.x = THREE.MathUtils.lerp(this.bodyMesh.rotation.x, -0.5, t);
-      
+      this.bodyMesh.rotation.x = THREE.MathUtils.lerp(
+        this.bodyMesh.rotation.x,
+        -0.5,
+        t,
+      );
+
       // Bend legs (simulated by rotating them forward and shifting up)
-      this.leftLegMesh.rotation.x = THREE.MathUtils.lerp(this.leftLegMesh.rotation.x, 0.3, t);
-      this.rightLegMesh.rotation.x = THREE.MathUtils.lerp(this.rightLegMesh.rotation.x, 0.3, t);
+      this.leftLegMesh.rotation.x = THREE.MathUtils.lerp(
+        this.leftLegMesh.rotation.x,
+        0.3,
+        t,
+      );
+      this.rightLegMesh.rotation.x = THREE.MathUtils.lerp(
+        this.rightLegMesh.rotation.x,
+        0.3,
+        t,
+      );
       this.leftLegMesh.position.y += 0.0 * t;
       this.rightLegMesh.position.y += 0.0 * t;
 
@@ -1398,30 +1620,65 @@ export class RemotePlayer {
         // Tactical sneak walk
         const sneakStride = this.walkCycle * 0.8;
         const sneakSwing = Math.sin(sneakStride) * 0.4 * t;
-        
+
         this.leftLegMesh.rotation.x += sneakSwing;
         this.rightLegMesh.rotation.x -= sneakSwing;
-        
+
         // Arms held in a ready/tactical position (Minecraft-style sneak arms)
         // Arms are held slightly back and out
         const baseArmX = -0.4 * t;
         const baseArmZ = 0.15 * t;
-        
-        this.leftArmMesh.rotation.x = THREE.MathUtils.lerp(this.leftArmMesh.rotation.x, baseArmX - sneakSwing * 0.3, t);
-        this.rightArmMesh.rotation.x = THREE.MathUtils.lerp(this.rightArmMesh.rotation.x, baseArmX + sneakSwing * 0.3, t);
-        this.leftArmMesh.rotation.z = THREE.MathUtils.lerp(this.leftArmMesh.rotation.z, baseArmZ, t);
-        this.rightArmMesh.rotation.z = THREE.MathUtils.lerp(this.rightArmMesh.rotation.z, -baseArmZ, t);
+
+        this.leftArmMesh.rotation.x = THREE.MathUtils.lerp(
+          this.leftArmMesh.rotation.x,
+          baseArmX - sneakSwing * 0.3,
+          t,
+        );
+        this.rightArmMesh.rotation.x = THREE.MathUtils.lerp(
+          this.rightArmMesh.rotation.x,
+          baseArmX + sneakSwing * 0.3,
+          t,
+        );
+        this.leftArmMesh.rotation.z = THREE.MathUtils.lerp(
+          this.leftArmMesh.rotation.z,
+          baseArmZ,
+          t,
+        );
+        this.rightArmMesh.rotation.z = THREE.MathUtils.lerp(
+          this.rightArmMesh.rotation.z,
+          -baseArmZ,
+          t,
+        );
       } else {
         // Idle crouch pose - subtle breathing sway
         const sway = Math.sin(this.idleTime * 2) * 0.05 * t;
-        this.leftArmMesh.rotation.x = THREE.MathUtils.lerp(this.leftArmMesh.rotation.x, 0.2 + sway, t);
-        this.rightArmMesh.rotation.x = THREE.MathUtils.lerp(this.rightArmMesh.rotation.x, 0.2 + sway, t);
-        this.leftArmMesh.rotation.z = THREE.MathUtils.lerp(this.leftArmMesh.rotation.z, 0.15, t);
-        this.rightArmMesh.rotation.z = THREE.MathUtils.lerp(this.rightArmMesh.rotation.z, -0.15, t);
+        this.leftArmMesh.rotation.x = THREE.MathUtils.lerp(
+          this.leftArmMesh.rotation.x,
+          0.2 + sway,
+          t,
+        );
+        this.rightArmMesh.rotation.x = THREE.MathUtils.lerp(
+          this.rightArmMesh.rotation.x,
+          0.2 + sway,
+          t,
+        );
+        this.leftArmMesh.rotation.z = THREE.MathUtils.lerp(
+          this.leftArmMesh.rotation.z,
+          0.15,
+          t,
+        );
+        this.rightArmMesh.rotation.z = THREE.MathUtils.lerp(
+          this.rightArmMesh.rotation.z,
+          -0.15,
+          t,
+        );
       }
     }
 
-    if (this.heldItemType === ItemType.FLUID_CHOCOLATE_HOSE || this.heldItemType === ItemType.WASHING_HOSE) {
+    if (
+      this.heldItemType === ItemType.FLUID_CHOCOLATE_HOSE ||
+      this.heldItemType === ItemType.WASHING_HOSE
+    ) {
       // Hose aiming animation - aligns exactly with look direction
       this.rightArmMesh.rotation.x = this.headPitch + Math.PI / 2;
       this.rightArmMesh.rotation.y = 0;
@@ -1440,108 +1697,181 @@ export class RemotePlayer {
 
       if (this.heldItemType === ItemType.BOW) {
         // 3rd Person Bow Charge Animation
-        this.rightArmMesh.rotation.x = THREE.MathUtils.lerp(this.rightArmMesh.rotation.x, Math.PI / 2, t);
-        this.rightArmMesh.rotation.y = THREE.MathUtils.lerp(this.rightArmMesh.rotation.y, -0.3, t);
-        
-        this.leftArmMesh.rotation.x = THREE.MathUtils.lerp(this.leftArmMesh.rotation.x, Math.PI / 2 - 0.5, t);
-        this.leftArmMesh.rotation.y = THREE.MathUtils.lerp(this.leftArmMesh.rotation.y, 0.5, t);
-        this.leftArmMesh.rotation.z = THREE.MathUtils.lerp(this.leftArmMesh.rotation.z, 0.9, t);
+        this.rightArmMesh.rotation.x = THREE.MathUtils.lerp(
+          this.rightArmMesh.rotation.x,
+          Math.PI / 2,
+          t,
+        );
+        this.rightArmMesh.rotation.y = THREE.MathUtils.lerp(
+          this.rightArmMesh.rotation.y,
+          -0.3,
+          t,
+        );
+
+        this.leftArmMesh.rotation.x = THREE.MathUtils.lerp(
+          this.leftArmMesh.rotation.x,
+          Math.PI / 2 - 0.5,
+          t,
+        );
+        this.leftArmMesh.rotation.y = THREE.MathUtils.lerp(
+          this.leftArmMesh.rotation.y,
+          0.5,
+          t,
+        );
+        this.leftArmMesh.rotation.z = THREE.MathUtils.lerp(
+          this.leftArmMesh.rotation.z,
+          0.9,
+          t,
+        );
 
         if (this.heldItemModel) {
-            this.heldItemModel.rotation.set(
-              THREE.MathUtils.lerp(-Math.PI / 4, Math.PI / 2, t),
-              THREE.MathUtils.lerp(Math.PI / 8, -Math.PI / 2, t),
-              THREE.MathUtils.lerp(Math.PI / 16, 0, t)
-            );
+          this.heldItemModel.rotation.set(
+            THREE.MathUtils.lerp(-Math.PI / 4, Math.PI / 2, t),
+            THREE.MathUtils.lerp(Math.PI / 8, -Math.PI / 2, t),
+            THREE.MathUtils.lerp(Math.PI / 16, 0, t),
+          );
         }
 
-        const arrowMesh = this.heldItemModel?.getObjectByName('bow_arrow');
-        const stringMesh = this.heldItemModel?.getObjectByName('bow_string');
+        const arrowMesh = this.heldItemModel?.getObjectByName("bow_arrow");
+        const stringMesh = this.heldItemModel?.getObjectByName("bow_string");
         if (arrowMesh && stringMesh) {
-           arrowMesh.visible = true;
-           arrowMesh.rotation.z = -Math.PI / 2;
-           arrowMesh.position.set(0.1 - (t * 0.25), 0, 0);
-           // stringMesh.position.set(0.24 + (t * 0.21), 0, 0);
+          arrowMesh.visible = true;
+          arrowMesh.rotation.z = -Math.PI / 2;
+          arrowMesh.position.set(0.1 - t * 0.25, 0, 0);
+          // stringMesh.position.set(0.24 + (t * 0.21), 0, 0);
         }
       } else {
         // Minecraft sword block animation style
-        this.rightArmMesh.rotation.x = THREE.MathUtils.lerp(this.rightArmMesh.rotation.x, -0.5, t);
-        this.rightArmMesh.rotation.y = THREE.MathUtils.lerp(this.rightArmMesh.rotation.y, -0.3, t);
-        this.rightArmMesh.rotation.z = THREE.MathUtils.lerp(this.rightArmMesh.rotation.z, 0.5, t);
-        
+        this.rightArmMesh.rotation.x = THREE.MathUtils.lerp(
+          this.rightArmMesh.rotation.x,
+          -0.5,
+          t,
+        );
+        this.rightArmMesh.rotation.y = THREE.MathUtils.lerp(
+          this.rightArmMesh.rotation.y,
+          -0.3,
+          t,
+        );
+        this.rightArmMesh.rotation.z = THREE.MathUtils.lerp(
+          this.rightArmMesh.rotation.z,
+          0.5,
+          t,
+        );
+
         // Override idle sway logic
-        if (this.crouchTransition <= 0.01 && !isMoving && !this.isFlying && !this.isSwimming && this.groundedTimer > 0.5) {
+        if (
+          this.crouchTransition <= 0.01 &&
+          !isMoving &&
+          !this.isFlying &&
+          !this.isSwimming &&
+          this.groundedTimer > 0.5
+        ) {
           const breath = Math.sin(this.idleTime * 2) * 0.02;
           this.rightArmMesh.position.y += breath * 0.8;
         }
-        
+
         if (this.isSwinging) {
           this.rightArmMesh.rotation.x += Math.sin(this.swingTimer) * 0.5 * t;
         }
       }
     } else {
       if (this.heldItemType === ItemType.BOW && this.heldItemModel) {
-         this.heldItemModel.rotation.set(-Math.PI / 4, Math.PI / 8, Math.PI / 16);
-         const arrowMesh = this.heldItemModel.getObjectByName('bow_arrow');
-         const stringMesh = this.heldItemModel.getObjectByName('bow_string');
-         if (arrowMesh && stringMesh) {
-            arrowMesh.visible = false;
-            stringMesh.position.set(0.24, 0, 0);
-         }
+        this.heldItemModel.rotation.set(
+          -Math.PI / 4,
+          Math.PI / 8,
+          Math.PI / 16,
+        );
+        const arrowMesh = this.heldItemModel.getObjectByName("bow_arrow");
+        const stringMesh = this.heldItemModel.getObjectByName("bow_string");
+        if (arrowMesh && stringMesh) {
+          arrowMesh.visible = false;
+          stringMesh.position.set(0.24, 0, 0);
+        }
       }
-      
-      if (this.isSwinging) {
-      const t = this.swingTimer / Math.PI;
-      // Use a power curve for more "snap" at the start of the swing
-      const swingProgress = Math.sin(Math.pow(t, 0.4) * Math.PI);
-      
-      const isSword = (this.heldItemType >= ItemType.WOODEN_SWORD && this.heldItemType <= ItemType.DIAMOND_SWORD) || 
-                      this.heldItemType === ItemType.ASPECT_OF_THE_END;
 
-      if (isSword) {
-        // Upside down swipe (Underhand/Upward slash)
-        // Starts from behind/down and swipes upwards
-        this.rightArmMesh.rotation.x = THREE.MathUtils.lerp(this.rightArmMesh.rotation.x, 0.4 - swingProgress * 2.0, 0.8);
-        this.rightArmMesh.rotation.y = THREE.MathUtils.lerp(this.rightArmMesh.rotation.y, swingProgress * 0.8, 0.5);
-        this.rightArmMesh.rotation.z = THREE.MathUtils.lerp(this.rightArmMesh.rotation.z, swingProgress * 0.4, 0.5);
-      } else {
-        // Diagonal slash motion for tools
-        this.rightArmMesh.rotation.x = THREE.MathUtils.lerp(this.rightArmMesh.rotation.x, swingProgress * 1.5 - 0.2, 0.8);
-        this.rightArmMesh.rotation.y = THREE.MathUtils.lerp(this.rightArmMesh.rotation.y, -swingProgress * 0.8, 0.5);
-        this.rightArmMesh.rotation.z = THREE.MathUtils.lerp(this.rightArmMesh.rotation.z, -swingProgress * 0.4, 0.5);
-      }
-      
-      // If crouching, make the swing slightly more forward-leaning
-      if (this.isCrouching) {
-        this.rightArmMesh.rotation.x -= 0.2;
+      if (this.isSwinging) {
+        const t = this.swingTimer / Math.PI;
+        // Use a power curve for more "snap" at the start of the swing
+        const swingProgress = Math.sin(Math.pow(t, 0.4) * Math.PI);
+
+        const isSword =
+          (this.heldItemType >= ItemType.WOODEN_SWORD &&
+            this.heldItemType <= ItemType.DIAMOND_SWORD) ||
+          this.heldItemType === ItemType.ASPECT_OF_THE_END;
+
+        if (isSword) {
+          // Upside down swipe (Underhand/Upward slash)
+          // Starts from behind/down and swipes upwards
+          this.rightArmMesh.rotation.x = THREE.MathUtils.lerp(
+            this.rightArmMesh.rotation.x,
+            0.4 - swingProgress * 2.0,
+            0.8,
+          );
+          this.rightArmMesh.rotation.y = THREE.MathUtils.lerp(
+            this.rightArmMesh.rotation.y,
+            swingProgress * 0.8,
+            0.5,
+          );
+          this.rightArmMesh.rotation.z = THREE.MathUtils.lerp(
+            this.rightArmMesh.rotation.z,
+            swingProgress * 0.4,
+            0.5,
+          );
+        } else {
+          // Diagonal slash motion for tools
+          this.rightArmMesh.rotation.x = THREE.MathUtils.lerp(
+            this.rightArmMesh.rotation.x,
+            swingProgress * 1.5 - 0.2,
+            0.8,
+          );
+          this.rightArmMesh.rotation.y = THREE.MathUtils.lerp(
+            this.rightArmMesh.rotation.y,
+            -swingProgress * 0.8,
+            0.5,
+          );
+          this.rightArmMesh.rotation.z = THREE.MathUtils.lerp(
+            this.rightArmMesh.rotation.z,
+            -swingProgress * 0.4,
+            0.5,
+          );
+        }
+
+        // If crouching, make the swing slightly more forward-leaning
+        if (this.isCrouching) {
+          this.rightArmMesh.rotation.x -= 0.2;
+        }
       }
     }
-  }
 
-  // Final clamp for head rotation to prevent extreme angles from animations
+    // Final clamp for head rotation to prevent extreme angles from animations
     const limitUpHead = Math.PI * 0.35;
-    const limitDownHead = Math.PI * 0.20; // ~86 degrees
-    
+    const limitDownHead = Math.PI * 0.2; // ~86 degrees
+
     // Apply the head rotation offset after clamp so crouch still looks right
-    const headPitchOffset = this.crouchTransition > 0.01 ? (this.crouchTransition * 0.5) : 0;
-    this.headMesh.rotation.x = Math.max(-limitDownHead, Math.min(limitUpHead, this.headMesh.rotation.x)) + headPitchOffset;
+    const headPitchOffset =
+      this.crouchTransition > 0.01 ? this.crouchTransition * 0.5 : 0;
+    this.headMesh.rotation.x =
+      Math.max(
+        -limitDownHead,
+        Math.min(limitUpHead, this.headMesh.rotation.x),
+      ) + headPitchOffset;
 
     // Apply hit react flail
     if (this.hitFlailValue > 0.001) {
-      const hitT = this.hitFlailValue; 
+      const hitT = this.hitFlailValue;
 
       // Head snaps back (removed head tilt animation)
       // this.headMesh.rotation.x -= hitT * 0.3;
-      
+
       // Arms flail outward and back
       this.leftArmMesh.rotation.x -= hitT * 0.4;
       this.rightArmMesh.rotation.x -= hitT * 0.4;
       this.leftArmMesh.rotation.z += hitT * 0.25;
       this.rightArmMesh.rotation.z -= hitT * 0.25;
-      
+
       // Body leans back slightly
       // this.bodyMesh.rotation.x -= hitT * 0.15;
-      
+
       // Legs splay slightly
       this.leftLegMesh.rotation.x -= hitT * 0.15;
       this.rightLegMesh.rotation.x -= hitT * 0.15;
@@ -1559,13 +1889,18 @@ export class RemotePlayer {
       this.visualOffsetTarget.addScaledVector(kDir, 0.4);
       this.damageRotateAxis.set(-kDir.z, 0, kDir.x).normalize();
       this.damageRotateTarget = 0.4;
-      
+
       // Perform local positional knockback prediction for instant response
       this.knockback(kDir, knockbackDir.length());
     } else {
-      this._recoilDir.set(0, 0, 1).applyQuaternion(this.group.quaternion).negate();
+      this._recoilDir
+        .set(0, 0, 1)
+        .applyQuaternion(this.group.quaternion)
+        .negate();
       this.visualOffsetTarget.addScaledVector(this._recoilDir, 0.4);
-      this.damageRotateAxis.set(-this._recoilDir.z, 0, this._recoilDir.x).normalize();
+      this.damageRotateAxis
+        .set(-this._recoilDir.z, 0, this._recoilDir.x)
+        .normalize();
       this.damageRotateTarget = 0.4;
     }
     this.visualOffsetTarget.y += 0.2;
@@ -1573,8 +1908,10 @@ export class RemotePlayer {
     this.group.traverse((obj) => {
       if (obj instanceof THREE.Mesh && obj.material) {
         // Handle array of materials
-        const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
-        
+        const materials = Array.isArray(obj.material)
+          ? obj.material
+          : [obj.material];
+
         for (const mat of materials) {
           if (mat.emissive !== undefined) {
             if (mat.userData === undefined) mat.userData = {};
@@ -1586,11 +1923,12 @@ export class RemotePlayer {
             }
             mat.emissive.setHex(0xff0000);
             mat.emissiveIntensity = 0.5;
-            
+
             setTimeout(() => {
               if (mat.emissive !== undefined) {
                 mat.emissive.setHex(mat.userData.originalEmissive ?? 0x000000);
-                mat.emissiveIntensity = mat.userData.originalEmissiveIntensity ?? 0;
+                mat.emissiveIntensity =
+                  mat.userData.originalEmissiveIntensity ?? 0;
               }
             }, 200);
           } else if (mat.color !== undefined) {
@@ -1599,7 +1937,7 @@ export class RemotePlayer {
               mat.userData.originalColor = mat.color.getHex();
             }
             mat.color.setHex(0xff0000);
-            
+
             setTimeout(() => {
               if (mat.color !== undefined) {
                 mat.color.setHex(mat.userData.originalColor ?? 0xffffff);

@@ -1,8 +1,8 @@
-import * as THREE from 'three';
-import { ItemType } from './Inventory';
-import { generateSkin, applySkinUVs } from './SkinManager';
-import { settingsManager } from './Settings';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import * as THREE from "three";
+import { ItemType } from "./Inventory";
+import { generateSkin, applySkinUVs } from "./SkinManager";
+import { settingsManager } from "./Settings";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 const gltfLoader = new GLTFLoader();
 const _hitMin = new THREE.Vector3();
@@ -15,7 +15,7 @@ export interface ShopItem {
   currency: ItemType;
   outputAmount?: number;
   metadata?: any;
-  action?: 'buy' | 'sell';
+  action?: "buy" | "sell";
 }
 
 export class NPC {
@@ -31,14 +31,23 @@ export class NPC {
   scale: number = 1.0;
   isHubNPC: boolean = false; // Flag to identify hub NPCs
 
-  constructor(id: string, name: string, position: THREE.Vector3, shopItems: ShopItem[], modelPath?: string, rotation: number = 0, scale: number = 1.0, autoRotate: boolean = false) {
+  constructor(
+    id: string,
+    name: string,
+    position: THREE.Vector3,
+    shopItems: ShopItem[],
+    modelPath?: string,
+    rotation: number = 0,
+    scale: number = 1.0,
+    autoRotate: boolean = false,
+  ) {
     this.id = id;
     this.name = name;
     this.position = position;
     this.rotation = rotation;
     this.scale = scale;
     this.autoRotate = autoRotate;
-    this.isHubNPC = id.startsWith('hub_npc'); // Automatically detect hub NPCs
+    this.isHubNPC = id.startsWith("hub_npc"); // Automatically detect hub NPCs
     this.shopItems = shopItems;
     this.modelPath = modelPath;
     this.group = new THREE.Group();
@@ -46,7 +55,7 @@ export class NPC {
     this.group.rotation.y = rotation;
     this.group.scale.set(scale, scale, scale);
     this.group.userData = { npcId: id, isNPC: true };
-    
+
     if (modelPath) {
       this.loadModel(modelPath);
     } else {
@@ -57,17 +66,20 @@ export class NPC {
   }
 
   private createNameTag() {
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
     if (!context) return;
 
     // Higher resolution for hub NPCs, even wider for longer names
-    const isWide = this.id === 'hub_npc_dungeon' || this.id === 'hub_npc_br' || this.id === 'hub_npc_void';
+    const isWide =
+      this.id === "hub_npc_dungeon" ||
+      this.id === "hub_npc_br" ||
+      this.id === "hub_npc_void";
     canvas.width = isWide ? 1536 : 1024;
     canvas.height = 256;
 
     // Background with rounded corners
-    context.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    context.fillStyle = "rgba(0, 0, 0, 0.7)";
     // Draw rounded rect
     const r = 40;
     context.beginPath();
@@ -75,7 +87,12 @@ export class NPC {
     context.lineTo(canvas.width - r, 0);
     context.quadraticCurveTo(canvas.width, 0, canvas.width, r);
     context.lineTo(canvas.width, canvas.height - r);
-    context.quadraticCurveTo(canvas.width, canvas.height, canvas.width - r, canvas.height);
+    context.quadraticCurveTo(
+      canvas.width,
+      canvas.height,
+      canvas.width - r,
+      canvas.height,
+    );
     context.lineTo(r, canvas.height);
     context.quadraticCurveTo(0, canvas.height, 0, canvas.height - r);
     context.lineTo(0, r);
@@ -85,17 +102,21 @@ export class NPC {
 
     // Text style - Very large and bold
     context.font = 'bold 120px "Inter", Arial';
-    context.textAlign = 'center';
-    context.textBaseline = 'middle';
-    
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+
     // Strong shadow for high contrast
-    context.shadowColor = 'rgba(0, 0, 0, 0.8)';
+    context.shadowColor = "rgba(0, 0, 0, 0.8)";
     context.shadowBlur = 8;
     context.shadowOffsetX = 4;
     context.shadowOffsetY = 4;
 
-    context.fillStyle = '#ffffff';
-    context.fillText(this.name.toUpperCase(), canvas.width / 2, canvas.height / 2);
+    context.fillStyle = "#ffffff";
+    context.fillText(
+      this.name.toUpperCase(),
+      canvas.width / 2,
+      canvas.height / 2,
+    );
 
     const texture = new THREE.CanvasTexture(canvas);
     texture.minFilter = THREE.LinearFilter;
@@ -105,103 +126,118 @@ export class NPC {
     // This makes it "non-rotational" (it stays fixed in world space)
     const geoWidth = isWide ? 3.75 : 2.5;
     const geometry = new THREE.PlaneGeometry(geoWidth, 0.625);
-    const material = new THREE.MeshBasicMaterial({ 
-      map: texture, 
+    const material = new THREE.MeshBasicMaterial({
+      map: texture,
       transparent: true,
       side: THREE.DoubleSide,
-      depthTest: true // Ensure it respects occlusion
+      depthTest: true, // Ensure it respects occlusion
     });
-    
+
     const nameTag = new THREE.Mesh(geometry, material);
-    
+
     // Rotate name tag for specific NPCs if requested (e.g., Jerry)
-    if (this.id.includes('jerry')) {
+    if (this.id.includes("jerry")) {
       nameTag.rotation.y = Math.PI;
     }
-    
+
     // Elevate it slightly above the NPC
     nameTag.position.y = 2.3;
-    
+
     // Add it to the NPC group (it will inherit the NPC's rotation)
     this.group.add(nameTag);
     this.group.userData.nameTag = nameTag; // Store for billboard rotation
   }
 
   private loadModel(path: string) {
-    gltfLoader.load(path, (gltf) => {
-      const isPerformance = settingsManager.getSettings().performanceMode;
-      const model = gltf.scene;
-      // Scale if needed, typical NPCs are ~2 blocks tall
-      model.scale.set(1, 1, 1);
-      this.group.add(model);
-      
-      if (gltf.animations && gltf.animations.length > 0) {
-        const mixer = new THREE.AnimationMixer(model);
-        // Play the first animation by default (usually idle if it's a character)
-        const action = mixer.clipAction(gltf.animations[0]);
-        action.play();
-        this.group.userData.mixer = mixer;
-      }
-      
-      model.traverse((child) => {
-        if (child instanceof THREE.Mesh) {
-          child.castShadow = !isPerformance;
-          child.receiveShadow = !isPerformance;
-          if (isPerformance && child.material) {
-             const oldMat = child.material;
-             child.material = new THREE.MeshBasicMaterial({
+    gltfLoader.load(
+      path,
+      (gltf) => {
+        const isPerformance = settingsManager.getSettings().performanceMode;
+        const model = gltf.scene;
+        // Scale if needed, typical NPCs are ~2 blocks tall
+        model.scale.set(1, 1, 1);
+        this.group.add(model);
+
+        if (gltf.animations && gltf.animations.length > 0) {
+          const mixer = new THREE.AnimationMixer(model);
+          // Play the first animation by default (usually idle if it's a character)
+          const action = mixer.clipAction(gltf.animations[0]);
+          action.play();
+          this.group.userData.mixer = mixer;
+        }
+
+        model.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            child.castShadow = !isPerformance;
+            child.receiveShadow = !isPerformance;
+            if (isPerformance && child.material) {
+              const oldMat = child.material;
+              child.material = new THREE.MeshBasicMaterial({
                 map: oldMat.map,
                 color: oldMat.color,
                 transparent: oldMat.transparent,
                 opacity: oldMat.opacity,
-                alphaTest: oldMat.alphaTest
-             });
+                alphaTest: oldMat.alphaTest,
+              });
+            }
           }
-        }
-      });
-    }, undefined, (error) => {
-      console.error(`Error loading model ${path}:`, error);
-      this.createModel(); // Fallback to classic NPC model
-    });
+        });
+      },
+      undefined,
+      (error) => {
+        console.error(`Error loading model ${path}:`, error);
+        this.createModel(); // Fallback to classic NPC model
+      },
+    );
   }
 
   getHitbox(): THREE.Box3 {
     const width = 0.6;
     const height = 1.95;
     const pos = this.group.position;
-    
-    _hitMin.set(
-      pos.x - width / 2,
-      pos.y,
-      pos.z - width / 2
-    );
-    _hitMax.set(
-      pos.x + width / 2,
-      pos.y + height,
-      pos.z + width / 2
-    );
-    
+
+    _hitMin.set(pos.x - width / 2, pos.y, pos.z - width / 2);
+    _hitMax.set(pos.x + width / 2, pos.y + height, pos.z + width / 2);
+
     return _hitBox.set(_hitMin, _hitMax);
   }
 
   private createModel() {
     const isPerformance = settingsManager.getSettings().performanceMode;
-    const hash = this.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const hash = this.id
+      .split("")
+      .reduce((acc, char) => acc + char.charCodeAt(0), 0);
     const skinTexture = generateSkin(this.id);
-    const skinMaterial = isPerformance ?
-      new THREE.MeshBasicMaterial({ map: skinTexture }) :
-      new THREE.MeshStandardMaterial({ map: skinTexture, roughness: 0.9, metalness: 0.0 });
-    const outerMaterial = isPerformance ?
-      new THREE.MeshBasicMaterial({ map: skinTexture, transparent: true, alphaTest: 0.1, side: THREE.DoubleSide }) :
-      new THREE.MeshStandardMaterial({ map: skinTexture, transparent: true, alphaTest: 0.1, side: THREE.DoubleSide, roughness: 0.9, metalness: 0.0 });
+    const skinMaterial = isPerformance
+      ? new THREE.MeshBasicMaterial({ map: skinTexture })
+      : new THREE.MeshStandardMaterial({
+          map: skinTexture,
+          roughness: 1.0,
+          metalness: 0.0,
+        });
+    const outerMaterial = isPerformance
+      ? new THREE.MeshBasicMaterial({
+          map: skinTexture,
+          transparent: true,
+          alphaTest: 0.1,
+          side: THREE.DoubleSide,
+        })
+      : new THREE.MeshStandardMaterial({
+          map: skinTexture,
+          transparent: true,
+          alphaTest: 0.1,
+          side: THREE.DoubleSide,
+          roughness: 1.0,
+          metalness: 0.0,
+        });
 
     // Head
     const headGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
-    applySkinUVs(headGeo, 'head');
+    applySkinUVs(headGeo, "head");
     const head = new THREE.Mesh(headGeo, skinMaterial);
 
     const headOuterGeo = new THREE.BoxGeometry(0.42, 0.42, 0.42);
-    applySkinUVs(headOuterGeo, 'head', true);
+    applySkinUVs(headOuterGeo, "head", true);
     const headOuter = new THREE.Mesh(headOuterGeo, outerMaterial);
     head.add(headOuter);
 
@@ -214,9 +250,9 @@ export class NPC {
     if (hash % 3 === 0) {
       const isPerformance = settingsManager.getSettings().performanceMode;
       const hatGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.1, 8);
-      const hatMat = isPerformance ?
-        new THREE.MeshBasicMaterial({ color: 0x222222 }) :
-        new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8 });
+      const hatMat = isPerformance
+        ? new THREE.MeshBasicMaterial({ color: 0x222222 })
+        : new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8 });
       const hat = new THREE.Mesh(hatGeo, hatMat);
       hat.position.y = 0.25;
       hat.castShadow = true;
@@ -225,11 +261,11 @@ export class NPC {
 
     // Body
     const bodyGeo = new THREE.BoxGeometry(0.4, 0.6, 0.2); // Adjusted to match 8x12x4 ratio
-    applySkinUVs(bodyGeo, 'body');
+    applySkinUVs(bodyGeo, "body");
     const body = new THREE.Mesh(bodyGeo, skinMaterial);
 
     const bodyOuterGeo = new THREE.BoxGeometry(0.42, 0.62, 0.22);
-    applySkinUVs(bodyOuterGeo, 'body', true);
+    applySkinUVs(bodyOuterGeo, "body", true);
     const bodyOuter = new THREE.Mesh(bodyOuterGeo, outerMaterial);
     body.add(bodyOuter);
 
@@ -237,14 +273,14 @@ export class NPC {
     body.castShadow = true;
     body.receiveShadow = true;
     this.group.add(body);
-    
+
     // Optional Backpack (based on hash)
     if (hash % 2 === 0) {
       const isPerformance = settingsManager.getSettings().performanceMode;
       const packGeo = new THREE.BoxGeometry(0.3, 0.4, 0.15);
-      const packMat = isPerformance ?
-        new THREE.MeshBasicMaterial({ color: 0x8b4513 }) :
-        new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.9 });
+      const packMat = isPerformance
+        ? new THREE.MeshBasicMaterial({ color: 0x8b4513 })
+        : new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.9 });
       const backpack = new THREE.Mesh(packGeo, packMat);
       backpack.position.set(0, 0, 0.18);
       backpack.castShadow = true;
@@ -253,11 +289,11 @@ export class NPC {
 
     // Legs
     const legGeoL = new THREE.BoxGeometry(0.2, 0.6, 0.2);
-    applySkinUVs(legGeoL, 'legL');
+    applySkinUVs(legGeoL, "legL");
     const leftLeg = new THREE.Mesh(legGeoL, skinMaterial);
 
     const legOuterGeoL = new THREE.BoxGeometry(0.22, 0.62, 0.22);
-    applySkinUVs(legOuterGeoL, 'legL', true);
+    applySkinUVs(legOuterGeoL, "legL", true);
     const legOuterL = new THREE.Mesh(legOuterGeoL, outerMaterial);
     legOuterL.position.y = -0.3;
     leftLeg.add(legOuterL);
@@ -269,11 +305,11 @@ export class NPC {
     this.group.add(leftLeg);
 
     const legGeoR = new THREE.BoxGeometry(0.2, 0.6, 0.2);
-    applySkinUVs(legGeoR, 'legR');
+    applySkinUVs(legGeoR, "legR");
     const rightLeg = new THREE.Mesh(legGeoR, skinMaterial);
 
     const legOuterGeoR = new THREE.BoxGeometry(0.22, 0.62, 0.22);
-    applySkinUVs(legOuterGeoR, 'legR', true);
+    applySkinUVs(legOuterGeoR, "legR", true);
     const legOuterR = new THREE.Mesh(legOuterGeoR, outerMaterial);
     legOuterR.position.y = -0.3;
     rightLeg.add(legOuterR);
@@ -286,11 +322,11 @@ export class NPC {
 
     // Arms
     const armGeoL = new THREE.BoxGeometry(0.2, 0.6, 0.2);
-    applySkinUVs(armGeoL, 'armL');
+    applySkinUVs(armGeoL, "armL");
     const leftArm = new THREE.Mesh(armGeoL, skinMaterial);
 
     const armOuterGeoL = new THREE.BoxGeometry(0.22, 0.62, 0.22);
-    applySkinUVs(armOuterGeoL, 'armL', true);
+    applySkinUVs(armOuterGeoL, "armL", true);
     const armOuterL = new THREE.Mesh(armOuterGeoL, outerMaterial);
     armOuterL.position.y = -0.3;
     leftArm.add(armOuterL);
@@ -302,11 +338,11 @@ export class NPC {
     this.group.add(leftArm);
 
     const armGeoR = new THREE.BoxGeometry(0.2, 0.6, 0.2);
-    applySkinUVs(armGeoR, 'armR');
+    applySkinUVs(armGeoR, "armR");
     const rightArm = new THREE.Mesh(armGeoR, skinMaterial);
 
     const armOuterGeoR = new THREE.BoxGeometry(0.22, 0.62, 0.22);
-    applySkinUVs(armOuterGeoR, 'armR', true);
+    applySkinUVs(armOuterGeoR, "armR", true);
     const armOuterR = new THREE.Mesh(armOuterGeoR, outerMaterial);
     armOuterR.position.y = -0.3;
     rightArm.add(armOuterR);
@@ -316,7 +352,7 @@ export class NPC {
     rightArm.castShadow = true;
     rightArm.receiveShadow = true;
     this.group.add(rightArm);
-    
+
     // Store parts for animation
     this.group.userData.head = head;
     this.group.userData.body = body;
@@ -329,16 +365,20 @@ export class NPC {
     if (this.autoRotate) {
       this.group.rotation.y += delta * 1.5;
     }
-    
+
     // Hub NPCs name tags follow the player
     if (this.isHubNPC && this.group.userData.nameTag) {
       const tag = this.group.userData.nameTag as THREE.Mesh;
       // Billboard effect: lookAt the player
-      tag.lookAt(playerPos.x, tag.position.y + this.group.position.y, playerPos.z);
+      tag.lookAt(
+        playerPos.x,
+        tag.position.y + this.group.position.y,
+        playerPos.z,
+      );
     }
-    
+
     const isPerformanceMode = settingsManager.getSettings().performanceMode;
-    
+
     // Update animation mixer if it exists
     if (this.group.userData.mixer) {
       this.group.userData.mixer.update(delta);
@@ -351,9 +391,9 @@ export class NPC {
     const time = Date.now() * 0.002;
     const hash = this.id.charCodeAt(0); // Offset animation per NPC
     const breath = Math.sin(time + hash) * 0.02;
-    
+
     const { head, body, leftArm, rightArm } = this.group.userData;
-    
+
     if (body) {
       body.scale.y = 1.0 + breath;
     }
