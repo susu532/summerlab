@@ -421,7 +421,10 @@ export class Player {
            itemsAdded = true;
         }
       } else if (modeWithoutNum === 'summerlab') {
-        if (getInventoryCount(ItemType.FLUID_CHOCOLATE_HOSE) === 0 && getInventoryCount(ItemType.BOW) === 0) {
+        if (getInventoryCount(ItemType.FLUID_CHOCOLATE_HOSE) === 0 && 
+            getInventoryCount(ItemType.BOW) === 0 && 
+            getInventoryCount(ItemType.WASHING_HOSE) === 0 && 
+            !this.inventory.isBuilder) {
           window.dispatchEvent(new CustomEvent("triggerChooseRole"));
         }
       }

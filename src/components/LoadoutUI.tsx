@@ -20,7 +20,7 @@ export function LoadoutUI({ game }: { game: Game | null }) {
     } else if (!hasPicked && currentMode !== 'hub' && currentMode !== 'dungeondelver') {
       setIsOpen(true);
       // Ensure controls unlocked to click
-      if (game) {
+      if (game && document.pointerLockElement) {
         document.exitPointerLock?.();
       }
     }
@@ -80,6 +80,20 @@ export function LoadoutUI({ game }: { game: Game | null }) {
 
     setHasPicked(true);
     setIsOpen(false);
+
+    // Request pointer lock synchronously on role selection so they can immediately play
+    try {
+      game.controls.lock();
+    } catch (err) {
+      console.warn('Pointer lock request failed during loadout selection:', err);
+    }
+    
+    // Add a small delay to check if lock actually succeeded or was blocked by browser policies
+    setTimeout(() => {
+      if (document.pointerLockElement !== document.body) {
+         useUIStore.getState().setPauseMenuOpen(true);
+      }
+    }, 100);
   };
 
   if (!isOpen) return null;

@@ -9,6 +9,7 @@ export function MapLoadingScreen() {
   const loadingProgress = useGameStore((state) => state.loadingProgress);
   const loadingMessage = useGameStore((state) => state.loadingMessage);
   const setIsMapLoading = useGameStore((state) => state.setIsMapLoading);
+  const currentMode = useGameStore((state) => state.currentMode);
 
   const [showTapToPlay, setShowTapToPlay] = useState(false);
 
@@ -40,7 +41,14 @@ export function MapLoadingScreen() {
       e.preventDefault();
       e.stopPropagation();
       setIsMapLoading(false);
-      document.body.requestPointerLock?.();
+      
+      // If we are heading into a loadout mode (non-hub, non-dungeondelver),
+      // the LoadoutUI selection modal will display immediately.
+      // Do not request pointer lock here to avoid immediate exitPointerLock collision.
+      const willShowLoadout = currentMode !== "hub" && currentMode !== "dungeondelver";
+      if (!willShowLoadout) {
+        document.body.requestPointerLock?.();
+      }
     }
   };
 

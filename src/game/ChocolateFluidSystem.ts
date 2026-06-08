@@ -24,6 +24,7 @@ export class ChocolateFluidSystem {
   projectileAges: number[] = [];
   projectileInitialScales: number[] = [];
   projectileColors: THREE.Color[] = [];
+  projectileWriteIdx = 0;
   
   // Splats (painted decays)
   maxSplats: number;
@@ -64,7 +65,7 @@ export class ChocolateFluidSystem {
   constructor(game: Game) {
     this.game = game;
     const isMobile = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
-    this.maxProjectiles = isMobile ? 250 : 3000;
+    this.maxProjectiles = isMobile ? 1500 : 3000;
     this.maxSplats = isMobile ? 8000 : 100000;
     
     this.minProjIdx = this.maxProjectiles;
@@ -263,21 +264,22 @@ export class ChocolateFluidSystem {
         const rand5 = seededRandom(interpOrigin.x, interpOrigin.y, interpOrigin.z, randSeedBase + 4);
         
         const spawnThickness = req.isSpray ? (0.4 + rand1 * 0.4) : THREE.MathUtils.lerp(0.4, 1.45, pumpAlpha);
-
-        const idx = this.projectileLifetimes.findIndex((l) => l <= 0);
-        if (idx !== -1) {
-          this.projectileLifetimes[idx] = 1.2 + rand2 * 0.4; // slightly longer lifespan
-          this.projectileAges[idx] = 0; // reset age
-          this.projectileInitialScales[idx] = spawnThickness; // Store thickness at spawn time
-          this.projectileMesh.setColorAt(idx, req.color);
-          this.projectileColors[idx].copy(req.color);
-          
-          const alpha = req.color.getHex() === 0x3889f0 ? 0.25 : 1.0;
-          this.projectileMesh.geometry.attributes.instanceAlpha.setX(idx, alpha);
-          
-          this.projectileUpdated = true;
-          if (idx < this.minProjIdx) this.minProjIdx = idx;
-          if (idx > this.maxProjIdx) this.maxProjIdx = idx;
+        
+        const idx = this.projectileWriteIdx;
+        this.projectileWriteIdx = (this.projectileWriteIdx + 1) % this.maxProjectiles;
+        
+        this.projectileLifetimes[idx] = 1.2 + rand2 * 0.4; // slightly longer lifespan
+        this.projectileAges[idx] = 0; // reset age
+        this.projectileInitialScales[idx] = spawnThickness; // Store thickness at spawn time
+        this.projectileMesh.setColorAt(idx, req.color);
+        this.projectileColors[idx].copy(req.color);
+        
+        const alpha = req.color.getHex() === 0x3889f0 ? 0.25 : 1.0;
+        this.projectileMesh.geometry.attributes.instanceAlpha.setX(idx, alpha);
+        
+        this.projectileUpdated = true;
+        if (idx < this.minProjIdx) this.minProjIdx = idx;
+        if (idx > this.maxProjIdx) this.maxProjIdx = idx;
           
           // Tight origin spread for cohesive stream, wider for spray
           const originSpreadAmount = req.isSpray ? 0.08 : 0.0;
@@ -300,7 +302,6 @@ export class ChocolateFluidSystem {
           // Precise backdating for sub-frame continuity
           this.projectilePositions[idx].addScaledVector(this.projectileVelocities[idx], -t * delta);
           this.projectileAges[idx] = (1.0 - t) * delta;
-        }
       }
     }
     
