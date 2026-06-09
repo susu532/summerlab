@@ -1,10 +1,10 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { useGameStore } from "../store/gameStore";
-import { useUIStore } from "../store/uiStore";
-import { Game } from "../game/Game";
-import { ITEM_NAMES } from "../game/Constants";
-import { ItemIcon } from "./inventory/Slot";
+import { useGameStore } from '../store/gameStore';
+import { useUIStore } from '../store/uiStore';
+import { Game } from '../game/Game';
+import { ITEM_NAMES } from '../game/Constants';
+import { ItemIcon } from './inventory/Slot';
 import { Mail, X, Smile, Send } from 'lucide-react';
 import { settingsManager } from "../game/Settings";
 import { getSecureBackendUrl } from '../utils/security';
@@ -12,8 +12,7 @@ import { getSecureBackendUrl } from '../utils/security';
 import { motion, AnimatePresence } from 'motion/react';
 import { ItemType } from "../game/Inventory";
 
-
-const EMOJIS = ["👋", "🤣", "😭", "❤️", "🔥", "💀", "👍", "👎"];
+const EMOJIS = ['👋', '🤣', '😭', '❤️', '🔥', '💀', '👍', '👎'];
 
 export const HotbarUI: React.FC<{ game: Game | null }> = ({ game }) => {
   const inventoryVersion = useGameStore((state) => state.inventoryVersion);
@@ -76,15 +75,15 @@ export const HotbarUI: React.FC<{ game: Game | null }> = ({ game }) => {
 
   const handlePointerDown = (e: React.PointerEvent, i: number) => {
     e.stopPropagation();
-
+    
     if (longPressTimer.current) clearTimeout(longPressTimer.current);
     if (progressInterval.current) clearInterval(progressInterval.current);
-
+    
     setDropProgress({ index: i, progress: 0 });
-
+    
     const startTime = Date.now();
     const duration = 1000; // 1 second to drop
-
+    
     progressInterval.current = setInterval(() => {
       const elapsed = Date.now() - startTime;
       const progress = Math.min(100, (elapsed / duration) * 100);
@@ -139,7 +138,9 @@ export const HotbarUI: React.FC<{ game: Game | null }> = ({ game }) => {
   if (!game) return null;
 
   return (
+    
     <div className="absolute bottom-0 sm:bottom-2 md:bottom-4 left-1/2 -translate-x-1/2 pointer-events-none safe-mb z-[60] scale-[0.65] sm:scale-85 md:scale-100 landscape:scale-[0.65] sm:landscape:scale-85 md:landscape:scale-90 lg:landscape:scale-100 origin-bottom">
+      
       {/* Emoji Wheel */}
       {isEmojiWheelOpen && (
         <div
@@ -243,7 +244,7 @@ export const HotbarUI: React.FC<{ game: Game | null }> = ({ game }) => {
       )}
 
       <div className="flex items-end gap-2">
-        <div
+        <div 
           className="flex items-center gap-0.5 sm:gap-0 p-1 bg-[#C6C6C6] border-t-2 border-l-2 border-white border-b-2 border-r-2 border-[#555555] shadow-2xl pointer-events-auto max-w-[100vw] sm:max-w-none overflow-x-auto custom-scrollbar rounded-sm"
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
@@ -307,7 +308,7 @@ export const HotbarUI: React.FC<{ game: Game | null }> = ({ game }) => {
             );
           })}
         </div>
-
+        
         {/* Separated Emoji Button */}
         <button
           className="relative flex justify-center items-center flex-shrink-0 transition-all w-12 h-12 bg-[#8B8B8B] border-[3px] border-l-white border-t-white border-r-[#373737] border-b-[#373737] hover:bg-[#A0A0A0] shadow-xl pointer-events-auto"
@@ -333,9 +334,7 @@ export const HotbarUI: React.FC<{ game: Game | null }> = ({ game }) => {
             [H]
           </span>
         </button>
-        
-        {/* Separated Emote Button */}
-        <button
+<button
           className="relative flex justify-center items-center flex-shrink-0 transition-all w-12 h-12 bg-[#8B8B8B] border-[3px] border-l-white border-t-white border-r-[#373737] border-b-[#373737] hover:bg-[#A0A0A0] shadow-xl pointer-events-auto"
           onClick={(e) => {
             e.stopPropagation();
@@ -358,6 +357,21 @@ export const HotbarUI: React.FC<{ game: Game | null }> = ({ game }) => {
           <span className="absolute -top-3 -right-2 text-xs font-bold text-white bg-black/50 px-1 py-0.5 rounded shadow">
             [J]
           </span>
+        </button>
+        <button
+          onClick={(e) => {
+             e.stopPropagation();
+             setShowFeedbackModal(true);
+             (window as any).suppressPauseMenu = true;
+             document.exitPointerLock();
+             if (game && game.controls) game.controls.unlock();
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="pointer-events-auto bg-[#C6C6C6] border-t-2 border-l-2 border-white border-b-2 border-r-2 border-[#555555] p-2 hover:bg-[#8B8B8B] transition-colors rounded-sm group relative flex-shrink-0 h-12 w-12 sm:h-14 sm:w-14 flex items-center justify-center"
+          title={`Send suggestions (Key: ${feedbackKeybind.replace('Key', '')})`}
+        >
+          <Mail className="w-6 h-6 sm:w-8 sm:h-8 text-[#555555] group-hover:text-white" />
+          <span className="absolute -top-3 right-0 bg-black/60 text-white text-[10px] px-1 rounded">{feedbackKeybind.replace('Key', '')}</span>
         </button>
       </div>
 
