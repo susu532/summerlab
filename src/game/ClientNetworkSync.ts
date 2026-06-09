@@ -108,6 +108,7 @@ export class ClientNetworkSync {
           if (rp) {
             rp.isDead = playersMap[id].isDead || false;
             rp.isSpectator = playersMap[id].isSpectator || false;
+            rp.currentEmote = playersMap[id].currentEmote;
           }
         }
       }
@@ -216,8 +217,7 @@ export class ClientNetworkSync {
       );
 
       const myName =
-        settingsManager.getSettings().username ||
-        getRandomCutePlayerName();
+        settingsManager.getSettings().username || getRandomCutePlayerName();
 
       networkManager.join(
         joinPos,
@@ -249,6 +249,9 @@ export class ClientNetworkSync {
           if (player.currentEmoji !== undefined) {
             rp.currentEmoji = player.currentEmoji;
           }
+          if (player.currentEmote !== undefined) {
+            rp.currentEmote = player.currentEmote;
+          }
         }
       }
     };
@@ -264,7 +267,14 @@ export class ClientNetworkSync {
     };
 
     networkManager.onBlockChanged = (data) => {
-      this.game.world.setBlock(data.x, data.y, data.z, data.type, false, data.force);
+      this.game.world.setBlock(
+        data.x,
+        data.y,
+        data.z,
+        data.type,
+        false,
+        data.force,
+      );
       const pos = Game._tempVec.set(data.x + 0.5, data.y + 0.5, data.z + 0.5);
       if (data.type === 0) {
         audioManager.playPositional(

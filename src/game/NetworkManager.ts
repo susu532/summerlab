@@ -6,6 +6,7 @@ import { audioManager } from "./AudioManager";
 import { CrazyGamesManager } from "./CrazyGamesManager";
 import { getSecureBackendUrl } from '../utils/security';
 import { settingsManager } from "./Settings";
+import { getSecureBackendUrl, checkEnvironment } from "../utils/security";
 
 class FakeClientSocket {
   public connected = false;
@@ -711,7 +712,32 @@ export class NetworkManager {
 
     this.socket.on("friendAccept", (data: { sourceId: string, sourceName: string }) => {
       useGameStore.getState().addChatMessage("System", `§e${data.sourceName} accepted your friend request!`);
-      // It is up to CommunitySidebar to actually add to 'friends' array locally, or we can trigger an event
+             // Safely update localStorage so it persists even if the sidebar is unmounted
+        try {
+          const savedStr = localStorage.getItem("starplex_friends");
+          let friends = savedStr ? JSON.parse(savedStr) : [];
+          if (!Array.isArray(friends)) friends = [];
+
+          if (!friends.some((f: any) => f && f.name && f.name.toUpperCase() === data.sourceName.toUpperCase())) {
+            const randomColors = [
+              "#C6895C", "#5F3A19", "#4E5F19", "#194B5F",
+              "#5F194E", "#E09944", "#44E099", "#9944E0",
+            ];
+            const randomColor = randomColors[Math.floor(Math.random() * randomColors.length)];
+
+            friends.push({
+              id: Date.now().toString() + Math.floor(Math.random() * 1000).toString(),
+              name: data.sourceName,
+              online: true,
+              avatarColor: randomColor,
+            });
+            localStorage.setItem("starplex_friends", JSON.stringify(friends));
+          }
+        } catch (e) {
+          console.warn("Failed to update friends in localStorage", e);
+        }
+
+        // It is up to CommunitySidebar to actually add to 'friends' array locally if mounted
       window.dispatchEvent(new CustomEvent('friendAcceptedNetwork', { detail: data.sourceName }));
     });
 

@@ -95,6 +95,8 @@ export class RemotePlayer {
   currentModelType: number | null = null;
   currentOffHandModelType: number | null = null;
   currentEmoji?: string;
+  currentEmote?: string;
+  emoteTimer: number = 0;
 
   targetPosition: THREE.Vector3;
   targetRotation: THREE.Euler;
@@ -191,13 +193,16 @@ export class RemotePlayer {
   addSnapshot(position: THREE.Vector3, rotation: THREE.Euler) {
     this.targetPosition.copy(position);
     this.targetRotation.copy(rotation);
+    // Keep it simple: we use targetPosition for smooth exponential lerping
+    // so we don't strictly need a timestamped snapshot buffer for position, 
+    // but we can preserve the array if other systems want it.
     this.snapshots.push({
       time: Date.now(),
       position: position.clone(),
       rotation: rotation.clone(),
     });
-    // Keep only last 4 snapshots
-    if (this.snapshots.length > 4) {
+    // Keep only last 2
+    if (this.snapshots.length > 2) {
       this.snapshots.shift();
     }
   }
@@ -995,47 +1000,14 @@ export class RemotePlayer {
 
     const oldCurrentPos = this.currentPos.clone();
 
-    // Networked movement interpolation
-    const renderTime = Date.now() - 50; // 50ms artificial delay
-
-    let snapA = null;
-    let snapB = null;
-
-    for (let i = 0; i < this.snapshots.length - 1; i++) {
-      if (
-        this.snapshots[i].time <= renderTime &&
-        this.snapshots[i + 1].time >= renderTime
-      ) {
-        snapA = this.snapshots[i];
-        snapB = this.snapshots[i + 1];
-        break;
-      }
-    }
-
-    if (snapA && snapB) {
-      const duration = snapB.time - snapA.time;
-      const t =
-        duration > 0
-          ? Math.max(0, Math.min(1, (renderTime - snapA.time) / duration))
-          : 1;
-      this.currentPos.lerpVectors(snapA.position, snapB.position, t);
-    } else if (this.snapshots.length > 0) {
-      const latest = this.snapshots[this.snapshots.length - 1];
-      const dist = this.currentPos.distanceTo(latest.position);
-      if (dist > 10) {
-        this.currentPos.copy(latest.position);
-      } else {
-        const moveFactor = 1.0 - Math.exp(-20 * delta);
-        this.currentPos.lerp(latest.position, moveFactor);
-      }
+    // Clean smooth networked movement interpolation using exponential decay
+    // This looks much more seamless for low-tick-rate jumps than linear piecewise interpolation
+    const dist = this.currentPos.distanceTo(this.targetPosition);
+    if (dist > 10) {
+      this.currentPos.copy(this.targetPosition);
     } else {
-      const dist = this.currentPos.distanceTo(this.targetPosition);
-      if (dist > 10) {
-        this.currentPos.copy(this.targetPosition);
-      } else {
-        const moveFactor = 1.0 - Math.exp(-20 * delta);
-        this.currentPos.lerp(this.targetPosition, moveFactor);
-      }
+      const moveFactor = 1.0 - Math.exp(-22 * delta);
+      this.currentPos.lerp(this.targetPosition, moveFactor);
     }
 
     // Blend server movement into prediction offset to seamlessly match server ground-truth
@@ -1840,6 +1812,60 @@ export class RemotePlayer {
         if (this.isCrouching) {
           this.rightArmMesh.rotation.x -= 0.2;
         }
+      }
+    }
+
+    if (this.currentEmote && !isMoving && !this.isFlying && !this.isSwimming) {
+      this.emoteTimer += delta;
+      const et = this.emoteTimer;
+      if (this.currentEmote === "wave") {
+        this.rightArmMesh.rotation.x = -Math.PI; // arm up
+        this.rightArmMesh.rotation.z = Math.sin(et * 10) * 0.5 - 0.2; // waving side to side
+      } else if (this.currentEmote === "dance") {
+        const bounce = Math.abs(Math.sin(et * 5)) * 0.1;
+        this.bodyMesh.position.y = 0.9 + bounce;
+        this.leftLegMesh.position.y = 0.6 + bounce;
+        this.rightLegMesh.position.y = 0.6 + bounce;
+        this.leftArmMesh.rotation.x = Math.sin(et * 5) * 1.5;
+        this.rightArmMesh.rotation.x = Math.cos(et * 5) * 1.5;
+        this.leftLegMesh.rotation.x = -Math.sin(et * 5) * 0.5;
+        this.rightLegMesh.rotation.x = -Math.cos(et * 5) * 0.5;
+        this.headMesh.rotation.y = Math.sin(et * 3) * 0.3;
+      } else if (this.currentEmote === "cheer") {
+        const bounce = Math.abs(Math.sin(et * 8)) * 0.3;
+        this.bodyMesh.position.y = 0.9 + bounce;
+        this.leftLegMesh.position.y = 0.6 + bounce;
+        this.rightLegMesh.position.y = 0.6 + bounce;
+        this.leftArmMesh.rotation.x = -Math.PI + Math.sin(et * 10) * 0.2;
+        this.rightArmMesh.rotation.x = -Math.PI + Math.cos(et * 10) * 0.2;
+        this.leftArmMesh.rotation.z = -0.2;
+        this.rightArmMesh.rotation.z = 0.2;
+        this.leftLegMesh.rotation.x = -0.2;
+        this.rightLegMesh.rotation.x = 0.2;
+      } else if (this.currentEmote === "floss") {
+        const swing = Math.sin(et * 12);
+        this.bodyMesh.rotation.y = swing * 0.3;
+        this.leftArmMesh.rotation.x = 0.2;
+        this.rightArmMesh.rotation.x = 0.2;
+        this.leftArmMesh.rotation.z = swing * 1.2 - 0.4;
+        this.rightArmMesh.rotation.z = swing * 1.2 + 0.4;
+        this.leftLegMesh.rotation.x = swing * 0.2;
+        this.rightLegMesh.rotation.x = -swing * 0.2;
+      } else if (this.currentEmote === "zombie") {
+        this.leftArmMesh.rotation.x = Math.PI / 2 + Math.sin(et * 2) * 0.2;
+        this.rightArmMesh.rotation.x = Math.PI / 2 - Math.sin(et * 2) * 0.2;
+        this.leftLegMesh.rotation.x = Math.sin(et * 2) * 0.3;
+        this.rightLegMesh.rotation.x = -Math.sin(et * 2) * 0.3;
+        this.headMesh.rotation.x = 0.2 + Math.sin(et * 4) * 0.1;
+        this.bodyMesh.rotation.z = Math.sin(et) * 0.1;
+      } else if (this.currentEmote === "headbang") {
+        const bang = Math.sin(et * 15);
+        this.headMesh.rotation.x = bang * 0.6;
+        this.bodyMesh.rotation.x = bang * 0.2;
+        this.leftArmMesh.rotation.x = -0.5 + bang * 0.2;
+        this.rightArmMesh.rotation.x = -0.5 + bang * 0.2;
+        this.leftArmMesh.rotation.z = -0.3;
+        this.rightArmMesh.rotation.z = 0.3;
       }
     }
 

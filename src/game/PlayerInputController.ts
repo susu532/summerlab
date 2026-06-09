@@ -83,10 +83,10 @@ export class PlayerInputController {
         const jX = window.mobileInputs.joystickX;
         const jY = window.mobileInputs.joystickY;
         
-        this.moveForward = jY < -0.2;
-        this.moveBackward = jY > 0.2;
-        this.moveLeft = jX < -0.2;
-        this.moveRight = jX > 0.2;
+     this.moveForward = jY < -0.05;
+        this.moveBackward = jY > 0.05;
+        this.moveLeft = jX < -0.05;
+        this.moveRight = jX > 0.05;
         this.isSprinting = window.mobileInputs.isSprinting;
         
         const wasMovingUp = this.moveUp;
@@ -867,6 +867,11 @@ export class PlayerInputController {
           const pos = new THREE.Vector3(hitResult.prevPos.x + 0.5, hitResult.prevPos.y, hitResult.prevPos.z + 0.5);
           this.player.entityManager.addMinion(minionId, ItemType.STONE, pos);
           this.player.inventory.removeItem(ItemType.MINION, 1);
+          return;
+        }
+
+        // Disable building at spawn (5 block radius)
+        if (Math.abs(hitResult.prevPos.x) <= 5 && Math.abs(hitResult.prevPos.z) <= 5) {
           return;
         }
 

@@ -1593,6 +1593,60 @@ export class PlayerRenderer {
         }
       }
 
+      if (this.player.currentEmote && !isMoving && !this.player.isFlying && !this.player.isSwimming) {
+        this.player.emoteTimer += delta;
+        const et = this.player.emoteTimer;
+        if (this.player.currentEmote === "wave") {
+          this.player.rightArmMesh.rotation.x = -Math.PI; // arm up
+          this.player.rightArmMesh.rotation.z = Math.sin(et * 10) * 0.5 - 0.2; // waving side to side
+        } else if (this.player.currentEmote === "dance") {
+          const bounce = Math.abs(Math.sin(et * 5)) * 0.1;
+          this.player.bodyMesh.position.y = 0.9 + bounce;
+          this.player.leftLegMesh.position.y = 0.6 + bounce;
+          this.player.rightLegMesh.position.y = 0.6 + bounce;
+          this.player.leftArmMesh.rotation.x = Math.sin(et * 5) * 1.5;
+          this.player.rightArmMesh.rotation.x = Math.cos(et * 5) * 1.5;
+          this.player.leftLegMesh.rotation.x = -Math.sin(et * 5) * 0.5;
+          this.player.rightLegMesh.rotation.x = -Math.cos(et * 5) * 0.5;
+          this.player.headMesh.rotation.y = Math.sin(et * 3) * 0.3;
+        } else if (this.player.currentEmote === "cheer") {
+          const bounce = Math.abs(Math.sin(et * 8)) * 0.3;
+          this.player.bodyMesh.position.y = 0.9 + bounce;
+          this.player.leftLegMesh.position.y = 0.6 + bounce;
+          this.player.rightLegMesh.position.y = 0.6 + bounce;
+          this.player.leftArmMesh.rotation.x = -Math.PI + Math.sin(et * 10) * 0.2;
+          this.player.rightArmMesh.rotation.x = -Math.PI + Math.cos(et * 10) * 0.2;
+          this.player.leftArmMesh.rotation.z = -0.2;
+          this.player.rightArmMesh.rotation.z = 0.2;
+          this.player.leftLegMesh.rotation.x = -0.2;
+          this.player.rightLegMesh.rotation.x = 0.2;
+        } else if (this.player.currentEmote === "floss") {
+          const swing = Math.sin(et * 12);
+          this.player.bodyMesh.rotation.y = swing * 0.3;
+          this.player.leftArmMesh.rotation.x = 0.2;
+          this.player.rightArmMesh.rotation.x = 0.2;
+          this.player.leftArmMesh.rotation.z = swing * 1.2 - 0.4;
+          this.player.rightArmMesh.rotation.z = swing * 1.2 + 0.4;
+          this.player.leftLegMesh.rotation.x = swing * 0.2;
+          this.player.rightLegMesh.rotation.x = -swing * 0.2;
+        } else if (this.player.currentEmote === "zombie") {
+          this.player.leftArmMesh.rotation.x = Math.PI / 2 + Math.sin(et * 2) * 0.2;
+          this.player.rightArmMesh.rotation.x = Math.PI / 2 - Math.sin(et * 2) * 0.2;
+          this.player.leftLegMesh.rotation.x = Math.sin(et * 2) * 0.3;
+          this.player.rightLegMesh.rotation.x = -Math.sin(et * 2) * 0.3;
+          this.player.headMesh.rotation.x = 0.2 + Math.sin(et * 4) * 0.1;
+          this.player.bodyMesh.rotation.z = Math.sin(et) * 0.1;
+        } else if (this.player.currentEmote === "headbang") {
+          const bang = Math.sin(et * 15);
+          this.player.headMesh.rotation.x = bang * 0.6;
+          this.player.bodyMesh.rotation.x = bang * 0.2;
+          this.player.leftArmMesh.rotation.x = -0.5 + bang * 0.2;
+          this.player.rightArmMesh.rotation.x = -0.5 + bang * 0.2;
+          this.player.leftArmMesh.rotation.z = -0.3;
+          this.player.rightArmMesh.rotation.z = 0.3;
+        }
+      }
+
       // Final clamp for head rotation to prevent extreme angles from animations
       const limitUp = Math.PI * 0.35;
       const limitDown = Math.PI * 0.2; // ~86 degrees

@@ -1,27 +1,37 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from "react";
 import { createPortal } from 'react-dom';
-import { useGameStore } from '../store/gameStore';
-import { useUIStore } from '../store/uiStore';
-import { Game } from '../game/Game';
-import { ITEM_NAMES } from '../game/Constants';
-import { ItemIcon } from './inventory/Slot';
+import { useGameStore } from "../store/gameStore";
+import { useUIStore } from "../store/uiStore";
+import { Game } from "../game/Game";
+import { ITEM_NAMES } from "../game/Constants";
+import { ItemIcon } from "./inventory/Slot";
 import { Mail, X, Smile, Send } from 'lucide-react';
-import { settingsManager } from '../game/Settings';
-import { getSecureBackendUrl } from '../utils/security';
-import { motion, AnimatePresence } from 'motion/react';
+import { settingsManager } from "../game/Settings";
 
-const EMOJIS = ['👋', '🤣', '😭', '❤️', '🔥', '💀', '👍', '👎'];
+import { motion, AnimatePresence } from 'motion/react';
+import { ItemType } from "../game/Inventory";
+
+
+const EMOJIS = ["👋", "🤣", "😭", "❤️", "🔥", "💀", "👍", "👎"];
 
 export const HotbarUI: React.FC<{ game: Game | null }> = ({ game }) => {
-  const inventoryVersion = useGameStore(state => state.inventoryVersion);
-  const globalHotbarIndex = useGameStore(state => state.hotbarIndex);
-  const setGlobalHotbarIndex = useGameStore(state => state.setHotbarIndex);
-  const isEmojiWheelOpen = useUIStore(state => state.isEmojiWheelOpen);
-  const setEmojiWheelOpen = useUIStore(state => state.setEmojiWheelOpen);
-  
-  const [hotbarItems, setHotbarItems] = useState<(any | null)[]>(new Array(9).fill(null));
+  const inventoryVersion = useGameStore((state) => state.inventoryVersion);
+  const globalHotbarIndex = useGameStore((state) => state.hotbarIndex);
+  const setGlobalHotbarIndex = useGameStore((state) => state.setHotbarIndex);
+  const isEmojiWheelOpen = useUIStore((state) => state.isEmojiWheelOpen);
+  const setEmojiWheelOpen = useUIStore((state) => state.setEmojiWheelOpen);
+  const isEmoteWheelOpen = useUIStore((state) => state.isEmoteWheelOpen);
+  const setEmoteWheelOpen = useUIStore((state) => state.setEmoteWheelOpen);
+  const EMOTES = ["wave", "dance", "cheer", "floss", "zombie", "headbang"];
 
-  const [dropProgress, setDropProgress] = useState<{ index: number, progress: number } | null>(null);
+  const [hotbarItems, setHotbarItems] = useState<(any | null)[]>(
+    new Array(9).fill(null),
+  );
+
+  const [dropProgress, setDropProgress] = useState<{
+    index: number;
+    progress: number;
+  } | null>(null);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const progressInterval = useRef<NodeJS.Timeout | null>(null);
 
@@ -65,15 +75,15 @@ export const HotbarUI: React.FC<{ game: Game | null }> = ({ game }) => {
 
   const handlePointerDown = (e: React.PointerEvent, i: number) => {
     e.stopPropagation();
-    
+
     if (longPressTimer.current) clearTimeout(longPressTimer.current);
     if (progressInterval.current) clearInterval(progressInterval.current);
-    
+
     setDropProgress({ index: i, progress: 0 });
-    
+
     const startTime = Date.now();
     const duration = 1000; // 1 second to drop
-    
+
     progressInterval.current = setInterval(() => {
       const elapsed = Date.now() - startTime;
       const progress = Math.min(100, (elapsed / duration) * 100);
@@ -128,146 +138,225 @@ export const HotbarUI: React.FC<{ game: Game | null }> = ({ game }) => {
   if (!game) return null;
 
   return (
-    
     <div className="absolute bottom-0 sm:bottom-2 md:bottom-4 left-1/2 -translate-x-1/2 pointer-events-none safe-mb z-[60] scale-[0.65] sm:scale-85 md:scale-100 landscape:scale-[0.65] sm:landscape:scale-85 md:landscape:scale-90 lg:landscape:scale-100 origin-bottom">
-      
       {/* Emoji Wheel */}
       {isEmojiWheelOpen && (
-         <div 
-           className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 w-64 h-64 bg-black/60 rounded-full border-4 border-white/20 backdrop-blur-sm pointer-events-auto"
-           onPointerDown={e => e.stopPropagation()}
-           onClick={e => e.stopPropagation()}
-         >
-            {EMOJIS.map((emoji, index) => {
-               const angle = (index / EMOJIS.length) * Math.PI * 2 - Math.PI / 2;
-               const radius = 90;
-               const x = Math.cos(angle) * radius;
-               const y = Math.sin(angle) * radius;
-               
-               return (
-                  <button
-                     key={index}
-                     className="absolute flex items-center justify-center w-14 h-14 bg-white/10 hover:bg-white/30 rounded-full transition-transform hover:scale-125 hover:z-10"
-                     style={{
-                        left: `calc(50% + ${x}px)`,
-                        top: `calc(50% + ${y}px)`,
-                        transform: 'translate(-50%, -50%)'
-                     }}
-                     onClick={(e) => {
-                        e.stopPropagation();
-                        if (game) {
-                           game.player.currentEmoji = emoji;
-                           // clear emoji after 4 seconds
-                           setTimeout(() => {
-                               if (game.player.currentEmoji === emoji) {
-                                   game.player.currentEmoji = undefined;
-                               }
-                           }, 4000);
-                        }
-                        setEmojiWheelOpen(false);
-                     }}
-                     onPointerDown={(e) => e.stopPropagation()}
-                  >
-                     <span className="text-3xl">{emoji}</span>
-                  </button>
-               );
-            })}
-         </div>
+        <div
+          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 w-64 h-64 bg-black/60 rounded-full border-4 border-white/20 backdrop-blur-sm pointer-events-auto"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {EMOJIS.map((emoji, index) => {
+            const angle = (index / EMOJIS.length) * Math.PI * 2 - Math.PI / 2;
+            const radius = 90;
+            const x = Math.cos(angle) * radius;
+            const y = Math.sin(angle) * radius;
+
+            return (
+              <button
+                key={index}
+                className="absolute flex items-center justify-center w-14 h-14 bg-white/10 hover:bg-white/30 rounded-full transition-transform hover:scale-125 hover:z-10"
+                style={{
+                  left: `calc(50% + ${x}px)`,
+                  top: `calc(50% + ${y}px)`,
+                  transform: "translate(-50%, -50%)",
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (game) {
+                    game.player.currentEmoji = emoji;
+                    // clear emoji after 4 seconds
+                    setTimeout(() => {
+                      if (game.player.currentEmoji === emoji) {
+                        game.player.currentEmoji = undefined;
+                      }
+                    }, 4000);
+                  }
+                  setEmojiWheelOpen(false);
+                }}
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  if (game) {
+                    game.player.currentEmoji = emoji;
+                    // clear emoji after 4 seconds
+                    setTimeout(() => {
+                      if (game.player.currentEmoji === emoji) {
+                        game.player.currentEmoji = undefined;
+                      }
+                    }, 4000);
+                  }
+                  setEmojiWheelOpen(false);
+                }}
+              >
+                <span className="text-3xl">{emoji}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Emote Wheel */}
+      {isEmoteWheelOpen && (
+        <div
+          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 w-64 h-64 bg-black/60 rounded-full border-4 border-white/20 backdrop-blur-sm pointer-events-auto"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {EMOTES.map((emote, index) => {
+            const angle = (index / EMOTES.length) * Math.PI * 2 - Math.PI / 2;
+            const radius = 90;
+            const x = Math.cos(angle) * radius;
+            const y = Math.sin(angle) * radius;
+
+            return (
+              <button
+                key={index}
+                className="absolute flex items-center justify-center w-20 h-14 bg-white/10 hover:bg-white/30 rounded-lg transition-transform hover:scale-110 hover:z-10"
+                style={{
+                  left: `calc(50% + ${x}px)`,
+                  top: `calc(50% + ${y}px)`,
+                  transform: "translate(-50%, -50%)",
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (game) {
+                    game.player.currentEmote = emote;
+                    game.player.emoteTimer = 0;
+                  }
+                  setEmoteWheelOpen(false);
+                }}
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  if (game) {
+                    game.player.currentEmote = emote;
+                    game.player.emoteTimer = 0;
+                  }
+                  setEmoteWheelOpen(false);
+                }}
+              >
+                <span className="text-sm font-bold text-white capitalize">{emote.replace('_', ' ')}</span>
+              </button>
+            );
+          })}
+        </div>
       )}
 
       <div className="flex items-end gap-2">
-        <div 
+        <div
           className="flex items-center gap-0.5 sm:gap-0 p-1 bg-[#C6C6C6] border-t-2 border-l-2 border-white border-b-2 border-r-2 border-[#555555] shadow-2xl pointer-events-auto max-w-[100vw] sm:max-w-none overflow-x-auto custom-scrollbar rounded-sm"
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
         >
-        {hotbarItems.map((item, i) => {
-          const isSelected = i === globalHotbarIndex;
-          const showProgress = dropProgress?.index === i && dropProgress.progress > 0 && dropProgress.progress < 100;
-          return (
-            <button
-              key={i}
-              onPointerDown={(e) => handlePointerDown(e, i)}
-              onPointerUp={handlePointerUp}
-              onPointerLeave={handlePointerUp}
-              onPointerCancel={handlePointerUp}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (game) {
-                  game.player.hotbarIndex = i;
-                  setGlobalHotbarIndex(i);
+          {hotbarItems.map((item, i) => {
+            const isSelected = i === globalHotbarIndex;
+            const showProgress =
+              dropProgress?.index === i &&
+              dropProgress.progress > 0 &&
+              dropProgress.progress < 100;
+            return (
+              <button
+                key={i}
+                onPointerDown={(e) => handlePointerDown(e, i)}
+                onPointerUp={handlePointerUp}
+                onPointerLeave={handlePointerUp}
+                onPointerCancel={handlePointerUp}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (game) {
+                    game.player.hotbarIndex = i;
+                    setGlobalHotbarIndex(i);
+                  }
+                }}
+                title={
+                  item ? `${ITEM_NAMES[item.type]} x${item.count}` : undefined
                 }
-              }}
-              title={item ? `${ITEM_NAMES[item.type]} x${item.count}` : undefined}
-              className={`
+                className={`
                 relative flex items-center justify-center flex-shrink-0 transition-all overflow-hidden
                 w-10 h-10 sm:w-12 sm:h-12
-                ${isSelected 
-                  ? 'bg-[#8B8B8B] border-[3px] sm:border-4 border-white z-10 scale-105 sm:scale-110 shadow-xl rounded-sm' 
-                  : 'bg-[#8B8B8B] border-2 border-black/20 hover:bg-[#A0A0A0]'
+                ${
+                  isSelected
+                    ? "bg-[#8B8B8B] border-[3px] sm:border-4 border-white z-10 scale-105 sm:scale-110 shadow-xl rounded-sm"
+                    : "bg-[#8B8B8B] border-2 border-black/20 hover:bg-[#A0A0A0]"
                 }
               `}
-            >
-              {showProgress && (
-                <div 
-                  className="absolute bottom-0 left-0 h-1.5 bg-green-500 z-20"
-                  style={{ width: `${dropProgress.progress}%` }}
-                />
-              )}
-              {item ? (
-                <div className="w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center relative">
-                  <ItemIcon item={item} />
-                  {showProgress && (
-                    <div 
-                      className="absolute inset-0 bg-green-500/30 z-10"
-                      style={{ 
-                         clipPath: `polygon(0 0, ${dropProgress.progress}% 0, ${dropProgress.progress}% 100%, 0 100%)`
-                      }}
-                    />
-                  )}
-                </div>
-              ) : null}
-              <span className="absolute top-0.5 left-1 text-[8px] sm:text-[10px] font-bold text-white/20">
-                {i + 1}
-              </span>
-            </button>
-          );
-        })}
+              >
+                {showProgress && (
+                  <div
+                    className="absolute bottom-0 left-0 h-1.5 bg-green-500 z-20"
+                    style={{ width: `${dropProgress.progress}%` }}
+                  />
+                )}
+                {item ? (
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center relative">
+                    <ItemIcon item={item} />
+                    {showProgress && (
+                      <div
+                        className="absolute inset-0 bg-green-500/30 z-10"
+                        style={{
+                          clipPath: `polygon(0 0, ${dropProgress.progress}% 0, ${dropProgress.progress}% 100%, 0 100%)`,
+                        }}
+                      />
+                    )}
+                  </div>
+                ) : null}
+                <span className="absolute top-0.5 left-1 text-[8px] sm:text-[10px] font-bold text-white/20">
+                  {i + 1}
+                </span>
+              </button>
+            );
+          })}
         </div>
-        
+
         {/* Separated Emoji Button */}
         <button
+          className="relative flex justify-center items-center flex-shrink-0 transition-all w-12 h-12 bg-[#8B8B8B] border-[3px] border-l-white border-t-white border-r-[#373737] border-b-[#373737] hover:bg-[#A0A0A0] shadow-xl pointer-events-auto"
           onClick={(e) => {
-             e.stopPropagation();
-             const newState = !isEmojiWheelOpen;
-             setEmojiWheelOpen(newState);
-             if (newState && document.pointerLockElement) {
-                 (window as any).suppressPauseMenu = true;
-                 document.exitPointerLock();
-             }
+            e.stopPropagation();
+            const newState = !isEmojiWheelOpen;
+            setEmojiWheelOpen(newState);
+            if (newState && document.pointerLockElement) {
+              document.exitPointerLock();
+            }
           }}
-          onPointerDown={(e) => e.stopPropagation()}
-          className="pointer-events-auto bg-[#C6C6C6] border-t-2 border-l-2 border-white border-b-2 border-r-2 border-[#555555] p-2 hover:bg-[#8B8B8B] transition-colors rounded-sm group relative flex-shrink-0 h-12 w-12 sm:h-14 sm:w-14 flex items-center justify-center"
-          title="Open Emoji Wheel (Key: H)"
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            const newState = !isEmojiWheelOpen;
+            setEmojiWheelOpen(newState);
+            if (newState && document.pointerLockElement) {
+              document.exitPointerLock();
+            }
+          }}
         >
-           <Smile className="w-6 h-6 sm:w-8 sm:h-8 text-[#555555] group-hover:text-white" />
-           <span className="absolute -top-3 right-0 bg-black/60 text-white text-[10px] px-1 rounded">H</span>
+          <Smile size={24} className="text-white" />
+          <span className="absolute -top-3 -right-2 text-xs font-bold text-white bg-black/50 px-1 py-0.5 rounded shadow">
+            [H]
+          </span>
         </button>
-
+        
+        {/* Separated Emote Button */}
         <button
+          className="relative flex justify-center items-center flex-shrink-0 transition-all w-12 h-12 bg-[#8B8B8B] border-[3px] border-l-white border-t-white border-r-[#373737] border-b-[#373737] hover:bg-[#A0A0A0] shadow-xl pointer-events-auto"
           onClick={(e) => {
-             e.stopPropagation();
-             setShowFeedbackModal(true);
-             (window as any).suppressPauseMenu = true;
-             document.exitPointerLock();
-             if (game && game.controls) game.controls.unlock();
+            e.stopPropagation();
+            const newState = !isEmoteWheelOpen;
+            setEmoteWheelOpen(newState);
+            if (newState && document.pointerLockElement) {
+              document.exitPointerLock();
+            }
           }}
-          onPointerDown={(e) => e.stopPropagation()}
-          className="pointer-events-auto bg-[#C6C6C6] border-t-2 border-l-2 border-white border-b-2 border-r-2 border-[#555555] p-2 hover:bg-[#8B8B8B] transition-colors rounded-sm group relative flex-shrink-0 h-12 w-12 sm:h-14 sm:w-14 flex items-center justify-center"
-          title={`Send suggestions (Key: ${feedbackKeybind.replace('Key', '')})`}
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            const newState = !isEmoteWheelOpen;
+            setEmoteWheelOpen(newState);
+            if (newState && document.pointerLockElement) {
+              document.exitPointerLock();
+            }
+          }}
         >
-          <Mail className="w-6 h-6 sm:w-8 sm:h-8 text-[#555555] group-hover:text-white" />
-          <span className="absolute -top-3 right-0 bg-black/60 text-white text-[10px] px-1 rounded">{feedbackKeybind.replace('Key', '')}</span>
+          <span className="text-white font-bold text-lg leading-none">🧍</span>
+          <span className="absolute -top-3 -right-2 text-xs font-bold text-white bg-black/50 px-1 py-0.5 rounded shadow">
+            [J]
+          </span>
         </button>
       </div>
 

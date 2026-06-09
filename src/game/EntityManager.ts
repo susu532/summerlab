@@ -45,13 +45,17 @@ export class EntityManager {
     const hits = Array.isArray(e.detail) ? e.detail : [e.detail];
     for (const hit of hits) {
       // If we are the attacker, we already played the client-side prediction
-      if (hit.attackerId && hit.attackerId === networkManager.id)
-        continue;
+      if (hit.attackerId && hit.attackerId === networkManager.id) continue;
 
       const player = this.remotePlayers.get(hit.id);
       if (player) {
         if (hit.attackerId) {
-          audioManager.playPositional("hit", player.group.position, 0.5, 0.9 + Math.random() * 0.2);
+          audioManager.playPositional(
+            "hit",
+            player.group.position,
+            0.5,
+            0.9 + Math.random() * 0.2,
+          );
         }
 
         const dir = hit.knockbackDir;
@@ -68,13 +72,17 @@ export class EntityManager {
     const hits = Array.isArray(e.detail) ? e.detail : [e.detail];
     for (const hit of hits) {
       // If we are the attacker, we already played the client-side prediction
-      if (hit.attackerId && hit.attackerId === networkManager.id)
-        continue;
+      if (hit.attackerId && hit.attackerId === networkManager.id) continue;
 
       const mob = this.mobs.get(hit.id);
       if (mob) {
         if (hit.attackerId) {
-          audioManager.playPositional("hit", mob.position, 0.5, 0.9 + Math.random() * 0.2);
+          audioManager.playPositional(
+            "hit",
+            mob.position,
+            0.5,
+            0.9 + Math.random() * 0.2,
+          );
         }
 
         const dir = hit.knockbackDir;
@@ -130,13 +138,14 @@ export class EntityManager {
         const mob = this.mobs.get(id);
         if (mob) {
           const data = updates[id]; // [x, y, z, health]
-          
+
           mob.lastNetPos.copy(mob.group.position);
           if (mob.updatePositionFromServer) {
             mob.updatePositionFromServer(data[0], data[1], data[2]);
           } else {
             // Fallback if missing
-            if(mob.targetPosition) mob.targetPosition.set(data[0], data[1], data[2]);
+            if (mob.targetPosition)
+              mob.targetPosition.set(data[0], data[1], data[2]);
           }
           mob.interpolationTimer = 0;
           mob.lastNetworkUpdate = now;
@@ -145,7 +154,10 @@ export class EntityManager {
           if (data[3] !== undefined) {
             const serverHp = data[3] as number;
             // Prevent jitter and prioritize lowest health locally (or after timeout)
-            if (now - mob.lastDamagePredictedTime > 500 || serverHp < mob.health) {
+            if (
+              now - mob.lastDamagePredictedTime > 500 ||
+              serverHp < mob.health
+            ) {
               mob.health = serverHp;
             }
           }
@@ -208,7 +220,12 @@ export class EntityManager {
       }
     });
 
-    networkManager.onPlayerRespawn = (data: IPlayerUpdate & { position: { x: number, y: number, z: number }, yaw?: number }) => {
+    networkManager.onPlayerRespawn = (
+      data: IPlayerUpdate & {
+        position: { x: number; y: number; z: number };
+        yaw?: number;
+      },
+    ) => {
       const player = this.remotePlayers.get(data.id);
       if (player) {
         player.isDead = false;
@@ -351,7 +368,14 @@ export class EntityManager {
 
   private mobPool: Map<string, Mob[]> = new Map();
 
-  createMob(id: string, startPos: THREE.Vector3, level: number, type: any, textureAtlas: THREE.Texture | null, team?: string): Mob {
+  createMob(
+    id: string,
+    startPos: THREE.Vector3,
+    level: number,
+    type: any,
+    textureAtlas: THREE.Texture | null,
+    team?: string,
+  ): Mob {
     let pool = this.mobPool.get(type);
     if (!pool) {
       pool = [];
@@ -363,7 +387,7 @@ export class EntityManager {
       mob.level = level;
       mob.team = team;
       mob.group.position.copy(startPos);
-      mob.group.rotation.set(0,0,0);
+      mob.group.rotation.set(0, 0, 0);
       mob.currentPos.copy(startPos);
       mob.lastNetPos.copy(startPos);
       mob.targetPosition?.copy(startPos);
@@ -372,11 +396,11 @@ export class EntityManager {
       mob.isDying = false;
       mob.deathTimer = 0;
       mob.interpolationTimer = 0;
-      mob.group.scale.set(1,1,1);
-      
+      mob.group.scale.set(1, 1, 1);
+
       // Reset rotation of children to 0
-      mob.group.children.forEach(child => {
-        child.rotation.set(0,0,0);
+      mob.group.children.forEach((child) => {
+        child.rotation.set(0, 0, 0);
       });
       // specific limbs are inside Mob.head etc, their rotations will be overwritten by animation anyway
       return mob;
@@ -397,7 +421,7 @@ export class EntityManager {
     if (mob) {
       this.scene.remove(mob.group);
       this.mobs.delete(id);
-      
+
       const type = mob.type;
       let pool = this.mobPool.get(type);
       if (!pool) {
@@ -414,45 +438,48 @@ export class EntityManager {
     if (!this.remotePlayers.has(id)) {
       let player = this.remotePlayerPool.pop();
       if (player) {
-         player.id = id;
-         player.name = name;
-         player.skinSeed = skinSeed;
-         player.team = team;
-       
-         if (typeof (player as any).updateTeam === 'function') {
-            (player as any).updateTeam(team);
-         }
-         player.updateSkin(skinSeed);
-         player.updateNametag(name);
-         player.health = 100;
-         player.isDead = false;
-         player.isSpectator = false;
-         player.group.position.set(0,0,0);
-         player.currentPos.set(0,0,0);
-         player.lastNetPos.set(0,0,0);
-         player.targetPosition.set(0,0,0);
-         player.group.visible = true;
-         this.scene.add(player.group);
-         this.remotePlayers.set(id, player);
+        player.id = id;
+        player.name = name;
+        player.skinSeed = skinSeed;
+        player.team = team;
+
+        if (typeof (player as any).updateTeam === "function") {
+          (player as any).updateTeam(team);
+        }
+        player.updateSkin(skinSeed);
+        player.updateNametag(name);
+        player.health = 100;
+        player.isDead = false;
+        player.isSpectator = false;
+        player.group.position.set(0, 0, 0);
+        player.currentPos.set(0, 0, 0);
+        player.lastNetPos.set(0, 0, 0);
+        player.targetPosition.set(0, 0, 0);
+        player.group.visible = true;
+        this.scene.add(player.group);
+        this.remotePlayers.set(id, player);
       } else {
-         player = new RemotePlayer(id, skinSeed, name, this.scene, team);
-         
-         this.remotePlayers.set(id, player);
+        player = new RemotePlayer(id, skinSeed, name, this.scene, team);
+
+        this.remotePlayers.set(id, player);
       }
     } else {
       const player = this.remotePlayers.get(id);
       if (player) {
-         if (player.name !== name) {
-            player.name = name;
-            player.updateNametag(name);
-         }
-         if (player.skinSeed !== skinSeed) {
-            player.skinSeed = skinSeed;
-            player.updateSkin(skinSeed);
-         }
-         if (player.team !== team && typeof (player as any).updateTeam === 'function') {
-            (player as any).updateTeam(team);
-         }
+        if (player.name !== name) {
+          player.name = name;
+          player.updateNametag(name);
+        }
+        if (player.skinSeed !== skinSeed) {
+          player.skinSeed = skinSeed;
+          player.updateSkin(skinSeed);
+        }
+        if (
+          player.team !== team &&
+          typeof (player as any).updateTeam === "function"
+        ) {
+          (player as any).updateTeam(team);
+        }
       }
     }
   }
@@ -466,7 +493,27 @@ export class EntityManager {
     }
   }
 
-  updateRemotePlayer(id: string, data: Partial<IPlayerUpdate> & { position?: { x: number, y: number, z: number }, rotation?: { x: number, y: number, z: number }, isFlying?: boolean, isSwimming?: boolean, isCrouching?: boolean, isSprinting?: boolean, isSwinging?: boolean, isGliding?: boolean, isInvulnerable?: boolean, swingSpeed?: number, isGrounded?: boolean, heldItem?: number, offHandItem?: number, isBlocking?: boolean, currentEmoji?: string }) {
+  updateRemotePlayer(
+    id: string,
+    data: Partial<IPlayerUpdate> & {
+      position?: { x: number; y: number; z: number };
+      rotation?: { x: number; y: number; z: number };
+      isFlying?: boolean;
+      isSwimming?: boolean;
+      isCrouching?: boolean;
+      isSprinting?: boolean;
+      isSwinging?: boolean;
+      isGliding?: boolean;
+      isInvulnerable?: boolean;
+      swingSpeed?: number;
+      isGrounded?: boolean;
+      heldItem?: number;
+      offHandItem?: number;
+      isBlocking?: boolean;
+      currentEmoji?: string;
+      currentEmote?: string;
+    },
+  ) {
     const player = this.remotePlayers.get(id);
     if (player) {
       player.lastNetPos.copy(player.currentPos);
@@ -475,7 +522,7 @@ export class EntityManager {
         data.position!.y,
         data.position!.z,
       );
-      
+
       const rotEuler = new THREE.Euler(
         data.rotation!.x,
         data.rotation!.y,
@@ -493,7 +540,8 @@ export class EntityManager {
       player.isSwimming = data.isSwimming || false;
       player.isCrouching = data.isCrouching || false;
       player.isSprinting = data.isSprinting || false;
-      if (player.isSwinging !== data.isSwinging) player.isSwinging = data.isSwinging || false;
+      if (player.isSwinging !== data.isSwinging)
+        player.isSwinging = data.isSwinging || false;
       player.isGliding = data.isGliding || false;
       player.isInvulnerable = data.isInvulnerable || false;
       if (data.team !== undefined && data.team !== player.team) {
@@ -501,6 +549,12 @@ export class EntityManager {
       }
       if (data.currentEmoji !== undefined) {
         player.currentEmoji = data.currentEmoji;
+      }
+      if (data.currentEmote !== undefined) {
+        if (player.currentEmote !== data.currentEmote && data.currentEmote) {
+           player.emoteTimer = 0; // reset emote timer when new emote starts
+        }
+        player.currentEmote = data.currentEmote;
       }
       player.swingSpeed = data.swingSpeed || 15;
       player.isGrounded =
@@ -556,7 +610,10 @@ export class EntityManager {
 
   update(playerPos: THREE.Vector3, delta: number) {
     const projScreenMatrix = new THREE.Matrix4();
-    projScreenMatrix.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);
+    projScreenMatrix.multiplyMatrices(
+      this.camera.projectionMatrix,
+      this.camera.matrixWorldInverse,
+    );
     const frustum = new THREE.Frustum();
     frustum.setFromProjectionMatrix(projScreenMatrix);
 
@@ -564,26 +621,32 @@ export class EntityManager {
       npc.update(playerPos, delta);
     }
     const isPerformanceMode = settingsManager.getSettings().performanceMode;
-    const isMobile = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
-    
+    const isMobile =
+      typeof window !== "undefined" &&
+      ("ontouchstart" in window || navigator.maxTouchPoints > 0);
+
     for (const player of this.remotePlayers.values()) {
       let isVisible = true;
       const distSq = player.group.position.distanceToSquared(playerPos);
-      if (distSq > 64) { // 8 blocks distance minimum
-          isVisible = frustum.intersectsSphere(new THREE.Sphere(player.group.position, 3.0));
+      if (distSq > 64) {
+        // 8 blocks distance minimum
+        isVisible = frustum.intersectsSphere(
+          new THREE.Sphere(player.group.position, 3.0),
+        );
       }
-      
-      if (isPerformanceMode && distSq > (isMobile ? 900 : 2500)) { // 30 or 50 blocks
-          isVisible = false;
+
+      if (isPerformanceMode && distSq > (isMobile ? 900 : 2500)) {
+        // 30 or 50 blocks
+        isVisible = false;
       }
-      
+
       player.group.visible = isVisible;
       if (isVisible) {
-          player.update(delta, playerPos, this.world);
+        player.update(delta, playerPos, this.world);
       } else {
-          // Keep internal tracking minimal
-          player.currentPos.copy(player.targetPosition);
-          player.group.position.copy(player.currentPos);
+        // Keep internal tracking minimal
+        player.currentPos.copy(player.targetPosition);
+        player.group.position.copy(player.currentPos);
       }
     }
     for (const minion of this.minions.values()) {
@@ -629,14 +692,21 @@ export class EntityManager {
 
       if (arrow.isLocalPlayer) {
         let hitSomething = false;
-        const hitSteps = Math.max(1, Math.ceil(oldPos.distanceTo(arrow.group.position) / 0.1));
+        const hitSteps = Math.max(
+          1,
+          Math.ceil(oldPos.distanceTo(arrow.group.position) / 0.1),
+        );
 
         for (let step = 1; step <= hitSteps; step++) {
           const t = step / hitSteps;
           const testPos = oldPos.clone().lerp(arrow.group.position, t);
 
           // Check if arrow hit a solid block/wall before scanning targets behind it
-          const blockAtPos = this.world.getBlock(Math.floor(testPos.x), Math.floor(testPos.y), Math.floor(testPos.z));
+          const blockAtPos = this.world.getBlock(
+            Math.floor(testPos.x),
+            Math.floor(testPos.y),
+            Math.floor(testPos.z),
+          );
           if (blockAtPos !== 0 && isSolidBlock(blockAtPos)) {
             arrow.group.position.copy(testPos);
             break;
@@ -651,26 +721,51 @@ export class EntityManager {
 
             if (horizontalDist < 0.6 && dy >= 0 && dy <= 1.9) {
               const localPlayerTeam = useGameStore.getState().playerTeam;
-              const isSkyCastles = networkManager.serverName.startsWith('skycastles');
-              if (isSkyCastles && localPlayerTeam && rp.team && rp.team === localPlayerTeam) {
-                 continue; // Friendly fire disabled
+              const isSkyCastles =
+                networkManager.serverName.startsWith("skycastles");
+              if (
+                isSkyCastles &&
+                localPlayerTeam &&
+                rp.team &&
+                rp.team === localPlayerTeam
+              ) {
+                continue; // Friendly fire disabled
               }
               const damage = 20 * arrow.power;
               const isCrit = arrow.power > 0.9;
               const kbDir = arrow.velocity.clone().normalize();
               // Attack the remote player
-              networkManager.attack(id, false, kbDir, false, damage, isCrit, true);
+              networkManager.attack(
+                id,
+                false,
+                kbDir,
+                false,
+                damage,
+                isCrit,
+                true,
+              );
               // Local prediction for visual feedback
               rp.takeDamage(kbDir);
-              
+
               if (this.camera) {
-                const pPos = rp.group.position.clone().add(new THREE.Vector3(0, 1.5, 0));
+                const pPos = rp.group.position
+                  .clone()
+                  .add(new THREE.Vector3(0, 1.5, 0));
                 pPos.project(this.camera);
                 const screenX = (pPos.x * 0.5 + 0.5) * window.innerWidth;
                 const screenY = -(pPos.y * 0.5 - 0.5) * window.innerHeight;
-                window.dispatchEvent(new CustomEvent('mobDamage', { detail: { amount: Math.floor(damage), isCrit, screenX, screenY } }));
+                window.dispatchEvent(
+                  new CustomEvent("mobDamage", {
+                    detail: {
+                      amount: Math.floor(damage),
+                      isCrit,
+                      screenX,
+                      screenY,
+                    },
+                  }),
+                );
               }
-              
+
               hitSomething = true;
               break;
             }
@@ -690,16 +785,34 @@ export class EntityManager {
             const maxHeight = isMorvane ? 12.0 : 2.2;
             const minHeight = isMorvane ? -1.0 : 0;
 
-            if (horizontalDist < maxHorizontalDist && dy >= minHeight && dy <= maxHeight) {
+            if (
+              horizontalDist < maxHorizontalDist &&
+              dy >= minHeight &&
+              dy <= maxHeight
+            ) {
               const localPlayerTeam = useGameStore.getState().playerTeam;
-              const isSkyCastles = networkManager.serverName.startsWith('skycastles');
-              if (isSkyCastles && localPlayerTeam && mob.team && mob.team === localPlayerTeam) {
-                 continue; // Friendly fire disabled
+              const isSkyCastles =
+                networkManager.serverName.startsWith("skycastles");
+              if (
+                isSkyCastles &&
+                localPlayerTeam &&
+                mob.team &&
+                mob.team === localPlayerTeam
+              ) {
+                continue; // Friendly fire disabled
               }
               const damage = 20 * arrow.power;
               const kbDir = arrow.velocity.clone().normalize();
               // Attack the mob
-              networkManager.attack(id, true, kbDir, false, damage, arrow.power > 0.9, true);
+              networkManager.attack(
+                id,
+                true,
+                kbDir,
+                false,
+                damage,
+                arrow.power > 0.9,
+                true,
+              );
               // Local prediction for visual feedback
               mob.takeDamage(damage, kbDir);
               hitSomething = true;
@@ -715,46 +828,66 @@ export class EntityManager {
         }
       }
 
-      const b = this.world.getBlock(Math.floor(arrow.group.position.x), Math.floor(arrow.group.position.y), Math.floor(arrow.group.position.z));
+      const b = this.world.getBlock(
+        Math.floor(arrow.group.position.x),
+        Math.floor(arrow.group.position.y),
+        Math.floor(arrow.group.position.z),
+      );
       if (b !== 0 && isSolidBlock(b)) {
         arrow.disposeTimer = setTimeout(() => {
           arrow.dispose();
         }, 5000);
       }
     }
-    
+
     for (const arrow of toRemove) {
-        arrow.dispose();
+      arrow.dispose();
     }
 
     // Animate dropped items via instanced manager
     this.droppedItemManager.update(playerPos, delta, isPerformanceMode);
   }
 
-  shootArrow(shooterId: string, startPos: THREE.Vector3, velocity: THREE.Vector3, power: number, isLocalPlayer: boolean) {
+  shootArrow(
+    shooterId: string,
+    startPos: THREE.Vector3,
+    velocity: THREE.Vector3,
+    power: number,
+    isLocalPlayer: boolean,
+  ) {
     const isPerformance = settingsManager.getSettings().performanceMode;
     const arrowGroup = new THREE.Group();
     // Shaft
     const shaftGeo = new THREE.BoxGeometry(0.05, 0.05, 0.6);
-    const shaftMat = isPerformance ? new THREE.MeshBasicMaterial({ color: 0x8b4513 }) : new THREE.MeshStandardMaterial({ color: 0x8b4513 });
+    const shaftMat = isPerformance
+      ? new THREE.MeshBasicMaterial({ color: 0x8b4513 })
+      : new THREE.MeshStandardMaterial({ color: 0x8b4513 });
     const shaft = new THREE.Mesh(shaftGeo, shaftMat);
     arrowGroup.add(shaft);
     // Head
     const headGeo = new THREE.BoxGeometry(0.08, 0.08, 0.1);
-    const headMat = isPerformance ? new THREE.MeshBasicMaterial({ color: 0xaabbcc }) : new THREE.MeshStandardMaterial({ color: 0xaabbcc });
+    const headMat = isPerformance
+      ? new THREE.MeshBasicMaterial({ color: 0xaabbcc })
+      : new THREE.MeshStandardMaterial({ color: 0xaabbcc });
     const head = new THREE.Mesh(headGeo, headMat);
     head.position.z = -0.3;
     arrowGroup.add(head);
 
     arrowGroup.position.copy(startPos);
-    
+
     // Calculate look target from velocity vector
     const lookTarget = startPos.clone().add(velocity);
     arrowGroup.lookAt(lookTarget);
-    
+
     this.scene.add(arrowGroup);
-    
-    audioManager.playPositional("bow_shoot", startPos, 0.6, 0.9 + Math.random() * 0.2, 30);
+
+    audioManager.playPositional(
+      "bow_shoot",
+      startPos,
+      0.6,
+      0.9 + Math.random() * 0.2,
+      30,
+    );
 
     const arrowObj: Arrow = {
       group: arrowGroup,
@@ -769,7 +902,7 @@ export class EntityManager {
         headGeo.dispose();
         headMat.dispose();
         this.arrows.delete(arrowObj);
-      }
+      },
     };
 
     this.arrows.add(arrowObj);
@@ -826,7 +959,12 @@ export class EntityManager {
 
     if (closestMob && closestDistance !== Infinity) {
       // Check for solid wall blocking line of sight
-      const blockHit = this.world.raycast(origin, direction, closestDistance, true);
+      const blockHit = this.world.raycast(
+        origin,
+        direction,
+        closestDistance,
+        true,
+      );
       if (blockHit.hit) {
         return null; // Blocked by wall
       }
@@ -882,7 +1020,12 @@ export class EntityManager {
 
     if (closestPlayer) {
       // Check for solid wall blocking line of sight
-      const blockHit = this.world.raycast(origin, direction, closestDistance, true);
+      const blockHit = this.world.raycast(
+        origin,
+        direction,
+        closestDistance,
+        true,
+      );
       if (blockHit.hit) {
         return null; // Blocked by wall
       }
@@ -969,10 +1112,15 @@ export class EntityManager {
     this.minions.forEach((minion) => disposeObject(minion.mesh));
     this.mobs.forEach((mob) => disposeObject(mob.group));
 
+    this.mobPool.forEach((pool) => pool.forEach((mob) => disposeObject(mob.group)));
+    this.remotePlayerPool.forEach((player) => disposeObject(player.group));
+
     this.npcs.clear();
     this.remotePlayers.clear();
     this.minions.clear();
     this.mobs.clear();
+    this.mobPool.clear();
+    this.remotePlayerPool = [];
 
     this.droppedItemManager.destroy(); // Optional, but good practice
   }

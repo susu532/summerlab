@@ -1,22 +1,22 @@
-import { useEffect, useRef, useState } from 'react';
-import { Game } from '../game/Game';
-import { useUIStore } from '../store/uiStore';
-import { useGameStore } from '../store/gameStore';
-import { networkManager } from '../game/NetworkManager';
-import { audioManager } from '../game/AudioManager';
-import { settingsManager } from '../game/Settings';
-import { ITEM_NAMES } from '../game/Constants';
-import { ItemType } from '../game/Inventory';
-import { CrazyGamesManager } from '../game/CrazyGamesManager';
+import { useEffect, useRef, useState } from "react";
+import { Game } from "../game/Game";
+import { useUIStore } from "../store/uiStore";
+import { useGameStore } from "../store/gameStore";
+import { networkManager } from "../game/NetworkManager";
+import { audioManager } from "../game/AudioManager";
+import { settingsManager } from "../game/Settings";
+import { ITEM_NAMES } from "../game/Constants";
+import { ItemType } from "../game/Inventory";
+import { CrazyGamesManager } from "../game/CrazyGamesManager";
 
-import { PointerLockStateMachine } from '../game/PointerLockStateMachine';
+import { PointerLockStateMachine } from "../game/PointerLockStateMachine";
 
 export function useGameEngine() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [game, setGame] = useState<Game | null>(null);
   const [isMobile, setIsMobile] = useState(false);
-  const [targetServer, setTargetServer] = useState<string>('skybridge');
-  const currentMode = useGameStore(state => state.currentMode);
+  const [targetServer, setTargetServer] = useState<string>("skybridge");
+  const currentMode = useGameStore((state) => state.currentMode);
 
   useEffect(() => {
     let active = true;
@@ -35,33 +35,71 @@ export function useGameEngine() {
     })();
 
     const checkPointer = () => {
-      const touchCapable = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-      const isActuallyMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      // Modern iPad detection (Safari on iPadOS 13+ requests desktop site by default)
-      const isIPad = /iPad/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-      setIsMobile(isActuallyMobile || isIPad || (touchCapable && window.innerWidth < 1024));
+      const touchCapable =
+        "ontouchstart" in window || navigator.maxTouchPoints > 0;
+      const isActuallyMobile =
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          navigator.userAgent,
+        );
+      const isMacTouch =
+        navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1; // iPad on iOS 13+
+      setIsMobile(
+        isActuallyMobile ||
+          isMacTouch ||
+          (touchCapable && window.innerWidth < 1024),
+      );
     };
 
     checkPointer();
-    
+
     // Listen for pointer changes (e.g., dynamically connecting/disconnecting a mouse on iPad)
     const mediaQuery = window.matchMedia("(pointer: fine)");
     const handler = () => checkPointer();
     if (mediaQuery.addEventListener) {
-      mediaQuery.addEventListener('change', handler);
+      mediaQuery.addEventListener("change", handler);
     } else if (mediaQuery.addListener) {
       // Legacy Safari support
       mediaQuery.addListener(handler);
     }
 
+    const unsubUI = useUIStore.subscribe((state) => {
+      if (
+        state.isInventoryOpen ||
+        state.isShopOpen ||
+        state.isSettingsOpen ||
+        state.isPauseMenuOpen ||
+        state.isServerJoinOpen ||
+        state.isLaunchMenuOpen ||
+        state.isChestOpen ||
+        state.isLoadoutOpen ||
+        state.isEmojiWheelOpen ||
+        state.isEmoteWheelOpen ||
+        state.showTutorialPopup
+      ) {
+        if (document.pointerLockElement) {
+          document.exitPointerLock?.();
+        }
+      }
+    });
+
+    const unsubGame = useGameStore.subscribe((state) => {
+      if (state.isFluidColorPickerOpen || state.showLeaderboard) {
+        if (document.pointerLockElement) {
+          document.exitPointerLock?.();
+        }
+      }
+    });
+
     return () => {
       active = false;
       CrazyGamesManager.removeJoinRoomListener(handleJoinRoom);
       if (mediaQuery.removeEventListener) {
-        mediaQuery.removeEventListener('change', handler);
+        mediaQuery.removeEventListener("change", handler);
       } else if (mediaQuery.removeListener) {
         mediaQuery.removeListener(handler);
       }
+      unsubUI();
+      unsubGame();
     };
   }, []);
 
@@ -74,7 +112,7 @@ export function useGameEngine() {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const canvas = document.createElement('canvas');
+    const canvas = document.createElement("canvas");
     canvas.className = "absolute inset-0 w-full h-full";
     containerRef.current.appendChild(canvas);
 
@@ -104,17 +142,23 @@ export function useGameEngine() {
         setTimeout(() => {
           const state = useUIStore.getState();
           const gameStoreState = useGameStore.getState();
-          if (!suppressPauseMenu.current && 
-              !(window as any).suppressPauseMenu &&
-              !state.isInventoryOpen && 
-              !state.isShopOpen && 
-              !state.isSettingsOpen && 
-              !state.isChestOpen && 
-              !state.isLoadoutOpen &&
-              !gameStoreState.isFluidColorPickerOpen &&
-              !gameStoreState.showLeaderboard &&
-              !state.isEmojiWheelOpen &&
-              !state.isTyping) {
+          if (
+            !suppressPauseMenu.current &&
+            !(window as any).suppressPauseMenu &&
+            !state.isInventoryOpen &&
+            !state.isShopOpen &&
+            !state.isSettingsOpen &&
+            !state.isChestOpen &&
+            !state.isLoadoutOpen &&
+            !state.isServerJoinOpen &&
+            !state.isLaunchMenuOpen &&
+            !state.showTutorialPopup &&
+            !gameStoreState.isFluidColorPickerOpen &&
+            !gameStoreState.showLeaderboard &&
+            !state.isEmojiWheelOpen &&
+            !state.isEmoteWheelOpen &&
+            !state.isTyping
+          ) {
             state.setPauseMenuOpen(true);
           }
           suppressPauseMenu.current = false;
@@ -125,23 +169,35 @@ export function useGameEngine() {
 
     const handleKeyDown = (e: KeyboardEvent) => {
       const state = useUIStore.getState();
-      const { isTyping: typing, isLocked: locked, isInventoryOpen: inv, isShopOpen: shop, isSettingsOpen: settings, isPauseMenuOpen: pause, isChestOpen: chest } = state;
+      const {
+        isTyping: typing,
+        isLocked: locked,
+        isInventoryOpen: inv,
+        isShopOpen: shop,
+        isSettingsOpen: settings,
+        isPauseMenuOpen: pause,
+        isChestOpen: chest,
+      } = state;
 
-      const isInputFocused = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
+      const isInputFocused =
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement;
 
       // Ignore standard keybinds when typing in an input
-      if (isInputFocused && e.code !== 'Escape' && e.code !== 'Enter') return;
+      if (isInputFocused && e.code !== "Escape" && e.code !== "Enter") return;
 
-      if (typing && e.code !== 'Enter' && e.code !== 'Escape') return;
+      if (typing && e.code !== "Enter" && e.code !== "Escape") return;
 
-      if (e.code === 'F3') {
+      if (e.code === "F3") {
         e.preventDefault();
-        settingsManager.updateSettings({ showDebug: !settingsManager.getSettings().showDebug });
+        settingsManager.updateSettings({
+          showDebug: !settingsManager.getSettings().showDebug,
+        });
       }
-      
+
       const { keybinds } = settingsManager.getSettings();
 
-      if (e.code === 'KeyH') {
+      if (e.code === "KeyH") {
         if (typing) return;
         const newState = !state.isEmojiWheelOpen;
         state.setEmojiWheelOpen(newState);
@@ -151,6 +207,23 @@ export function useGameEngine() {
           newGame.controls.unlock();
           state.setSettingsOpen(false);
           state.setPauseMenuOpen(false);
+          state.setEmoteWheelOpen(false);
+        } else {
+          handleStart(null);
+        }
+      }
+
+      if (e.code === "KeyJ") {
+        if (typing) return;
+        const newState = !state.isEmoteWheelOpen;
+        state.setEmoteWheelOpen(newState);
+        if (newState) {
+          suppressPauseMenu.current = true;
+          (window as any).suppressPauseMenu = true;
+          newGame.controls.unlock();
+          state.setSettingsOpen(false);
+          state.setPauseMenuOpen(false);
+          state.setEmojiWheelOpen(false);
         } else {
           handleStart(null);
         }
@@ -174,7 +247,7 @@ export function useGameEngine() {
         }
       }
 
-      if (e.code === 'Enter') {
+      if (e.code === "Enter") {
         if (locked && !isInputFocused) {
           // Do not unlock controls here to keep chat completely seamless
           state.setTyping(true);
@@ -188,35 +261,38 @@ export function useGameEngine() {
       }
 
       if (e.code === keybinds.openFluidColorPicker) {
-         if (!typing && !newGame.world.isHub) {
-            const hasHose = newGame.player.inventory.slots[newGame.player.hotbarIndex]?.type === ItemType.FLUID_CHOCOLATE_HOSE;
-            if (hasHose) {
-               const gState = useGameStore.getState();
-               const nextState = !gState.isFluidColorPickerOpen;
-               gState.setIsFluidColorPickerOpen(nextState);
-               
-               if (nextState) {
-                 suppressPauseMenu.current = true;
-                 newGame.controls.unlock();
-               } else if (!isMobile) {
-                 trySafeLock(false);
-               }
+        if (!typing && !newGame.world.isHub) {
+          const hasHose =
+            newGame.player.inventory.slots[newGame.player.hotbarIndex]?.type ===
+            ItemType.FLUID_CHOCOLATE_HOSE;
+          if (hasHose) {
+            const gState = useGameStore.getState();
+            const nextState = !gState.isFluidColorPickerOpen;
+            gState.setIsFluidColorPickerOpen(nextState);
+
+            if (nextState) {
+              suppressPauseMenu.current = true;
+              newGame.controls.unlock();
+            } else if (!isMobile) {
+              trySafeLock(false);
             }
-         }
+          }
+        }
       }
 
-      if (e.code === 'Escape') {
-        const { 
-          isInventoryOpen: inv, 
-          isShopOpen: shop, 
-          isSettingsOpen: settings, 
-          isPauseMenuOpen: pause, 
-          isTyping: typing, 
+      if (e.code === "Escape") {
+        const {
+          isInventoryOpen: inv,
+          isShopOpen: shop,
+          isSettingsOpen: settings,
+          isPauseMenuOpen: pause,
+          isTyping: typing,
           isChestOpen: chest,
           isServerJoinOpen: serverJoin,
           isLaunchMenuOpen: launchMenu,
           isLoadoutOpen: loadout,
-          isEmojiWheelOpen: emojiWheel
+          isEmojiWheelOpen: emojiWheel,
+          isEmoteWheelOpen: emoteWheel,
         } = state;
         const colorPickerOpen = useGameStore.getState().isFluidColorPickerOpen;
 
@@ -230,7 +306,20 @@ export function useGameEngine() {
           return;
         }
 
-        if (inv || shop || settings || pause || typing || chest || serverJoin || launchMenu || loadout || colorPickerOpen || emojiWheel) {
+        if (
+          inv ||
+          shop ||
+          settings ||
+          pause ||
+          typing ||
+          chest ||
+          serverJoin ||
+          launchMenu ||
+          loadout ||
+          colorPickerOpen ||
+          emojiWheel ||
+          emoteWheel
+        ) {
           state.setInventoryOpen(false);
           state.setShopOpen(false);
           state.setSettingsOpen(false);
@@ -242,7 +331,7 @@ export function useGameEngine() {
           state.setLoadoutOpen(false);
           state.setEmojiWheelOpen(false);
           useGameStore.getState().setIsFluidColorPickerOpen(false);
-          
+
           if (!isMobile) {
             trySafeLock(true);
           }
@@ -261,7 +350,7 @@ export function useGameEngine() {
     };
 
     const handleOpenServerJoin = (e: any) => {
-      const server = e.detail?.server || 'skybridge';
+      const server = e.detail?.server || "skybridge";
       setTargetServer(server);
       useUIStore.getState().setCurrentNPC(e.detail?.npc || null);
       suppressPauseMenu.current = true;
@@ -284,16 +373,16 @@ export function useGameEngine() {
     const trySafeLock = (isEscapeKey = false) => {
       if (document.pointerLockElement === document.body) return;
       if (isMobile) return;
-        
+
       if (!pointerLockSM.current.canLock() || isEscapeKey) {
         return;
       }
-      
+
       try {
         newGame.controls.lock();
         audioManager.resume();
       } catch (err) {
-        console.warn('Pointer lock sync request failed:', err);
+        console.warn("Pointer lock sync request failed:", err);
       }
     };
 
@@ -320,7 +409,7 @@ export function useGameEngine() {
     const handleWheel = (e: WheelEvent) => {
       if (document.pointerLockElement !== document.body) return;
       if (newGame.world.isHub) return;
-      
+
       const uiState = useUIStore.getState();
       const gameState = useGameStore.getState();
       if (
@@ -338,12 +427,12 @@ export function useGameEngine() {
       ) {
         return;
       }
-      
+
       let nextIndex = newGame.player.hotbarIndex + (e.deltaY > 0 ? 1 : -1);
-      
+
       if (nextIndex < 0) nextIndex = 8;
       if (nextIndex >= 9) nextIndex = 0;
-      
+
       newGame.player.hotbarIndex = nextIndex;
       useGameStore.getState().setHotbarIndex(nextIndex);
     };
@@ -354,11 +443,11 @@ export function useGameEngine() {
 
     const handlePlayerDied = () => {
       CrazyGamesManager.gameplayStop();
-      CrazyGamesManager.requestAd('midgame', {
-         adFinished: () => {
-            CrazyGamesManager.gameplayStart();
-            newGame.player.respawn();
-         }
+      CrazyGamesManager.requestAd("midgame", {
+        adFinished: () => {
+          CrazyGamesManager.gameplayStart();
+          newGame.player.respawn();
+        },
       });
     };
 
@@ -368,7 +457,7 @@ export function useGameEngine() {
       state.setServerJoinOpen(false);
       state.setShopOpen(false);
       state.setInventoryOpen(false);
-      setGameKey(k => k + 1);
+      setGameKey((k) => k + 1);
     };
 
     const handleContextMenu = (e: MouseEvent) => {
@@ -376,51 +465,74 @@ export function useGameEngine() {
     };
 
     const handlePointerLockError = () => {
-      console.warn('Pointer lock failed, restoring pause menu.');
+      console.warn("Pointer lock failed, restoring pause menu.");
       if (!newGame.world.isHub) {
         useUIStore.getState().setPauseMenuOpen(true);
       }
     };
 
-    document.addEventListener('pointerlockerror', handlePointerLockError);
-    document.addEventListener('pointerlockchange', handleLockChange);
-    document.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('wheel', handleWheel, { passive: false });
-    document.addEventListener('contextmenu', handleContextMenu);
-    window.addEventListener('openShop', handleOpenShop as EventListener);
-    window.addEventListener('openChest', handleOpenChest as EventListener);
+    document.addEventListener("pointerlockerror", handlePointerLockError);
+    document.addEventListener("pointerlockchange", handleLockChange);
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("wheel", handleWheel, { passive: false });
+    document.addEventListener("contextmenu", handleContextMenu);
+    window.addEventListener("openShop", handleOpenShop as EventListener);
+    window.addEventListener("openChest", handleOpenChest as EventListener);
     const handlePopState = () => {
       const p = new URLSearchParams(window.location.search);
-      const server = p.get('server') || 'dungeondelver';
-      networkManager.initMatchmaking(server).then(() => {
-        setGameKey(k => k + 1);
-      }).catch(() => {
-        setGameKey(k => k + 1);
-      });
+      const server = p.get("server") || "dungeondelver";
+      networkManager
+        .initMatchmaking(server)
+        .then(() => {
+          setGameKey((k) => k + 1);
+        })
+        .catch(() => {
+          setGameKey((k) => k + 1);
+        });
     };
 
-    window.addEventListener('popstate', handlePopState);
-    window.addEventListener('openServerJoin', handleOpenServerJoin as EventListener);
-    window.addEventListener('openLaunchMenu', handleOpenLaunchMenu as EventListener);
-    window.addEventListener('requestRespawn', handleRequestRespawn as EventListener);
-    window.addEventListener('playerDied', handlePlayerDied as EventListener);
-    window.addEventListener('requestGameRestart', handleRequestGameRestart as EventListener);
+    window.addEventListener("popstate", handlePopState);
+    window.addEventListener(
+      "openServerJoin",
+      handleOpenServerJoin as EventListener,
+    );
+    window.addEventListener(
+      "openLaunchMenu",
+      handleOpenLaunchMenu as EventListener,
+    );
+    window.addEventListener(
+      "requestRespawn",
+      handleRequestRespawn as EventListener,
+    );
+    window.addEventListener("playerDied", handlePlayerDied as EventListener);
+    window.addEventListener(
+      "requestGameRestart",
+      handleRequestGameRestart as EventListener,
+    );
 
     const urlParams = new URLSearchParams(window.location.search);
-    const serverName = urlParams.get('server') || 'dungeondelver';
-    if (serverName.startsWith('hub')) {
+    const serverName = urlParams.get("server") || "dungeondelver";
+    if (serverName.startsWith("hub")) {
       setTimeout(() => {
-        networkManager.receiveLocalMessage('System', '§bWelcome to Starplex.io hub! §eExplore the area or use /server dungeondelver to join the game.');
+        networkManager.receiveLocalMessage(
+          "System",
+          "§bWelcome to Starplex.io hub! §eExplore the area or use /server dungeondelver to join the game.",
+        );
       }, 2000);
     } else {
       setTimeout(() => {
-        let displayName = 'SkyBridge';
-        if (serverName.startsWith('skycastles')) displayName = 'SkyCastles';
-        else if (serverName.startsWith('battleroyale')) displayName = 'Battle Royale';
-        else if (serverName.startsWith('skyisland')) displayName = 'Sky Island';
-        else if (serverName.startsWith('dungeondelver')) displayName = 'Dungeon Delver';
-        else if (serverName.startsWith('voidtrail')) displayName = 'Void Trail';
-        networkManager.receiveLocalMessage('System', `§bWelcome to ${displayName}!`);
+        let displayName = "SkyBridge";
+        if (serverName.startsWith("skycastles")) displayName = "SkyCastles";
+        else if (serverName.startsWith("battleroyale"))
+          displayName = "Battle Royale";
+        else if (serverName.startsWith("skyisland")) displayName = "Sky Island";
+        else if (serverName.startsWith("dungeondelver"))
+          displayName = "Dungeon Delver";
+        else if (serverName.startsWith("voidtrail")) displayName = "Void Trail";
+        networkManager.receiveLocalMessage(
+          "System",
+          `§bWelcome to ${displayName}!`,
+        );
       }, 2000);
     }
 
@@ -432,19 +544,36 @@ export function useGameEngine() {
         containerRef.current.removeChild(canvas);
       }
       cancelAnimationFrame(fastUIAF);
-      document.removeEventListener('pointerlockchange', handleLockChange);
-      document.removeEventListener('pointerlockerror', handlePointerLockError);
-      document.removeEventListener('keydown', handleKeyDown);
-      document.removeEventListener('wheel', handleWheel, { passive: false } as any);
-      document.removeEventListener('contextmenu', handleContextMenu);
-      window.removeEventListener('popstate', handlePopState);
-      window.removeEventListener('openShop', handleOpenShop as EventListener);
-      window.removeEventListener('openChest', handleOpenChest as EventListener);
-      window.removeEventListener('openServerJoin', handleOpenServerJoin as EventListener);
-      window.removeEventListener('openLaunchMenu', handleOpenLaunchMenu as EventListener);
-      window.removeEventListener('requestRespawn', handleRequestRespawn as EventListener);
-      window.removeEventListener('playerDied', handlePlayerDied as EventListener);
-      window.removeEventListener('requestGameRestart', handleRequestGameRestart as EventListener);
+      document.removeEventListener("pointerlockchange", handleLockChange);
+      document.removeEventListener("pointerlockerror", handlePointerLockError);
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("wheel", handleWheel, {
+        passive: false,
+      } as any);
+      document.removeEventListener("contextmenu", handleContextMenu);
+      window.removeEventListener("popstate", handlePopState);
+      window.removeEventListener("openShop", handleOpenShop as EventListener);
+      window.removeEventListener("openChest", handleOpenChest as EventListener);
+      window.removeEventListener(
+        "openServerJoin",
+        handleOpenServerJoin as EventListener,
+      );
+      window.removeEventListener(
+        "openLaunchMenu",
+        handleOpenLaunchMenu as EventListener,
+      );
+      window.removeEventListener(
+        "requestRespawn",
+        handleRequestRespawn as EventListener,
+      );
+      window.removeEventListener(
+        "playerDied",
+        handlePlayerDied as EventListener,
+      );
+      window.removeEventListener(
+        "requestGameRestart",
+        handleRequestGameRestart as EventListener,
+      );
     };
   }, [gameKey]);
 
@@ -455,22 +584,19 @@ export function useGameEngine() {
   const handleStart = async (e: any) => {
     if (e) e.stopPropagation();
 
-    // Call resume synchronously BEFORE any awaits, otherwise iOS Safari will block it
-    try {
-      audioManager.resume();
-    } catch (err) {}
-
     if (isMobile) {
       try {
         if (!document.fullscreenElement) {
           if (document.documentElement.requestFullscreen) {
             await document.documentElement.requestFullscreen();
-          } else if ((document.documentElement as any).webkitRequestFullscreen) {
-            await ((document.documentElement as any).webkitRequestFullscreen)();
+          } else if (
+            (document.documentElement as any).webkitRequestFullscreen
+          ) {
+            await (document.documentElement as any).webkitRequestFullscreen();
           }
         }
         if (screen.orientation && (screen.orientation as any).lock) {
-          await (screen.orientation as any).lock('landscape');
+          await (screen.orientation as any).lock("landscape");
         }
       } catch (err) {
         console.warn("Fullscreen/Orientation lock failed:", err);
@@ -479,12 +605,26 @@ export function useGameEngine() {
 
     const uiState = useUIStore.getState();
     const isMapLoading = useGameStore.getState().isMapLoading;
-    if (game && !game.controls.isLocked && !isMapLoading && !uiState.isInventoryOpen && !uiState.isShopOpen && !uiState.isSettingsOpen && !uiState.isPauseMenuOpen && !uiState.isServerJoinOpen && !uiState.isLoadoutOpen && !uiState.isEmojiWheelOpen) {
-      // If we are on mobile/tablet, never attempt to lock the pointer, even if
-      // the user tapped with a connected mouse (e.g. iPad Magic Keyboard), 
-      // because iOS Safari doesn't support the Pointer Lock API.
-      const isTouchOrMobile = isMobile || (e && e.pointerType === 'touch');
-      if (isTouchOrMobile) {
+    if (
+      game &&
+      !game.controls.isLocked &&
+      !isMapLoading &&
+      !uiState.isInventoryOpen &&
+      !uiState.isShopOpen &&
+      !uiState.isSettingsOpen &&
+      !uiState.isPauseMenuOpen &&
+      !uiState.isServerJoinOpen &&
+      !uiState.isLoadoutOpen &&
+      !uiState.isEmojiWheelOpen &&
+      !uiState.isEmoteWheelOpen &&
+      !uiState.showTutorialPopup &&
+      !uiState.isLaunchMenuOpen
+    ) {
+      const isTouch = e && e.pointerType === "touch";
+      if (isTouch) {
+        try {
+          audioManager.resume();
+        } catch (err) {}
         return;
       }
 
@@ -494,8 +634,9 @@ export function useGameEngine() {
 
       try {
         game.controls.lock();
+        audioManager.resume();
       } catch (err) {
-        console.warn('Pointer lock request failed:', err);
+        console.warn("Pointer lock request failed:", err);
       }
     }
   };
@@ -508,6 +649,6 @@ export function useGameEngine() {
     showDebug,
     handleStart,
     setGameKey,
-    gameKey
+    gameKey,
   };
 }
