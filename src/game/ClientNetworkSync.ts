@@ -22,6 +22,11 @@ export class ClientNetworkSync {
     // Network setup
     networkManager.onForceReloadMap = (data) => {
       useGameStore.getState().setIsMapLoading(true);
+      if (typeof caches !== 'undefined') {
+        caches.keys().then((names) => {
+          for (let name of names) caches.delete(name);
+        });
+      }
       window.location.reload();
     };
 
