@@ -7,7 +7,7 @@ export function SummerLabTitleUI() {
   useEffect(() => {
     const updateTimer = () => {
        const now = Date.now();
-       const phaseLength = 10 * 60 * 1000;
+       const phaseLength = 20 * 60 * 1000;
        const remaining = phaseLength - (now % phaseLength);
        setTimeLeft(remaining);
        setIsWaterPark(Math.floor(now / phaseLength) % 2 === 1);
@@ -109,7 +109,7 @@ export function SummerLabTitleUI() {
       >
         <span className="opacity-95">Clean up the mess and paint the world with</span>
         {(() => {
-           const phaseLength = 10 * 60 * 1000;
+           const phaseLength = 20 * 60 * 1000;
            const phaseIdx = Math.floor(Date.now() / phaseLength);
            const paintColors = [
               { name: "RED", hex: "#FF3333", glow: "rgba(255,51,51,0.5)" },
