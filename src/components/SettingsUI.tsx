@@ -242,9 +242,8 @@ export const SettingsUI: React.FC<SettingsUIProps> = ({ isOpen, onClose }) => {
                     onChange={(e) => handleChange('serverRegion', e.target.value)}
                     className="w-full text-sm font-bold bg-[#C6C6C6] border-2 border-black/30 text-[#222] px-2 py-1.5 focus:outline-none uppercase font-mono"
                   >
-                    <option value="auto">Auto (Fastest)</option>
-                    <option value="eu">Europe</option>
-                    <option value="us">US East</option>
+                    <option value="auto">US East</option>
+              
                   </select>
                 </div>
               </div>

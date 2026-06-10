@@ -146,6 +146,7 @@
   var _allowedHosts = [
     'summerlab.vercel.app',
     'summerlab-server.onrender.com',
+    'summerlab-server-hhnw.onrender.com',
     'crazygames.com',
     '1001juegos.com',
     'speelspelletjes.nl',
