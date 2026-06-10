@@ -248,16 +248,9 @@ export class NetworkManager {
 
     try {
       const region = settingsManager.getSettings().serverRegion || 'auto';
-      const euUrl = getSecureBackendUrl("https://summerlab-server-hhnw.onrender.com");
-      const usUrl = getSecureBackendUrl("https://summerlab-server-hhnw.onrender.com");
+      const euUrl = import.meta.env.VITE_BACKEND_URL_US as string;
+      const usUrl = import.meta.env.VITE_BACKEND_URL_US as string || euUrl;
       let baseUrl = euUrl;
-
-      // Early environment check - fail fast if not allowed
-      const envCheck = checkEnvironment();
-      if (!envCheck.allowed) {
-        console.error(`Environment check failed: ${envCheck.reason}`);
-        throw new Error(`Unauthorized environment: ${envCheck.reason}`);
-      }
 
       if (region === 'us') {
         baseUrl = usUrl;
@@ -373,7 +366,7 @@ export class NetworkManager {
     useGameStore.getState().setCurrentMode(serverName.split("_")[0] || "summerlab");
     useGameStore.getState().setServerId(serverName);
 
-    const backendUrl = this.currentBackendUrl || getSecureBackendUrl("https://summerlab-server-hhnw.onrender.com");
+    const backendUrl = this.currentBackendUrl || getSecureBackendUrl(import.meta.env.VITE_BACKEND_URL_US as string);
     const wsUrl = backendUrl.replace(/^https:/, 'wss:').replace(/^http:/, 'ws:');
     this.socket = new FakeClientSocket(`${wsUrl}/ws/${serverName}`);
     

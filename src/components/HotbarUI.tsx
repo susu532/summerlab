@@ -7,6 +7,7 @@ import { ITEM_NAMES } from '../game/Constants';
 import { ItemIcon } from './inventory/Slot';
 import { Mail, X, Smile, Send } from 'lucide-react';
 import { settingsManager } from '../game/Settings';
+import { getSecureBackendUrl } from '../utils/security';
 
 import { motion, AnimatePresence } from 'motion/react';
 import { ItemType } from "../game/Inventory";
@@ -114,7 +115,7 @@ export const HotbarUI: React.FC<{ game: Game | null }> = ({ game }) => {
   const sendFeedback = async () => {
     if (!feedbackText.trim()) return;
     try {
-      const baseUrl = "https://summerlab-server.onrender.com";
+      const baseUrl = getSecureBackendUrl(import.meta.env.VITE_BACKEND_URL as string);
       const resp = await fetch(`${baseUrl}/api/feedback`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
