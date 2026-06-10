@@ -78,6 +78,7 @@ export class World {
   bakedBlocksProcessed = false;
 
   bakedBlocks = bakedBlocksMap;
+  generationEpoch: number = 0;
 
   biomes = biomes;
 
@@ -1437,6 +1438,7 @@ export class World {
   }
 
   reset(serverName: string = "dungeondelver") {
+    this.generationEpoch++;
     if (!serverName) serverName = "dungeondelver";
     this.isHub = serverName.startsWith("hub");
     this.isSkyCastles = serverName.startsWith("skycastles");

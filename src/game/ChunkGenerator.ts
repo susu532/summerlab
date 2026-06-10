@@ -22,6 +22,11 @@ export async function generateChunkMethod(
   const key = world.getChunkKey(cx, cz);
   world.generatingChunks.add(key);
   const chunk = new Chunk(cx, cz);
+  
+  const startEpoch = world.generationEpoch;
+  const isWaterPark = typeof window !== "undefined" && (window as any).__FORCE_WATER_PARK !== undefined
+    ? (window as any).__FORCE_WATER_PARK
+    : Math.floor(Date.now() / 1200000) % 2 === 1;
 
   let startTime = performance.now();
   let iterations = 0;
@@ -54,10 +59,6 @@ export async function generateChunkMethod(
       // }
 
       if (world.isSummerLab) {
-        const isWaterPark = typeof window !== "undefined" && (window as any).__FORCE_WATER_PARK !== undefined
-          ? (window as any).__FORCE_WATER_PARK
-          : Math.floor(Date.now() / 1200000) % 2 === 1;
-
         for (let y = 0; y < CHUNK_HEIGHT; y++) {
           const worldY = y + WORLD_Y_OFFSET;
           const block = isWaterPark ? getWaterParkBlock(worldX, worldY, worldZ) : getSummerLabBlock(worldX, worldY, worldZ);
@@ -1233,6 +1234,12 @@ export async function generateChunkMethod(
         }
       }
     }
+  }
+
+  // If the world reset (e.g. game mode changed) while this chunk was generating asynchronously, discard it completely to prevent interpenetration
+  if (world.generationEpoch !== startEpoch) {
+     world.generatingChunks.delete(key);
+     return chunk; // Return chunk but don't add to world.chunks
   }
 
   world.chunks.set(key, chunk);
