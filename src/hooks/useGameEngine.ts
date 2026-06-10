@@ -148,12 +148,65 @@ export function useGameEngine() {
       prevEmojiWheelOpen = isEmojiWheelOpen;
     });
 
+    let prevLeaderboardOpen = false;
+    let prevColorPickerOpen = false;
+
     const unsubGame = useGameStore.subscribe((state) => {
       if (state.isFluidColorPickerOpen || state.showLeaderboard) {
         if (document.pointerLockElement) {
           document.exitPointerLock?.();
         }
+      } else {
+        const lbClosed = prevLeaderboardOpen && !state.showLeaderboard;
+        const colorClosed = prevColorPickerOpen && !state.isFluidColorPickerOpen;
+        
+        if (lbClosed || colorClosed) {
+          const isActuallyMobile =
+            /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+              navigator.userAgent,
+            );
+          const touchCapable =
+            "ontouchstart" in window || navigator.maxTouchPoints > 0;
+          const isMacTouch =
+            navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+          const isMobileCheck =
+            isActuallyMobile ||
+            isMacTouch ||
+            (touchCapable && window.innerWidth < 1024);
+
+          if (!isMobileCheck) {
+            setTimeout(() => {
+              const currentState = useUIStore.getState();
+              if (
+                !currentState.isInventoryOpen &&
+                !currentState.isShopOpen &&
+                !currentState.isSettingsOpen &&
+                !currentState.isPauseMenuOpen &&
+                !currentState.isServerJoinOpen &&
+                !currentState.isLaunchMenuOpen &&
+                !currentState.isChestOpen &&
+                !currentState.isLoadoutOpen &&
+                !currentState.isEmojiWheelOpen &&
+                !currentState.isEmoteWheelOpen &&
+                !currentState.showTutorialPopup
+              ) {
+                const activeGame = (window as any).game;
+                if (activeGame && activeGame.controls) {
+                  try {
+                    activeGame.controls.lock();
+                    audioManager.resume();
+                  } catch (err) {
+                    console.warn("Auto-re-lock pointer failed:", err);
+                  }
+                }
+              }
+            }, 50);
+          }
+        }
       }
+      
+      prevLeaderboardOpen = state.showLeaderboard;
+      prevColorPickerOpen = state.isFluidColorPickerOpen;
     });
 
     return () => {
@@ -268,8 +321,10 @@ export function useGameEngine() {
         const newState = !state.isEmojiWheelOpen;
         state.setEmojiWheelOpen(newState);
         if (newState) {
-          suppressPauseMenu.current = true;
-          (window as any).suppressPauseMenu = true;
+          if (document.pointerLockElement) {
+            suppressPauseMenu.current = true;
+            (window as any).suppressPauseMenu = true;
+          }
           newGame.controls.unlock();
           state.setSettingsOpen(false);
           state.setPauseMenuOpen(false);
@@ -284,8 +339,10 @@ export function useGameEngine() {
         const newState = !state.isEmoteWheelOpen;
         state.setEmoteWheelOpen(newState);
         if (newState) {
-          suppressPauseMenu.current = true;
-          (window as any).suppressPauseMenu = true;
+          if (document.pointerLockElement) {
+            suppressPauseMenu.current = true;
+            (window as any).suppressPauseMenu = true;
+          }
           newGame.controls.unlock();
           state.setSettingsOpen(false);
           state.setPauseMenuOpen(false);
@@ -304,7 +361,9 @@ export function useGameEngine() {
         }
         state.setInventoryOpen(!state.isInventoryOpen);
         if (!state.isInventoryOpen) {
-          suppressPauseMenu.current = true;
+          if (document.pointerLockElement) {
+            suppressPauseMenu.current = true;
+          }
           newGame.controls.unlock();
           state.setSettingsOpen(false);
           state.setPauseMenuOpen(false);
@@ -337,7 +396,9 @@ export function useGameEngine() {
             gState.setIsFluidColorPickerOpen(nextState);
 
             if (nextState) {
-              suppressPauseMenu.current = true;
+              if (document.pointerLockElement) {
+                suppressPauseMenu.current = true;
+              }
               newGame.controls.unlock();
             } else if (!isMobile) {
               trySafeLock(false);
@@ -363,7 +424,9 @@ export function useGameEngine() {
         const colorPickerOpen = useGameStore.getState().isFluidColorPickerOpen;
 
         if (isInputFocused) {
-          suppressPauseMenu.current = true;
+          if (document.pointerLockElement) {
+            suppressPauseMenu.current = true;
+          }
           (e.target as HTMLElement).blur();
           state.setTyping(false);
           if (!isMobile) {
@@ -411,7 +474,7 @@ export function useGameEngine() {
 
     const handleOpenShop = (e: any) => {
       useUIStore.getState().setCurrentNPC(e.detail.npc);
-      suppressPauseMenu.current = true;
+      if (document.pointerLockElement) suppressPauseMenu.current = true;
       useUIStore.getState().setShopOpen(true);
       newGame.controls.unlock();
     };
@@ -420,19 +483,19 @@ export function useGameEngine() {
       const server = e.detail?.server || "skybridge";
       setTargetServer(server);
       useUIStore.getState().setCurrentNPC(e.detail?.npc || null);
-      suppressPauseMenu.current = true;
+      if (document.pointerLockElement) suppressPauseMenu.current = true;
       useUIStore.getState().setServerJoinOpen(true);
       newGame.controls.unlock();
     };
 
     const handleOpenLaunchMenu = () => {
-      suppressPauseMenu.current = true;
+      if (document.pointerLockElement) suppressPauseMenu.current = true;
       useUIStore.getState().setLaunchMenuOpen(true);
       newGame.controls.unlock();
     };
 
     const handleOpenChest = () => {
-      suppressPauseMenu.current = true;
+      if (document.pointerLockElement) suppressPauseMenu.current = true;
       useUIStore.getState().setChestOpen(true);
       newGame.controls.unlock();
     };

@@ -8,6 +8,7 @@ import { getCastleBlock } from "./generation/SkyCastlesGenerator";
 import { getVillageBlock } from "./generation/SkyBridgeGenerator";
 import { getGiantMythicalShipBlock } from "./generation/ShipGenerator";
 import { getSummerLabBlock } from "./generation/SummerLabGenerator";
+import { getWaterParkBlock } from "./generation/WaterParkGenerator";
 import { generateSkyIslandTerrain } from "./generation/SkyIslandGenerator";
 import * as THREE from "three";
 import { skycastlesBakedBlocks } from "./SkycastlesBakedBlocks";
@@ -53,9 +54,13 @@ export async function generateChunkMethod(
       // }
 
       if (world.isSummerLab) {
+        const isWaterPark = typeof window !== "undefined" && (window as any).__FORCE_WATER_PARK !== undefined
+          ? (window as any).__FORCE_WATER_PARK
+          : Math.floor(Date.now() / 1200000) % 2 === 1;
+
         for (let y = 0; y < CHUNK_HEIGHT; y++) {
           const worldY = y + WORLD_Y_OFFSET;
-          const block = getSummerLabBlock(worldX, worldY, worldZ);
+          const block = isWaterPark ? getWaterParkBlock(worldX, worldY, worldZ) : getSummerLabBlock(worldX, worldY, worldZ);
           chunk.setBlockFast(x, y, z, block);
         }
         continue;

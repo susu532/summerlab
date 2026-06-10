@@ -146,4 +146,6 @@ export interface IGameStateData {
   droppedItems?: Record<string, IDroppedItemState>;
   npcs?: any[];
   dayTime?: number;
+  gameStartTime?: number;
+  isWaterPark?: boolean;
 }

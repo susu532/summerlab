@@ -1114,8 +1114,19 @@ export class World {
       return true;
     }
 
-    const absX = Math.abs(Math.floor(x));
-    const absZ = Math.abs(Math.floor(z));
+    const fx = Math.floor(x);
+    const fz = Math.floor(z);
+    
+    if (this.isSummerLab) {
+      const phaser = (window as any).__FORCE_WATER_PARK;
+      // We can't rely completely on Date.now() client-side perfectly synced, but we can do our best.
+      // Easiest is just to protect BOTH spawn areas from being built on since they are small 5x5 zones!
+      if (Math.abs(fx - 0) <= 2 && Math.abs(fz - 35) <= 2) return true;
+      if (Math.abs(fx - 0) <= 2 && Math.abs(fz - 25) <= 2) return true;
+    }
+
+    const absX = Math.abs(fx);
+    const absZ = Math.abs(fz);
     
     // Protect the 4 map corners from block placement/destruction
     if (absX >= 29 && absX <= 34 && absZ >= 76 && absZ <= 81) {

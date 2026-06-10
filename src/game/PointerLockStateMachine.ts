@@ -21,7 +21,13 @@ export class PointerLockStateMachine {
       ? (navigator as any).userActivation.isActive 
       : true;
 
-    return !hasCooldown && hasActivation;
+    // If we have explicit user activation (like a click), ignore the cooldown.
+    // The browser allows lock with user activation.
+    if (hasActivation) {
+      return true;
+    }
+
+    return !hasCooldown;
   }
 
   public dispose() {

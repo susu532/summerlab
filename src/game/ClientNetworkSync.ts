@@ -21,18 +21,23 @@ export class ClientNetworkSync {
   private registerHandlers() {
     // Network setup
     networkManager.onForceReloadMap = (data) => {
-      useGameStore.getState().setIsMapLoading(true);
-      if (typeof caches !== 'undefined') {
-        caches.keys().then((names) => {
-          for (let name of names) caches.delete(name);
-        });
+      if (data && data.isWaterPark !== undefined) {
+          (window as any).__FORCE_WATER_PARK = data.isWaterPark;
       }
-      window.location.reload();
+      useGameStore.getState().setIsMapLoading(true);
+      this.game.world.reset(this.game.currentMode);
+      if (this.game.chocolateFluidSystem) {
+        this.game.chocolateFluidSystem.clearAllSplats();
+      }
     };
 
     networkManager.onInit = (data: IGameStateData) => {
       const urlParams = new URLSearchParams(window.location.search);
       const serverName = urlParams.get("server") || "dungeondelver";
+
+      if (data.isWaterPark !== undefined) {
+         (window as any).__FORCE_WATER_PARK = data.isWaterPark;
+      }
 
       this.game.player.hasReceivedInitialRespawn = false;
       useGameStore.getState().setIsMapLoading(true);
