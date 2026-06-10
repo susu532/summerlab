@@ -1395,7 +1395,15 @@ export class World {
     if (!task) return;
     this.pendingTasks.delete(data.taskId);
 
+    const taskEpoch = this.generationEpoch;
+    
     const processMesh = () => {
+      // Prevent race conditions where reset() is called before the queued processMesh executes
+      if (this.generationEpoch !== taskEpoch) {
+        task.chunk.isMeshing = false;
+        task.resolve();
+        return;
+      }
       try {
         task.chunk.applyMesh(
           data.opaque,
@@ -1461,6 +1469,7 @@ export class World {
     });
     this.chunks.clear();
     this.generatingChunks.clear();
+    this.pendingTasks.clear();
     this.meshesToAdd = [];
     this.fallingBlocks.clear();
     this.waterUpdates.clear();

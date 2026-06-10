@@ -224,22 +224,27 @@ export class Player {
     this.world = world;
     this.entityManager = entityManager;
 
-    // Add random offsets so players don't all spawn exactly inside each other
-    const rx = (Math.random() - 0.5) * 4;
-    const rz = (Math.random() - 0.5) * 4;
-
-    this.worldPosition = new THREE.Vector3(rx, 10, rz);
-
-    // Initial position on the bridge
-    this.camera.position.set(rx, 6, rz);
-
-    this.renderer = new PlayerRenderer(this);
-    this.world.scene.add(this.renderer.modelGroup);
-
     // Initialize camera rotation state
     const urlParams = new URLSearchParams(window.location.search);
     const serverName = urlParams.get("server") || "dungeondelver";
     const isHub = serverName.startsWith("hub");
+
+    // Add random offsets so players don't all spawn exactly inside each other
+    const rx = (Math.random() - 0.5) * 4;
+    const rz = (Math.random() - 0.5) * 4;
+
+    let startZ = rz;
+    if (serverName.startsWith("summerlab")) {
+      startZ = 25 + rz;
+    }
+
+    this.worldPosition = new THREE.Vector3(rx, 10, startZ);
+
+    // Initial position on the bridge
+    this.camera.position.set(rx, 6, startZ);
+
+    this.renderer = new PlayerRenderer(this);
+    this.world.scene.add(this.renderer.modelGroup);
 
     if (isHub) {
       this.camera.quaternion.setFromAxisAngle(

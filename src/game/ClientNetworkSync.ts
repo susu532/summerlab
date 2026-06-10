@@ -24,6 +24,7 @@ export class ClientNetworkSync {
       if (data && data.isWaterPark !== undefined) {
           (window as any).__FORCE_WATER_PARK = data.isWaterPark;
       }
+      networkManager.blockChanges = {};
       useGameStore.getState().setIsMapLoading(true);
       this.game.world.reset(this.game.currentMode);
       if (this.game.chocolateFluidSystem) {
