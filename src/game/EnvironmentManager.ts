@@ -300,7 +300,7 @@ export class EnvironmentManager implements ISystem {
       this.clouds = new THREE.Group();
       const cloudColor = this.game.world.isSummerLab ? 0xffeef5 : 0xffffff;
       const cloudOpacity = this.game.world.isSummerLab ? 0.95 : 0.8;
-      const cloudMat = new THREE.MeshLambertMaterial({
+      const cloudMat = new THREE.MeshBasicMaterial({
         color: cloudColor,
         transparent: true,
         opacity: cloudOpacity,

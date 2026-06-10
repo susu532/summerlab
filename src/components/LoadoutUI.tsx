@@ -4,7 +4,7 @@ import { useGameStore } from '../store/gameStore';
 import { ItemType } from '../game/Inventory';
 import { Game } from '../game/Game';
 
-export function LoadoutUI({ game }: { game: Game | null }) {
+export function LoadoutUI({ game, isMobile }: { game: Game | null, isMobile?: boolean }) {
   const isOpen = useUIStore(state => state.isLoadoutOpen);
   const setIsOpen = useUIStore(state => state.setLoadoutOpen);
   const isMapLoading = useGameStore(state => state.isMapLoading);
@@ -83,14 +83,16 @@ export function LoadoutUI({ game }: { game: Game | null }) {
 
     // Request pointer lock synchronously on role selection so they can immediately play
     try {
-      game.controls.lock();
+      if (!isMobile) {
+        game.controls.lock();
+      }
     } catch (err) {
       console.warn('Pointer lock request failed during loadout selection:', err);
     }
     
     // Add a small delay to check if lock actually succeeded or was blocked by browser policies
     setTimeout(() => {
-      if (document.pointerLockElement !== document.body) {
+      if (!isMobile && document.pointerLockElement !== document.body) {
          useUIStore.getState().setPauseMenuOpen(true);
       }
     }, 100);

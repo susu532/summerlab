@@ -368,7 +368,7 @@ export class World {
                  customMetalness = 0.8;
              }
              
-             if (uIsSummerLab > 0.5 || uHideShininess > 0.5) {
+             if (abs(v - 0.5) < 0.01 && u >= 0.62 && u <= 0.85) { customRoughness = 0.15; customMetalness = 0.8; } else if (uIsSummerLab > 0.5 || uHideShininess > 0.5) {
                  // Completely eliminate specular/glossy highlights to prevent excessive light reflection
                  customRoughness = 1.0;
                  customMetalness = 0.0;

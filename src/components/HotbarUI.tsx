@@ -6,7 +6,7 @@ import { Game } from '../game/Game';
 import { ITEM_NAMES } from '../game/Constants';
 import { ItemIcon } from './inventory/Slot';
 import { Mail, X, Smile, Send } from 'lucide-react';
-import { settingsManager } from "../game/Settings";
+import { settingsManager } from '../game/Settings';
 import { getSecureBackendUrl } from '../utils/security';
 
 import { motion, AnimatePresence } from 'motion/react';
@@ -139,7 +139,7 @@ export const HotbarUI: React.FC<{ game: Game | null }> = ({ game }) => {
 
   return (
     
-    <div className="absolute bottom-0 sm:bottom-2 md:bottom-4 left-1/2 -translate-x-1/2 pointer-events-none safe-mb z-[60] scale-[0.65] sm:scale-85 md:scale-100 landscape:scale-[0.65] sm:landscape:scale-85 md:landscape:scale-90 lg:landscape:scale-100 origin-bottom">
+     <div className="absolute bottom-0 sm:bottom-2 md:bottom-4 left-1/2 -translate-x-1/2 pointer-events-none safe-mb z-[60] scale-[0.65] sm:scale-85 md:scale-100 landscape:scale-[0.65] sm:landscape:scale-85 md:landscape:scale-90 lg:landscape:scale-100 origin-bottom no-prevent">
       
       {/* Emoji Wheel */}
       {isEmojiWheelOpen && (

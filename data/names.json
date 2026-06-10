@@ -498,5 +498,13 @@
   "CONCRETE_TEAL": "Teal Concrete",
   "CONCRETE_SANDY_BEIGE": "Sandy Beige Concrete",
   "CONCRETE_CHOCOLATE": "Chocolate Concrete",
-  "CONCRETE_DEEP_BLUE": "Deep Ocean Blue Concrete"
+  "CONCRETE_DEEP_BLUE": "Deep Ocean Blue Concrete",
+  "CONCRETE_RAINBOW_RED": "Rainbow Red Concrete",
+  "CONCRETE_RAINBOW_ORANGE": "Rainbow Orange Concrete",
+  "CONCRETE_RAINBOW_YELLOW": "Rainbow Yellow Concrete",
+  "CONCRETE_RAINBOW_GREEN": "Rainbow Green Concrete",
+  "CONCRETE_RAINBOW_BLUE": "Rainbow Blue Concrete",
+  "CONCRETE_RAINBOW_INDIGO": "Rainbow Indigo Concrete",
+  "CONCRETE_RAINBOW_VIOLET": "Rainbow Violet Concrete",
+  "CONCRETE_RAINBOW_MULTICOLOR": "Multicolor Rainbow Block"
 }

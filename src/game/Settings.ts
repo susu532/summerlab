@@ -1,4 +1,3 @@
-
 import { getRandomCutePlayerName } from "./CuteNames";
 
 export interface Keybinds {
@@ -46,31 +45,31 @@ export interface GameSettings {
 }
 
 export const DEFAULT_KEYBINDS: Keybinds = {
-  forward: 'KeyW',
-  backward: 'KeyS',
-  left: 'KeyA',
-  right: 'KeyD',
-  jump: 'Space',
+  forward: "KeyW",
+  backward: "KeyS",
+  left: "KeyA",
+  right: "KeyD",
+  jump: "Space",
   crouch: "ControlLeft",
   sprint: "ShiftLeft",
-  inventory: 'KeyE',
-  drop: 'KeyQ',
-  zoom: 'KeyV',
-  perspective: 'KeyB',
-  fly: 'KeyP',
-  toggleHUD: 'KeyN',
-  leaderboard: 'Tab',
-  openFluidColorPicker: 'KeyF',
-  feedback: 'KeyG',
-  slot1: 'Digit1',
-  slot2: 'Digit2',
-  slot3: 'Digit3',
-  slot4: 'Digit4',
-  slot5: 'Digit5',
-  slot6: 'Digit6',
-  slot7: 'Digit7',
-  slot8: 'Digit8',
-  slot9: 'Digit9',
+  inventory: "KeyE",
+  drop: "KeyQ",
+  zoom: "KeyV",
+  perspective: "KeyB",
+  fly: "KeyP",
+  toggleHUD: "KeyN",
+  leaderboard: "Tab",
+  openFluidColorPicker: "KeyF",
+   feedback: 'KeyG',
+  slot1: "Digit1",
+  slot2: "Digit2",
+  slot3: "Digit3",
+  slot4: "Digit4",
+  slot5: "Digit5",
+  slot6: "Digit6",
+  slot7: "Digit7",
+  slot8: "Digit8",
+  slot9: "Digit9",
 };
 
 export const DEFAULT_SETTINGS: GameSettings = {
@@ -106,8 +105,8 @@ class SettingsManager {
     if (isMobileDevice) {
       this.settings.premiumShaders = false;
       this.settings.performanceMode = true;
-      this.settings.renderDistance = Math.min(this.settings.renderDistance, 1); // lowering default render distance for mobile
-      this.settings.sensitivity = 0.005; // 50 in UI
+      this.settings.renderDistance = Math.min(this.settings.renderDistance, 2); // lowering default render distance for mobile
+       this.settings.sensitivity = 0.005; // 50 in UI
     }
 
     try {
@@ -120,7 +119,7 @@ class SettingsManager {
           // Deep merge to ensure all defaults are present (like keybinds)
           const parsed = JSON.parse(saved);
           this.settings = { ...this.settings, ...parsed };
-          
+
           if (isMobileDevice) {
             this.settings.renderDistance = Math.min(
               this.settings.renderDistance,

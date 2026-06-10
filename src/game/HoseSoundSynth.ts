@@ -184,9 +184,9 @@ class HoseSoundSynth {
       this.waterGain.gain.setTargetAtTime(0.38, now, timeConstant);
       this.chocolateGain.gain.setTargetAtTime(0, now, timeConstant);
     } else if (type === "chocolate") {
-      // Calming mud-splatting fluid
+      // Calming mud-splatting fluid, increased volume
       this.waterGain.gain.setTargetAtTime(0, now, timeConstant);
-      this.chocolateGain.gain.setTargetAtTime(0.28, now, timeConstant);
+      this.chocolateGain.gain.setTargetAtTime(0.75, now, timeConstant);
     } else {
       // Fade completely to silent
       this.waterGain.gain.setTargetAtTime(0, now, timeConstant);

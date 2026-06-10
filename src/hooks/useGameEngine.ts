@@ -62,24 +62,90 @@ export function useGameEngine() {
       mediaQuery.addListener(handler);
     }
 
+    let prevEmoteWheelOpen = false;
+    let prevEmojiWheelOpen = false;
+
     const unsubUI = useUIStore.subscribe((state) => {
+      const {
+        isInventoryOpen,
+        isShopOpen,
+        isSettingsOpen,
+        isPauseMenuOpen,
+        isServerJoinOpen,
+        isLaunchMenuOpen,
+        isChestOpen,
+        isLoadoutOpen,
+        isEmojiWheelOpen,
+        isEmoteWheelOpen,
+        showTutorialPopup
+      } = state;
+
       if (
-        state.isInventoryOpen ||
-        state.isShopOpen ||
-        state.isSettingsOpen ||
-        state.isPauseMenuOpen ||
-        state.isServerJoinOpen ||
-        state.isLaunchMenuOpen ||
-        state.isChestOpen ||
-        state.isLoadoutOpen ||
-        state.isEmojiWheelOpen ||
-        state.isEmoteWheelOpen ||
-        state.showTutorialPopup
+        isInventoryOpen ||
+        isShopOpen ||
+        isSettingsOpen ||
+        isPauseMenuOpen ||
+        isServerJoinOpen ||
+        isLaunchMenuOpen ||
+        isChestOpen ||
+        isLoadoutOpen ||
+        isEmojiWheelOpen ||
+        isEmoteWheelOpen ||
+        showTutorialPopup
       ) {
         if (document.pointerLockElement) {
           document.exitPointerLock?.();
         }
+      } else {
+        const emoteClosed = prevEmoteWheelOpen && !isEmoteWheelOpen;
+        const emojiClosed = prevEmojiWheelOpen && !isEmojiWheelOpen;
+        if (emoteClosed || emojiClosed) {
+          const isActuallyMobile =
+            /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+              navigator.userAgent,
+            );
+          const touchCapable =
+            "ontouchstart" in window || navigator.maxTouchPoints > 0;
+          const isMacTouch =
+            navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+          const isMobileCheck =
+            isActuallyMobile ||
+            isMacTouch ||
+            (touchCapable && window.innerWidth < 1024);
+
+          if (!isMobileCheck) {
+            setTimeout(() => {
+              const currentState = useUIStore.getState();
+              if (
+                !currentState.isInventoryOpen &&
+                !currentState.isShopOpen &&
+                !currentState.isSettingsOpen &&
+                !currentState.isPauseMenuOpen &&
+                !currentState.isServerJoinOpen &&
+                !currentState.isLaunchMenuOpen &&
+                !currentState.isChestOpen &&
+                !currentState.isLoadoutOpen &&
+                !currentState.isEmojiWheelOpen &&
+                !currentState.isEmoteWheelOpen &&
+                !currentState.showTutorialPopup
+              ) {
+                const activeGame = (window as any).game;
+                if (activeGame && activeGame.controls) {
+                  try {
+                    activeGame.controls.lock();
+                    audioManager.resume();
+                  } catch (err) {
+                    console.warn("Auto-re-lock pointer failed:", err);
+                  }
+                }
+              }
+            }, 50);
+          }
+        }
       }
+
+      prevEmoteWheelOpen = isEmoteWheelOpen;
+      prevEmojiWheelOpen = isEmojiWheelOpen;
     });
 
     const unsubGame = useGameStore.subscribe((state) => {
@@ -330,6 +396,7 @@ export function useGameEngine() {
           state.setLaunchMenuOpen(false);
           state.setLoadoutOpen(false);
           state.setEmojiWheelOpen(false);
+          state.setEmoteWheelOpen(false);
           useGameStore.getState().setIsFluidColorPickerOpen(false);
 
           if (!isMobile) {
@@ -466,7 +533,7 @@ export function useGameEngine() {
 
     const handlePointerLockError = () => {
       console.warn("Pointer lock failed, restoring pause menu.");
-      if (!newGame.world.isHub) {
+      if (!isMobile && !newGame.world.isHub) {
         useUIStore.getState().setPauseMenuOpen(true);
       }
     };

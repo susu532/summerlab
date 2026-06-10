@@ -158,7 +158,7 @@ export class Game {
 
   applySettings(settings: GameSettings) {
     const isMobile = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
-    this.world.renderDistance = settings.performanceMode ? (isMobile ? Math.min(settings.renderDistance, 1) : Math.min(settings.renderDistance, 3)) : settings.renderDistance;
+    this.world.renderDistance = settings.performanceMode ? (isMobile ? Math.min(settings.renderDistance, 2) : Math.min(settings.renderDistance, 3)) : settings.renderDistance;
     this.player.sensitivity = settings.sensitivity;
     this.player.baseFOV = settings.fov;
 
@@ -232,35 +232,26 @@ export class Game {
   start() {
     this.loop();
     
-    // Background worker to keep the game ticking when the browser tab is hidden.
-    // iOS Safari blocks Worker() from Blob URLs (SecurityError), so we wrap in
-    // try-catch and fall back to a plain setInterval which achieves the same goal.
-    const backgroundTick = () => {
+    // Background worker to keep the game ticking when the browser tab is hidden
+    const workerCode = `
+      let interval;
+      self.onmessage = function(e) {
+        if (e.data === 'start') {
+          interval = setInterval(() => self.postMessage('tick'), 1000 / 20); // 20 TPS fallback
+        } else if (e.data === 'stop') {
+          clearInterval(interval);
+        }
+      };
+    `;
+    const blob = new Blob([workerCode], { type: 'application/javascript' });
+    this.tickWorker = new Worker(URL.createObjectURL(blob));
+    this.tickWorker.onmessage = () => {
+      // Only process background worker ticks if the tab is actually hidden and requestAnimationFrame has stalled
       if (document.hidden && performance.now() - this.lastFrameTime > 100) {
         this.loop(true);
       }
     };
-
-    try {
-      const workerCode = `
-        let interval;
-        self.onmessage = function(e) {
-          if (e.data === 'start') {
-            interval = setInterval(() => self.postMessage('tick'), 1000 / 20);
-          } else if (e.data === 'stop') {
-            clearInterval(interval);
-          }
-        };
-      `;
-      const blob = new Blob([workerCode], { type: 'application/javascript' });
-      this.tickWorker = new Worker(URL.createObjectURL(blob));
-      this.tickWorker.onmessage = () => backgroundTick();
-      this.tickWorker.postMessage('start');
-    } catch (e) {
-      // Fallback for iOS Safari and other browsers that block Blob-URL workers
-      console.warn('Blob Worker not supported, using setInterval fallback for background ticks:', e);
-      (this as any)._fallbackTickInterval = setInterval(backgroundTick, 1000 / 20);
-    }
+    this.tickWorker.postMessage('start');
   }
 
   stop() {
@@ -273,11 +264,6 @@ export class Game {
       this.tickWorker.postMessage('stop');
       this.tickWorker.terminate();
       this.tickWorker = null;
-    }
-    // Clean up fallback interval (used on iOS where Blob Workers are blocked)
-    if ((this as any)._fallbackTickInterval) {
-      clearInterval((this as any)._fallbackTickInterval);
-      (this as any)._fallbackTickInterval = null;
     }
 
     // Clear singleton listeners

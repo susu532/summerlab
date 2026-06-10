@@ -176,10 +176,12 @@ export const MobileControlsUI: React.FC<{ game?: any }> = ({ game }) => {
 
         const target = e.target as HTMLElement;
         const isButton = target && target.closest(".mobile-button");
+        const isHotbar = target && target.closest(".hotbar-btn");
         const isPassThrough = target && target.closest(".pass-through-button");
         const isNoPrevent = target && target.closest(".no-prevent");
 
         if (isNoPrevent) continue;
+        if (isHotbar) continue;
 
         const isBottomLeft =
           touch.clientX < window.innerWidth * 0.5 &&
@@ -404,7 +406,7 @@ export const MobileControlsUI: React.FC<{ game?: any }> = ({ game }) => {
   if (isAnyMenuOpen) return null;
 
   return (
-    <div className="absolute inset-0 pointer-events-none z-40 overflow-hidden touch-none">
+    <div className="absolute inset-0 pointer-events-none z-[70] overflow-hidden touch-none">
       {/* Top HUD Buttons */}
       <div
         className="absolute flex gap-2 pointer-events-auto transform origin-top-right scale-[0.8] landscape:scale-[1.0] md:landscape:scale-[1.1]"
@@ -412,6 +414,7 @@ export const MobileControlsUI: React.FC<{ game?: any }> = ({ game }) => {
           top: "calc(0.5rem + env(safe-area-inset-top))",
           right: "calc(0.5rem + env(safe-area-inset-right))",
         }}
+        onPointerDown={(e) => e.stopPropagation()}
       >
         <button
           className="w-12 h-12 rounded-full bg-black/40 border border-white/20 flex items-center justify-center text-white active:bg-white/40 touch-none mobile-button"
@@ -629,17 +632,17 @@ export const MobileControlsUI: React.FC<{ game?: any }> = ({ game }) => {
         }}
       >
         {!joystickOrigin && (
-          <div className="absolute w-36 h-36 sm:w-40 sm:h-40 md:w-48 md:h-48 landscape:w-[15vw] landscape:h-[15vw] landscape:min-w-[100px] landscape:min-h-[100px] max-w-[200px] max-h-[200px] bg-white/5 border-2 border-white/10 rounded-full flex items-center justify-center pointer-events-none -translate-x-1/2 -translate-y-1/2 left-[30%] top-[60%] landscape:left-[22%] landscape:top-[65%]">
-            <div className="w-[40%] h-[40%] border-2 border-white/20 bg-white/10 rounded-full shadow-lg pointer-events-none" />
+          <div className="absolute w-36 h-36 sm:w-40 sm:h-40 md:w-48 md:h-48 landscape:w-[15vw] landscape:h-[15vw] landscape:min-w-[100px] landscape:min-h-[100px] max-w-[200px] max-h-[200px] bg-white/10 border-2 border-white/30 rounded-full flex items-center justify-center pointer-events-none -translate-x-1/2 -translate-y-1/2 left-[30%] top-[60%] landscape:left-[22%] landscape:top-[65%]">
+            <div className="w-[40%] h-[40%] border-2 border-white/40 bg-white/30 rounded-full shadow-lg pointer-events-none" />
           </div>
         )}
         {joystickOrigin && (
           <div
-            className="absolute w-36 h-36 sm:w-40 sm:h-40 md:w-48 md:h-48 landscape:w-[15vw] landscape:h-[15vw] landscape:min-w-[100px] landscape:min-h-[100px] max-w-[200px] max-h-[200px] bg-black/20 border border-white/20 rounded-full flex items-center justify-center p-2 pointer-events-none -translate-x-1/2 -translate-y-1/2"
+            className="absolute w-36 h-36 sm:w-40 sm:h-40 md:w-48 md:h-48 landscape:w-[15vw] landscape:h-[15vw] landscape:min-w-[100px] landscape:min-h-[100px] max-w-[200px] max-h-[200px] bg-black/40 border-2 border-white/40 rounded-full flex items-center justify-center p-2 pointer-events-none -translate-x-1/2 -translate-y-1/2"
             style={{ left: joystickOrigin.x, top: joystickOrigin.y }}
           >
             <div
-              className={`w-[45%] h-[45%] border-2 rounded-full shadow-lg pointer-events-none flex items-center justify-center transition-colors ${window.mobileInputs.isSprinting ? "bg-white/60 border-white/80" : "bg-white/40 border-white/60"}`}
+              className={`w-[45%] h-[45%] border-2 rounded-full shadow-lg pointer-events-none flex items-center justify-center transition-colors ${window.mobileInputs.isSprinting ? "bg-white/80 border-white" : "bg-white/60 border-white/80"}`}
               style={{
                 transform: `translate(${joystick.x * 125}%, ${joystick.y * 125}%)`,
                 transition:
@@ -671,6 +674,7 @@ export const MobileControlsUI: React.FC<{ game?: any }> = ({ game }) => {
           bottom: "calc(3.5rem + env(safe-area-inset-bottom))",
           right: "calc(0.5rem + env(safe-area-inset-right))",
         }}
+        onPointerDown={(e) => e.stopPropagation()}
       >
         {/* Jump Button (Top) */}
         <button

@@ -20,6 +20,11 @@ export class ClientNetworkSync {
 
   private registerHandlers() {
     // Network setup
+    networkManager.onForceReloadMap = (data) => {
+      useGameStore.getState().setIsMapLoading(true);
+      window.location.reload();
+    };
+
     networkManager.onInit = (data: IGameStateData) => {
       const urlParams = new URLSearchParams(window.location.search);
       const serverName = urlParams.get("server") || "dungeondelver";
@@ -413,6 +418,9 @@ export class ClientNetworkSync {
         this.game.player.setupSummerLabInventory();
       } else {
         this.game.player.inventory.clear();
+      }
+      if (this.game.chocolateFluidSystem) {
+        this.game.chocolateFluidSystem.clearAllSplats();
       }
       if (data.mobs) {
         for (const id in data.mobs) {

@@ -36,7 +36,13 @@ export const ChestUI = React.memo<{
   useEffect(() => {
     const handleMouseUp = () => setDragState({ isDragging: false, button: -1, visitedSlots: new Set() });
     window.addEventListener('mouseup', handleMouseUp);
-    return () => window.removeEventListener('mouseup', handleMouseUp);
+    window.addEventListener('pointerup', handleMouseUp);
+    window.addEventListener('pointercancel', handleMouseUp);
+    return () => {
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('pointerup', handleMouseUp);
+      window.removeEventListener('pointercancel', handleMouseUp);
+    };
   }, []);
 
   const heldItemRefState = useRef(heldItem);

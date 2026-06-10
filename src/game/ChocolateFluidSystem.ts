@@ -66,7 +66,7 @@ export class ChocolateFluidSystem {
     this.game = game;
     const isMobile = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
     this.maxProjectiles = isMobile ? 1500 : 3000;
-    this.maxSplats = isMobile ? 8000 : 100000;
+    this.maxSplats = isMobile ? 30000 : 200000;
     
     this.minProjIdx = this.maxProjectiles;
     this.minSplatIdx = this.maxSplats;
@@ -561,6 +561,25 @@ export class ChocolateFluidSystem {
     if (!fromNetwork) {
        this.pendingSplats.push([position.x, position.y, position.z, normal.x, normal.y, normal.z, colorHex]);
     }
+  }
+
+  clearAllSplats() {
+    this.splatGrid.clear();
+    this.splatKeys.fill('');
+    this.splatCount = 0;
+    this.minSplatIdx = 0;
+    this.maxSplatIdx = this.maxSplats - 1;
+    this.splatDummy.scale.set(0, 0, 0);
+    this.splatDummy.updateMatrix();
+    if (this.splatMesh && this.squareSplatMesh) {
+       for (let i = 0; i < this.maxSplats; i++) {
+           this.splatMesh.setMatrixAt(i, this.splatDummy.matrix);
+           this.squareSplatMesh.setMatrixAt(i, this.splatDummy.matrix);
+       }
+    }
+    this.splatUpdated = true;
+    this.pendingSplats = [];
+    this.pendingCleanSplats = [];
   }
 
   removeSplat(key: string, fromNetwork = false) {

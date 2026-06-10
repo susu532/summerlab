@@ -179,6 +179,7 @@ export class NetworkManager {
     type: number;
   }) => void;
   onTimeUpdate?: (data: { dayTime: number }) => void;
+  onForceReloadMap?: (data?: { isWaterPark: boolean }) => void;
   private initData: any = null;
   private reconnectAttempt = 0;
   private currentBackendUrl: string = "";
@@ -206,6 +207,7 @@ export class NetworkManager {
     this.onMinionUpdate = undefined;
     this.onMinionCollected = undefined;
     this.onTimeUpdate = undefined;
+    this.onForceReloadMap = undefined;
   }
 
   receiveLocalMessage(sender: string, message: string) {
@@ -482,6 +484,10 @@ export class NetworkManager {
       if (this.onTimeUpdate) this.onTimeUpdate(data);
     });
 
+    this.socket.on("forceReloadMap", (data) => {
+      if (this.onForceReloadMap) this.onForceReloadMap(data);
+    });
+
     this.socket.on("playerJoined", (player) => {
       if (!player || !player.id) return;
       let isBrandNew = !this.players[player.id];
@@ -712,7 +718,7 @@ export class NetworkManager {
 
     this.socket.on("friendAccept", (data: { sourceId: string, sourceName: string }) => {
       useGameStore.getState().addChatMessage("System", `§e${data.sourceName} accepted your friend request!`);
-             // Safely update localStorage so it persists even if the sidebar is unmounted
+            // Safely update localStorage so it persists even if the sidebar is unmounted
         try {
           const savedStr = localStorage.getItem("starplex_friends");
           let friends = savedStr ? JSON.parse(savedStr) : [];
@@ -865,38 +871,84 @@ export class NetworkManager {
     this._emit("partyAccept", targetId);
   }
 
+  private chunkRequestQueue: {cx: number, cz: number, resolve: (data: Uint16Array | null) => void}[] = [];
+  private chunkRequestBouncing: any = null;
+
   async requestChunkChanges(cx: number, cz: number): Promise<Uint16Array | null> {
     if (!this.socket) return null;
     return new Promise((resolve) => {
+       this.chunkRequestQueue.push({cx, cz, resolve});
+       if (!this.chunkRequestBouncing) {
+          this.chunkRequestBouncing = setTimeout(() => {
+              this.flushChunkRequests();
+          }, 10);
+       }
+    });
+  }
+
+  private flushChunkRequests() {
+      this.chunkRequestBouncing = null;
+      if (this.chunkRequestQueue.length === 0) return;
+      if (!this.socket) return;
+      
+      // Batch up to 250 requests to avoid overly large packets if many are requested, 
+      // but enough to fit an entire 15x15 map chunk grid (225 chunks) in one single payload!
+      const batchSize = 250;
+      const reqs = this.chunkRequestQueue.splice(0, Math.min(batchSize, this.chunkRequestQueue.length));
+      
+      // If there are more after this batch, schedule another flush
+      if (this.chunkRequestQueue.length > 0) {
+          this.chunkRequestBouncing = setTimeout(() => {
+              this.flushChunkRequests();
+          }, 10);
+      }
+      
+      const coords = reqs.map(r => ({cx: r.cx, cz: r.cz}));
+      const payloadId = Math.random().toString(36).substr(2, 9);
+
       const handler = (data: any) => {
-        if (data.cx === cx && data.cz === cz) {
-          this.socket.off("chunkData", handler);
-          if (data.patch) {
-             const out = new Uint16Array(16*256*16);
-             out.fill(65535);
-             for(let i=0; i<data.patch.length; i+=2) {
-                 out[data.patch[i]] = data.patch[i+1];
-             }
-             resolve(out);
-          } else if (data.data) {
-             const compressed = new Uint16Array(data.data);
-             const out = new Uint16Array(16*256*16);
-             decodeRLE(compressed, out);
-             resolve(out);
-          } else {
-             resolve(null);
-          }
+        if (data.id === payloadId && data.chunks) {
+            this.socket.off("bulkChunkData", handler);
+            for (const chunkResp of data.chunks) {
+                const req = reqs.find(r => r.cx === chunkResp.cx && r.cz === chunkResp.cz);
+                if (req) {
+                   if (chunkResp.patch) {
+                       const out = new Uint16Array(16*256*16);
+                       out.fill(65535);
+                       for(let i=0; i<chunkResp.patch.length; i+=2) {
+                           out[chunkResp.patch[i]] = chunkResp.patch[i+1];
+                       }
+                       req.resolve(out);
+                   } else if (chunkResp.data) {
+                       const compressed = new Uint16Array(chunkResp.data);
+                       const out = new Uint16Array(16*256*16);
+                       import('./RLE').then(({ decodeRLE }) => {
+                           decodeRLE(compressed, out);
+                           req.resolve(out);
+                       });
+                   } else {
+                       req.resolve(null);
+                   }
+                }
+            }
+            // Resolve any remaining missing chunks with null
+            for (const req of reqs) {
+                if (!data.chunks.some((c: any) => c.cx === req.cx && c.cz === req.cz)) {
+                   req.resolve(null);
+                }
+            }
         }
       };
-      this.socket.on("chunkData", handler);
-      this._emit("requestChunkChanges", { cx, cz });
       
-      // Auto resolve if timeout
+      this.socket.on("bulkChunkData", handler);
+      this._emit("requestBulkChunkChanges", { id: payloadId, coords });
+      
       setTimeout(() => {
-        this.socket.off("chunkData", handler);
-        resolve(null);
-      }, 5000);
-    });
+        if (this.socket) this.socket.off("bulkChunkData", handler);
+        for (const req of reqs) {
+           req.resolve(null); // Timeout fallback
+        }
+      }, 10000); // 10 seconds timeout
   }
 
   removeMinion(id: string) {

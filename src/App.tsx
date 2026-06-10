@@ -54,7 +54,7 @@ export default function App() {
         isMobile={isMobile}
       />
 
-      <LoadoutUI game={game} />
+      <LoadoutUI game={game} isMobile={isMobile} />
 
       {/* Map Loading Screen */}
       <MapLoadingScreen />

@@ -1490,10 +1490,38 @@ export function createTextureAtlas(): THREE.Texture {
     { type: BLOCK.CONCRETE_SANDY_BEIGE, color: '#E5C49F', shadow: '#C8AA8B', x: 17, y: 15 },
     { type: BLOCK.CONCRETE_CHOCOLATE, color: '#5C3A21', shadow: '#4D301C', x: 18, y: 15 },
     { type: BLOCK.CONCRETE_DEEP_BLUE, color: '#1B4F72', shadow: '#174360', x: 19, y: 15 },
+    { type: BLOCK.CONCRETE_RAINBOW_RED, color: '#FF0000', shadow: '#AA0000', x: 20, y: 15 },
+    { type: BLOCK.CONCRETE_RAINBOW_ORANGE, color: '#FFA500', shadow: '#AA6F00', x: 21, y: 15 },
+    { type: BLOCK.CONCRETE_RAINBOW_YELLOW, color: '#FFFF00', shadow: '#AAAA00', x: 22, y: 15 },
+    { type: BLOCK.CONCRETE_RAINBOW_GREEN, color: '#00FF00', shadow: '#00AA00', x: 23, y: 15 },
+    { type: BLOCK.CONCRETE_RAINBOW_BLUE, color: '#0000FF', shadow: '#0000AA', x: 24, y: 15 },
+    { type: BLOCK.CONCRETE_RAINBOW_INDIGO, color: '#4B0082', shadow: '#310056', x: 25, y: 15 },
+    { type: BLOCK.CONCRETE_RAINBOW_VIOLET, color: '#EE82EE', shadow: '#B557B5', x: 26, y: 15 },
   ];
   customConcreteSpecs.forEach(spec => {
     drawTile(spec.x, spec.y, (ITEM_COLORS[spec.type] || spec.color), spec.shadow);
   });
+
+  // Unique Multicolor Rainbow block [27, 15] in standard TextureAtlas
+  const multicolorX = 27;
+  const multicolorY = 15;
+  const mStartX = multicolorX * size;
+  const mStartY = multicolorY * size;
+  ctx.clearRect(mStartX, mStartY, size, size);
+  const mRainbowColors = ['#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#0000FF', '#4B0082', '#8B00FF'];
+  const mStripeW = size / mRainbowColors.length;
+  for (let i = 0; i < mRainbowColors.length; i++) {
+    ctx.fillStyle = mRainbowColors[i];
+    ctx.fillRect(mStartX + i * mStripeW, mStartY, Math.ceil(mStripeW), size);
+  }
+  // Glass shiny reflection
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+  ctx.fillRect(mStartX + 1, mStartY + 1, size - 2, 2);
+  ctx.fillRect(mStartX + 1, mStartY + 3, 2, size - 4);
+  
+  // Darker container border for high-end look
+  ctx.strokeStyle = '#220022';
+  ctx.strokeRect(mStartX + 0.5, mStartY + 0.5, size - 1, size - 1);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.magFilter = THREE.NearestFilter;
