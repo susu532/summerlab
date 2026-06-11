@@ -97,13 +97,6 @@ export function LoadoutUI({ game, isMobile }: { game: Game | null, isMobile?: bo
     } catch (err) {
       console.warn('Pointer lock request failed during loadout selection:', err);
     }
-    
-    // Add a small delay to check if lock actually succeeded or was blocked by browser policies
-    setTimeout(() => {
-      if (!isMobile && document.pointerLockElement !== document.body) {
-         useUIStore.getState().setPauseMenuOpen(true);
-      }
-    }, 100);
   };
 
   if (!isOpen) return null;

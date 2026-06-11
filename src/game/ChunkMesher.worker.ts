@@ -652,7 +652,7 @@ class LayerData {
       for (let y = 0; y < CHUNK_HEIGHT; y++) {
         for (let z = 0; z < CHUNK_SIZE; z++) {
           const type = data.blocks[x | (z << 4) | (y << 8)];
-          if (type === BLOCK.AIR) continue;
+          if (type === BLOCK.AIR || type === BLOCK.BARRIER) continue;
           
           const isTypeTransparent = isTransparent(type);
           const isTypeCutout = isCutout(type);

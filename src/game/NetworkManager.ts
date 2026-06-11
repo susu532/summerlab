@@ -178,7 +178,7 @@ export class NetworkManager {
     type: number;
   }) => void;
   onTimeUpdate?: (data: { dayTime: number }) => void;
-  onForceReloadMap?: (data?: { isWaterPark: boolean }) => void;
+  onForceReloadMap?: (data?: { phase: number }) => void;
   private initData: any = null;
   private reconnectAttempt = 0;
   private currentBackendUrl: string = "";

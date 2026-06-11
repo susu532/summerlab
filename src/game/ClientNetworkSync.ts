@@ -21,8 +21,8 @@ export class ClientNetworkSync {
   private registerHandlers() {
     // Network setup
     networkManager.onForceReloadMap = (data) => {
-      if (data && data.isWaterPark !== undefined) {
-          (window as any).__FORCE_WATER_PARK = data.isWaterPark;
+      if (data && data.phase !== undefined) {
+          (window as any).__FORCE_SUMMER_LAB_PHASE = data.phase;
       }
       networkManager.blockChanges = {};
       useGameStore.getState().setIsMapLoading(true);
@@ -36,8 +36,8 @@ export class ClientNetworkSync {
       const urlParams = new URLSearchParams(window.location.search);
       const serverName = urlParams.get("server") || "dungeondelver";
 
-      if (data.isWaterPark !== undefined) {
-         (window as any).__FORCE_WATER_PARK = data.isWaterPark;
+      if (data.phase !== undefined) {
+         (window as any).__FORCE_SUMMER_LAB_PHASE = data.phase;
       }
 
       this.game.player.hasReceivedInitialRespawn = false;

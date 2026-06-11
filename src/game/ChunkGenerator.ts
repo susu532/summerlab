@@ -10,6 +10,7 @@ import { getGiantMythicalShipBlock } from "./generation/ShipGenerator";
 import { getSummerLabBlock } from "./generation/SummerLabGenerator";
 import { getWaterParkBlock } from "./generation/WaterParkGenerator";
 import { generateSkyIslandTerrain } from "./generation/SkyIslandGenerator";
+import { getHappyIslandBlock, generateHappyIslandColumn } from "./generation/HappyIslandGenerator";
 import * as THREE from "three";
 import { skycastlesBakedBlocks } from "./SkycastlesBakedBlocks";
 import { dungeonBakedBlocks } from "./DungeonBakedBlocks";
@@ -24,9 +25,9 @@ export async function generateChunkMethod(
   const chunk = new Chunk(cx, cz);
   
   const startEpoch = world.generationEpoch;
-  const isWaterPark = typeof window !== "undefined" && (window as any).__FORCE_WATER_PARK !== undefined
-    ? (window as any).__FORCE_WATER_PARK
-    : Math.floor(Date.now() / 600000) % 2 === 1;
+  const summerLabPhase = typeof window !== "undefined" && (window as any).__FORCE_SUMMER_LAB_PHASE !== undefined
+    ? (window as any).__FORCE_SUMMER_LAB_PHASE
+    : Math.floor(Date.now() / 600000) % 3;
 
   let startTime = performance.now();
   let iterations = 0;
@@ -59,11 +60,20 @@ export async function generateChunkMethod(
       // }
 
       if (world.isSummerLab) {
-        for (let y = 0; y < CHUNK_HEIGHT; y++) {
-          const worldY = y + WORLD_Y_OFFSET;
-          const block = isWaterPark ? getWaterParkBlock(worldX, worldY, worldZ) : getSummerLabBlock(worldX, worldY, worldZ);
-          chunk.setBlockFast(x, y, z, block);
+        if (summerLabPhase === 2) {
+          generateHappyIslandColumn(chunk, x, z, worldX, worldZ);
+        } else {
+          for (let y = 0; y < CHUNK_HEIGHT; y++) {
+            const worldY = y + WORLD_Y_OFFSET;
+            const block = summerLabPhase === 1 ? getWaterParkBlock(worldX, worldY, worldZ) : getSummerLabBlock(worldX, worldY, worldZ);
+            if (block !== 0) chunk.setBlockFast(x, y, z, block);
+          }
         }
+        continue;
+      }
+
+      if (world.isHappyIsland) {
+        generateHappyIslandColumn(chunk, x, z, worldX, worldZ);
         continue;
       }
 

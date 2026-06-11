@@ -821,7 +821,8 @@ export class RemotePlayer {
           const isSummerLab = new URLSearchParams(window.location.search)
             .get("server")
             ?.startsWith("summerlab");
-          (mesh.material as THREE.MeshStandardMaterial).map = isSummerLab
+          const useSummerLabAtlas = isSummerLab && (typeof window !== "undefined" && (window as any).__FORCE_SUMMER_LAB_PHASE !== 2);
+          (mesh.material as THREE.MeshStandardMaterial).map = useSummerLabAtlas
             ? createSummerLabTextureAtlas()
             : createTextureAtlas();
         }

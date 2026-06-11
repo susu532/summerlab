@@ -47,6 +47,12 @@ export function FluidColorPicker({ game }: { game?: any }) {
             setIsOpen(nextState);
             if (nextState) {
               game.controls.unlock();
+            } else {
+              setTimeout(() => {
+                try {
+                  game.controls.lock();
+                } catch(e) {}
+              }, 50);
             }
           }}
           className="bg-black/50 hover:bg-black/70 text-white p-4 rounded-full backdrop-blur-sm border border-white/10 transition-colors shadow-lg"

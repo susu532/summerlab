@@ -31,6 +31,15 @@ export class PlayerInputController {
   lastAttackTime = 0;
   bowChargeStart = 0;
 
+  keyForward = false;
+  keyBackward = false;
+  keyLeft = false;
+  keyRight = false;
+  keyUp = false;
+  keyDown = false;
+  keySprinting = false;
+  keyCrouching = false;
+
   // When true, keyboard input is accepted even if pointer lock hasn't been
   // confirmed by the browser yet.  This closes a race condition where the
   // player presses movement keys between requesting and receiving the lock.
@@ -79,6 +88,14 @@ export class PlayerInputController {
     this.moveDown = false;
     this.isCrouching = false;
     this.isSprinting = false;
+    this.keyForward = false;
+    this.keyBackward = false;
+    this.keyLeft = false;
+    this.keyRight = false;
+    this.keyUp = false;
+    this.keyDown = false;
+    this.keyCrouching = false;
+    this.keySprinting = false;
     this.player.isLeftMouseDown = false;
     this.isRightMouseDown = false;
     this.player.isMining = false;
@@ -94,14 +111,14 @@ export class PlayerInputController {
         const jX = window.mobileInputs.joystickX;
         const jY = window.mobileInputs.joystickY;
         
-     this.moveForward = jY < -0.05;
-        this.moveBackward = jY > 0.05;
-        this.moveLeft = jX < -0.05;
-        this.moveRight = jX > 0.05;
-        this.isSprinting = window.mobileInputs.isSprinting;
+     this.moveForward = this.keyForward || jY < -0.05;
+        this.moveBackward = this.keyBackward || jY > 0.05;
+        this.moveLeft = this.keyLeft || jX < -0.05;
+        this.moveRight = this.keyRight || jX > 0.05;
+        this.isSprinting = this.keySprinting || window.mobileInputs.isSprinting;
         
         const wasMovingUp = this.moveUp;
-        this.moveUp = window.mobileInputs.isJumping;
+        this.moveUp = this.keyUp || window.mobileInputs.isJumping;
         if (this.moveUp && !wasMovingUp) {
           if (!this.player.isFlying && !this.player.isSwimming && this.player.canJump) {
             this.player.velocity.y += this.player.jumpForce;
@@ -177,8 +194,8 @@ export class PlayerInputController {
         }
         
         const wasCrouching = this.isCrouching;
-        this.isCrouching = window.mobileInputs.isCrouching;
-        this.moveDown = window.mobileInputs.isCrouching;
+        this.isCrouching = this.keyCrouching || window.mobileInputs.isCrouching;
+        this.moveDown = this.keyDown || window.mobileInputs.isCrouching;
 
         const wasLeftMouseDown = this.player.isLeftMouseDown;
         if (window.mobileInputs.isAttacking && !wasLeftMouseDown) {
@@ -293,11 +310,11 @@ export class PlayerInputController {
     const { keybinds } = settingsManager.getSettings();
     
     switch (event.code) {
-      case keybinds.forward: this.moveForward = true; break;
-      case keybinds.left: this.moveLeft = true; break;
-      case keybinds.backward: this.moveBackward = true; break;
-      case keybinds.right: this.moveRight = true; break;
-      case keybinds.sprint: this.isSprinting = true; break;
+      case keybinds.forward: this.moveForward = true; this.keyForward = true; break;
+      case keybinds.left: this.moveLeft = true; this.keyLeft = true; break;
+      case keybinds.backward: this.moveBackward = true; this.keyBackward = true; break;
+      case keybinds.right: this.moveRight = true; this.keyRight = true; break;
+      case keybinds.sprint: this.isSprinting = true; this.keySprinting = true; break;
       case keybinds.drop: if (!this.player.world.isHub && !this.player.isSpectator && !this.player.isDead) this.dropItem(event.ctrlKey); break;
       case keybinds.zoom: this.player.isZooming = true; break;
       case keybinds.perspective: 
@@ -320,6 +337,7 @@ export class PlayerInputController {
 //         break;
       case keybinds.jump: 
         this.moveUp = true;
+        this.keyUp = true;
         if (!this.player.isFlying && !this.player.isSwimming && this.player.canJump) {
           this.player.velocity.y += this.player.jumpForce;
           
@@ -341,7 +359,9 @@ export class PlayerInputController {
         break;
       case keybinds.crouch:
         this.isCrouching = true;
+        this.keyCrouching = true;
         this.moveDown = true;
+        this.keyDown = true;
         break;
     }
   }
@@ -355,16 +375,18 @@ export class PlayerInputController {
     const { keybinds } = settingsManager.getSettings();
     
     switch (event.code) {
-      case keybinds.forward: this.moveForward = false; break;
-      case keybinds.left: this.moveLeft = false; break;
-      case keybinds.backward: this.moveBackward = false; break;
-      case keybinds.right: this.moveRight = false; break;
-      case keybinds.sprint: this.isSprinting = false; break;
+      case keybinds.forward: this.moveForward = false; this.keyForward = false; break;
+      case keybinds.left: this.moveLeft = false; this.keyLeft = false; break;
+      case keybinds.backward: this.moveBackward = false; this.keyBackward = false; break;
+      case keybinds.right: this.moveRight = false; this.keyRight = false; break;
+      case keybinds.sprint: this.isSprinting = false; this.keySprinting = false; break;
       case keybinds.zoom: this.player.isZooming = false; break;
-      case keybinds.jump: this.moveUp = false; break;
+      case keybinds.jump: this.moveUp = false; this.keyUp = false; break;
       case keybinds.crouch:
         this.isCrouching = false; 
+        this.keyCrouching = false;
         this.moveDown = false;
+        this.keyDown = false;
         break;
     }
   }

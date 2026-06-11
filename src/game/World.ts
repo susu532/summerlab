@@ -63,6 +63,7 @@ export class World {
   isHub: boolean = false;
   isSkyCastles: boolean = false;
   isSummerLab: boolean = false;
+  isHappyIsland: boolean = false;
   isDungeonDelver: boolean = false;
   isBattleRoyale: boolean = false;
   isSkyIsland: boolean = false;
@@ -94,6 +95,7 @@ export class World {
     this.isHub = serverName.startsWith("hub");
     this.isSkyCastles = serverName.startsWith("skycastles");
     this.isSummerLab = serverName.startsWith("summerlab");
+    this.isHappyIsland = serverName.startsWith("happyisland");
     this.isDungeonDelver = serverName.startsWith("dungeondelver");
     this.isBattleRoyale = serverName.startsWith("battleroyale");
     this.isSkyIsland = serverName.startsWith("skyisland");
@@ -1119,11 +1121,12 @@ export class World {
     const fz = Math.floor(z);
     
     if (this.isSummerLab) {
-      const phaser = (window as any).__FORCE_WATER_PARK;
+      const phaser = (window as any).__FORCE_SUMMER_LAB_PHASE;
       // We can't rely completely on Date.now() client-side perfectly synced, but we can do our best.
-      // Easiest is just to protect BOTH spawn areas from being built on since they are small 5x5 zones!
-      if (Math.abs(fx - 0) <= 2 && Math.abs(fz - 35) <= 2) return true;
-      if (Math.abs(fx - 0) <= 2 && Math.abs(fz - 25) <= 2) return true;
+      // Protect all spawn areas from being built on since they are small 5x5 zones.
+      if (Math.abs(fx - 0) <= 2 && Math.abs(fz - 35) <= 2) return true; // Water park
+      if (Math.abs(fx - 0) <= 2 && Math.abs(fz - 25) <= 2) return true; // Classic
+      if (Math.abs(fx - 0) <= 2 && Math.abs(fz - 0) <= 2) return true;  // Happy Island
     }
 
     const absX = Math.abs(fx);
@@ -1451,9 +1454,32 @@ export class World {
     this.isHub = serverName.startsWith("hub");
     this.isSkyCastles = serverName.startsWith("skycastles");
     this.isSummerLab = serverName.startsWith("summerlab");
+    this.isHappyIsland = serverName.startsWith("happyisland");
     this.isDungeonDelver = serverName.startsWith("dungeondelver");
     this.isBattleRoyale = serverName.startsWith("battleroyale");
     this.isSkyIsland = serverName.startsWith("skyisland");
+
+    let texture: THREE.Texture;
+    if (this.isSummerLab && typeof window !== "undefined" && (window as any).__FORCE_SUMMER_LAB_PHASE !== 2) {
+      texture = createSummerLabTextureAtlas();
+    } else {
+      texture = createTextureAtlas();
+    }
+    
+    if (this.opaqueMaterial) {
+      this.opaqueMaterial.map = texture;
+      this.opaqueMaterial.needsUpdate = true;
+      if ((this.opaqueMaterial as any).userData?.uIsSummerLab) {
+        (this.opaqueMaterial as any).userData.uIsSummerLab.value = this.isSummerLab ? 1.0 : 0.0;
+      }
+    }
+    if (this.transparentMaterial) {
+      this.transparentMaterial.map = texture;
+      this.transparentMaterial.needsUpdate = true;
+      if ((this.transparentMaterial as any).userData?.uIsSummerLab) {
+        (this.transparentMaterial as any).userData.uIsSummerLab.value = this.isSummerLab ? 1.0 : 0.0;
+      }
+    }
 
     this.chunks.forEach((chunk) => {
       this.meshesToRemove.push({

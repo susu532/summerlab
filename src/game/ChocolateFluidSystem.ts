@@ -11,6 +11,13 @@ function seededRandom(x: number, y: number, z: number, seed: number) {
     return sin - Math.floor(sin);
 }
 
+// Temp vectors for fluid calculation to prevent garbage collection sweeps
+const _tempNextPos = new THREE.Vector3();
+const _tempRayDir = new THREE.Vector3();
+const _tempVel = new THREE.Vector3();
+const _tempHitNorm = new THREE.Vector3();
+const _upVec = new THREE.Vector3(0, 1, 0);
+
 export class ChocolateFluidSystem {
 
   game: Game;
@@ -332,29 +339,30 @@ export class ChocolateFluidSystem {
         
         if (!hideNow) {
             // Next position
-            const nextPos = pos.clone().add(vel.clone().multiplyScalar(delta));
+            _tempVel.copy(vel).multiplyScalar(delta);
+            _tempNextPos.copy(pos).add(_tempVel);
             
             // Raycast voxel world (DDA)
-            const rayDir = nextPos.clone().sub(pos);
-            const dist = rayDir.length();
+            _tempRayDir.copy(_tempNextPos).sub(pos);
+            const dist = _tempRayDir.length();
             
             if (dist > 0.0001) {
-                rayDir.normalize();
+                _tempRayDir.normalize();
                 
-                const hitInfo = this.game.world.raycast(pos, rayDir, dist);
+                const hitInfo = this.game.world.raycast(pos, _tempRayDir, dist);
                 if (hitInfo.hit && hitInfo.hitPoint) {
                     // It hit a block!
                     this.projectileLifetimes[i] = 0;
                     
                     // Spawn a Splat!
-                    const hitNorm = hitInfo.prevPos.clone().sub(hitInfo.blockPos).normalize();
+                    _tempHitNorm.copy(hitInfo.prevPos).sub(hitInfo.blockPos).normalize();
                     // Prevent zero normal
-                    if (hitNorm.lengthSq() < 0.1) hitNorm.set(0, 1, 0);
+                    if (_tempHitNorm.lengthSq() < 0.1) _tempHitNorm.set(0, 1, 0);
 
-                    this.spawnSplat(hitInfo.hitPoint, hitNorm, this.projectileColors[i]);
+                    this.spawnSplat(hitInfo.hitPoint, _tempHitNorm, this.projectileColors[i]);
                     
                     hideNow = true;
-                } else if (nextPos.y <= -50) { 
+                } else if (_tempNextPos.y <= -50) { 
                     this.projectileLifetimes[i] = 0;
                     hideNow = true;
                 }
@@ -366,14 +374,15 @@ export class ChocolateFluidSystem {
                 vel.multiplyScalar(Math.max(0, 1.0 - 0.45 * delta)); // slightly less drag
 
                 // Apply new pos
-                pos.copy(nextPos);
+                pos.copy(_tempNextPos);
                 
                 // Update mesh
                 this.splatDummy.position.copy(pos);
                 // Stretchy projectiles using lookAt to velocity
                 const speed = vel.length();
                 if (speed > 0.1) {
-                    this.splatDummy.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), vel.clone().normalize());
+                    _tempVel.copy(vel).normalize();
+                    this.splatDummy.quaternion.setFromUnitVectors(_upVec, _tempVel);
                 }
                 
                 // Rope-like thickness: starts at individual initial scale, gets slightly thicker with age

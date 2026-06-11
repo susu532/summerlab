@@ -691,7 +691,7 @@ export class PlayerRenderer {
     this.fpArmMesh.rotation.set(0.4, -0.2, 0.1);
 
     const blockGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
-    const texture = this.player.world.isSummerLab
+    const texture = this.player.world.isSummerLab && (typeof window !== "undefined" && (window as any).__FORCE_SUMMER_LAB_PHASE !== 2)
       ? createSummerLabTextureAtlas()
       : createTextureAtlas();
     const blockMat = isPerformance
@@ -741,7 +741,7 @@ export class PlayerRenderer {
     this.fpOffHandArmMesh.rotation.set(0.4, 0.2, -0.1);
 
     const blockGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
-    const texture = this.player.world.isSummerLab
+    const texture = this.player.world.isSummerLab && (typeof window !== "undefined" && (window as any).__FORCE_SUMMER_LAB_PHASE !== 2)
       ? createSummerLabTextureAtlas()
       : createTextureAtlas();
     const blockMat = isPerformance
@@ -1011,8 +1011,7 @@ export class PlayerRenderer {
         uvAttribute.needsUpdate = true;
 
         if (!(mesh.material as THREE.MeshStandardMaterial).map) {
-          (mesh.material as THREE.MeshStandardMaterial).map = this.player.world
-            .isSummerLab
+          (mesh.material as THREE.MeshStandardMaterial).map = (this.player.world.isSummerLab && (typeof window !== "undefined" && (window as any).__FORCE_SUMMER_LAB_PHASE !== 2))
             ? createSummerLabTextureAtlas()
             : createTextureAtlas();
         }

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 export function SummerLabTitleUI() {
   const [timeLeft, setTimeLeft] = useState(0);
-  const [isWaterPark, setIsWaterPark] = useState(false);
+  const [phase, setPhase] = useState(0);
 
   useEffect(() => {
     const updateTimer = () => {
@@ -11,8 +11,8 @@ export function SummerLabTitleUI() {
        const remaining = phaseLength - (now % phaseLength);
        setTimeLeft(remaining);
        
-       const forcedPhase = typeof window !== 'undefined' ? (window as any).__FORCE_WATER_PARK : undefined;
-       setIsWaterPark(forcedPhase !== undefined ? forcedPhase : (Math.floor(now / phaseLength) % 2 === 1));
+       const forcedPhase = typeof window !== 'undefined' ? (window as any).__FORCE_SUMMER_LAB_PHASE : undefined;
+       setPhase(forcedPhase !== undefined ? forcedPhase : (Math.floor(now / phaseLength) % 3));
     };
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
@@ -55,7 +55,7 @@ export function SummerLabTitleUI() {
           -
         </span>
         <span style={{ letterSpacing: "0.12em" }}>
-        {isWaterPark ? (
+        {phase === 1 ? (
             "Water Park".split("").map((char, index) => {
               if (char === " ") return <span key={index}> </span>;
               const rainbowColors = ["#FF3333", "#FFAA33", "#FFFF33", "#33FF33", "#33AAFF", "#9933FF", "#FF33DD"];
@@ -65,6 +65,24 @@ export function SummerLabTitleUI() {
                   key={index}
                   style={{
                     color: rainbowColors[cidx % rainbowColors.length],
+                    WebkitTextStroke: "1px rgba(0,0,0,0.8)",
+                    filter: "drop-shadow(1px 1px 0px #000) drop-shadow(1px 2px 0px #000) drop-shadow(3px 4px 8px rgba(0,0,0,0.6))"
+                  }}
+                >
+                  {char}
+                </span>
+              );
+            })
+        ) : phase === 2 ? (
+            "Happy Island".split("").map((char, index) => {
+              if (char === " ") return <span key={index}> </span>;
+              const tropicalColors = ["#FF9900", "#FFCC00", "#33CC33", "#00CCCC"];
+              const cidx = index > 5 ? index - 1 : index; // skip space
+              return (
+                <span
+                  key={index}
+                  style={{
+                    color: tropicalColors[cidx % tropicalColors.length],
                     WebkitTextStroke: "1px rgba(0,0,0,0.8)",
                     filter: "drop-shadow(1px 1px 0px #000) drop-shadow(1px 2px 0px #000) drop-shadow(3px 4px 8px rgba(0,0,0,0.6))"
                   }}
@@ -97,7 +115,7 @@ export function SummerLabTitleUI() {
            textShadow: '2px 2px 0px #000, -2px -2px 0px #000, 2px -2px 0px #000, -2px 2px 0px #000, 4px 4px 8px rgba(0,0,0,0.5)',
         }}
       >
-        NEW MAP IN: <span style={{ color: isWaterPark ? '#ff7bee' : '#00ffd0' }}>{timerText}</span>
+        NEW MAP IN: <span style={{ color: phase === 1 ? '#ff7bee' : phase === 2 ? '#FFCC00' : '#00ffd0' }}>{timerText}</span>
       </div>
       
       {/* Paint the world text */}

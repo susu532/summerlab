@@ -1538,8 +1538,9 @@ export function getTextureAtlasDataUrl(): string {
   const isSummerLab = typeof window !== 'undefined' && 
          (new URLSearchParams(window.location.search).get('server')?.startsWith('summerlab') || 
           window.location.pathname.includes('summerlab'));
+  const useSummerLabAtlas = isSummerLab && (typeof window !== "undefined" && (window as any).__FORCE_SUMMER_LAB_PHASE !== 2);
 
-  if (isSummerLab) {
+  if (useSummerLabAtlas) {
     if (cachedSummerLabAtlasDataUrl) return cachedSummerLabAtlasDataUrl;
     const texture = createSummerLabTextureAtlas();
     const canvas = texture.image as HTMLCanvasElement;
