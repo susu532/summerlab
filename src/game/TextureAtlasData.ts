@@ -534,7 +534,6 @@ BLOCK_UVS[BLOCK.CONCRETE_RAINBOW_GREEN] = [[23,15], [23,15], [23,15], [23,15], [
 BLOCK_UVS[BLOCK.CONCRETE_RAINBOW_BLUE] = [[24,15], [24,15], [24,15], [24,15], [24,15], [24,15]];
 BLOCK_UVS[BLOCK.CONCRETE_RAINBOW_INDIGO] = [[25,15], [25,15], [25,15], [25,15], [25,15], [25,15]];
 BLOCK_UVS[BLOCK.CONCRETE_RAINBOW_VIOLET] = [[26,15], [26,15], [26,15], [26,15], [26,15], [26,15]];
-BLOCK_UVS[BLOCK.CONCRETE_RAINBOW_MULTICOLOR] = [[27,15], [27,15], [27,15], [27,15], [27,15], [27,15]];
 
 let cachedBreakingTexture: THREE.Texture | null = null;
 export function createBreakingTexture(): THREE.Texture {

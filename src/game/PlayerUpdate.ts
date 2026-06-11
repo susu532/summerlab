@@ -66,8 +66,8 @@ export function updatePlayer(player: Player, delta: number) {
     player.cameraPitch -= player.mouseDeltaY * 0.002 * factor * invertFactor;
 
     // Clamp pitch - look up/down limits
-    const limitUp = Math.PI * 0.4; // ~72 degrees
-    const limitDown = Math.PI * 0.48; // ~86 degrees
+    const limitUp = Math.PI * 0.495; // Almost 90 degrees
+    const limitDown = Math.PI * 0.495; // Almost 90 degrees
     player.cameraPitch = Math.max(
       -limitDown,
       Math.min(limitUp, player.cameraPitch),
@@ -833,6 +833,31 @@ export function updatePlayer(player: Player, delta: number) {
       swingPosX = -swingProgress * 0.2;
       swingPosY = -swingProgress * 0.1;
       swingPosZ = swingProgress * 0.1;
+    } else if (player.currentEmote && !isMoving && !player.isFlying && !player.isSwimming) {
+      const et = player.emoteTimer;
+      if (player.currentEmote === "wave") {
+        swingRotZ += Math.sin(et * 15) * 0.5 + 0.5;
+        swingRotX -= 0.5;
+        swingPosY += 0.2;
+      } else if (player.currentEmote === "dance") {
+        swingPosX += Math.sin(et * 5) * 0.2;
+        swingPosY += Math.cos(et * 5) * 0.2;
+        swingRotZ += Math.sin(et * 10) * 0.5;
+      } else if (player.currentEmote === "cheer") {
+        swingPosY += Math.abs(Math.sin(et * 8)) * 0.3;
+        swingRotX -= Math.abs(Math.sin(et * 8)) * 0.5 + 0.2;
+      } else if (player.currentEmote === "floss") {
+        swingPosX += Math.sin(et * 10) * 0.4;
+        swingRotZ += Math.sin(et * 10) * 0.4;
+      } else if (player.currentEmote === "zombie") {
+        swingRotX -= Math.PI / 2;
+        swingPosZ -= 0.3;
+        swingPosY += 0.2;
+        swingRotZ += Math.sin(et * 2) * 0.1;
+      } else if (player.currentEmote === "headbang") {
+        swingRotX += Math.sin(et * 12) * 0.3;
+        swingPosY += Math.min(0, Math.sin(et * 12)) * 0.2;
+      }
     }
 
     // Idle breathing and walk bobbing (more natural movement)

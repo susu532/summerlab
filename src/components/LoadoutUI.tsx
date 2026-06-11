@@ -57,8 +57,12 @@ export function LoadoutUI({ game, isMobile }: { game: Game | null, isMobile?: bo
       game.player.inventory.isBuilder = true;
       // Add a variety of colored blocks
       const builderBlocks = [
+        ItemType.CONCRETE_RAINBOW_RED, ItemType.CONCRETE_RAINBOW_ORANGE,
+        ItemType.CONCRETE_RAINBOW_YELLOW, ItemType.CONCRETE_RAINBOW_GREEN,
+        ItemType.CONCRETE_RAINBOW_BLUE, ItemType.CONCRETE_RAINBOW_INDIGO,
+        ItemType.CONCRETE_RAINBOW_VIOLET,
         ItemType.CONCRETE_WHITE, ItemType.CONCRETE_ORANGE, ItemType.CONCRETE_MAGENTA,
-        ItemType.CONCRETE_LIGHT_BLUE, ItemType.CONCRETE_YELLOW, ItemType.CONCRETE_LIME,
+        ItemType.CONCRETE_LIGHT_BLUE, ItemType.CONCRETE_YELLOW,
         ItemType.CONCRETE_PINK, ItemType.CONCRETE_GRAY, ItemType.CONCRETE_CYAN,
         ItemType.CONCRETE_PURPLE, ItemType.CONCRETE_BLUE, ItemType.CONCRETE_BROWN,
         ItemType.CONCRETE_GREEN, ItemType.CONCRETE_RED, ItemType.CONCRETE_BLACK,

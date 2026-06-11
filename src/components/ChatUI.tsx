@@ -163,7 +163,7 @@ export const ChatUI = React.memo(function ChatUI({
   }, [visibleMessages, showFullChat]);
 
   return (
-    <div className="absolute left-4 top-16 md:top-20 md:left-6 lg:top-24 lg:left-8 z-[60] w-[92vw] sm:w-[48vw] md:w-[44vw] lg:w-[38vw] xl:w-[34vw] min-w-[280px] max-w-[560px] flex flex-col gap-1 pointer-events-none transition-all">
+    <div className="absolute left-4 top-16 md:top-20 md:left-6 lg:top-24 lg:left-8 z-[60] w-[92vw] sm:w-[48vw] md:w-[44vw] lg:w-[38vw] xl:w-[34vw] min-w-[280px] max-w-[560px] flex flex-col gap-1 pointer-events-none transition-all [@media(orientation:landscape)_and_(max-height:500px)]:scale-[0.6] [@media(orientation:landscape)_and_(max-height:500px)]:origin-top-left">
       <div
         ref={chatContainerRef}
         onScroll={handleScroll}

@@ -519,7 +519,6 @@ export enum ItemType {
   CONCRETE_RAINBOW_BLUE = 547,
   CONCRETE_RAINBOW_INDIGO = 548,
   CONCRETE_RAINBOW_VIOLET = 549,
-  CONCRETE_RAINBOW_MULTICOLOR = 550,
 };
 
 export const isChest = (type: number) => type === ItemType.CHEST || type === ItemType.ENDER_CHEST || type === ItemType.CHEST_REVERSED;

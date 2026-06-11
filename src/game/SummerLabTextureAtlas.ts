@@ -181,24 +181,7 @@ export function createSummerLabTextureAtlas(): THREE.Texture {
        // We can give the kawaii face to "special" interactable blocks 
        if (blockId === ItemType.CRAFTING_TABLE || blockId === ItemType.FURNACE) hasFace = true;
 
-       if (blockId === ItemType.CONCRETE_RAINBOW_MULTICOLOR) {
-          ctx.clearRect(tx*size, ty*size, size, size);
-          const rainbowColors = ['#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#0000FF', '#4B0082', '#8B00FF'];
-          const stripeW = size / rainbowColors.length;
-          for (let i = 0; i < rainbowColors.length; i++) {
-             ctx.fillStyle = rainbowColors[i];
-             ctx.fillRect(tx*size + i * stripeW, ty*size, Math.ceil(stripeW), size);
-          }
-          // Shiny reflex gloss overlay
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
-          ctx.fillRect(tx*size + 1, ty*size + 1, size - 2, 2);
-          ctx.fillRect(tx*size + 1, ty*size + 3, 2, size - 4);
-          
-          // Outer black outline cel-shaded border
-          ctx.strokeStyle = '#220022';
-          ctx.lineWidth = 1;
-          ctx.strokeRect(tx*size + 0.5, ty*size + 0.5, size - 1, size - 1);
-       } else if (tx === 0 && ty === 2) { // Water
+       if (tx === 0 && ty === 2) { // Water
           ctx.clearRect(tx*size, ty*size, size, size);
           ctx.fillStyle = 'rgba(0, 240, 255, 0.6)';
           ctx.fillRect(tx*size, ty*size, size, size);

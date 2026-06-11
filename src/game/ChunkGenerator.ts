@@ -26,7 +26,7 @@ export async function generateChunkMethod(
   const startEpoch = world.generationEpoch;
   const isWaterPark = typeof window !== "undefined" && (window as any).__FORCE_WATER_PARK !== undefined
     ? (window as any).__FORCE_WATER_PARK
-    : Math.floor(Date.now() / 1200000) % 2 === 1;
+    : Math.floor(Date.now() / 600000) % 2 === 1;
 
   let startTime = performance.now();
   let iterations = 0;

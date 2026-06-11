@@ -118,6 +118,11 @@ export const MobileControlsUI: React.FC<{ game?: any }> = ({ game }) => {
 
   const lastZoomLookPos = useRef<{ x: number; y: number } | null>(null);
 
+  const initialPinchDistance = useRef<number | null>(null);
+  const isPinching = useRef<boolean>(false);
+  
+  const lastJoystickTapTime = useRef<number>(0);
+
   const maxRadius = useRef(50);
 
   const activeTaps = useRef<
@@ -191,6 +196,12 @@ export const MobileControlsUI: React.FC<{ game?: any }> = ({ game }) => {
           joystickTouchId.current = touch.identifier;
           joystickOriginRef.current = { x: touch.clientX, y: touch.clientY };
           setJoystickOrigin({ x: touch.clientX, y: touch.clientY });
+
+          const now = Date.now();
+          if (now - lastJoystickTapTime.current < 300) {
+              window.mobileInputs.isSprinting = true;
+          }
+          lastJoystickTapTime.current = now;
           continue; // Dedicated joystick touch
         }
 
@@ -238,6 +249,14 @@ export const MobileControlsUI: React.FC<{ game?: any }> = ({ game }) => {
           });
         }
       }
+
+      // Pinch to zoom logic
+      if (e.touches.length === 2 && !isAnyMenuOpen) {
+        isPinching.current = true;
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        initialPinchDistance.current = Math.sqrt(dx * dx + dy * dy);
+      }
     };
 
     const handleTouchMove = (e: TouchEvent) => {
@@ -245,6 +264,21 @@ export const MobileControlsUI: React.FC<{ game?: any }> = ({ game }) => {
       const target = e.target as HTMLElement;
       if (!target || !target.closest(".no-prevent")) {
         e.preventDefault();
+      }
+
+      if (e.touches.length === 2 && isPinching.current) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const currentDist = Math.sqrt(dx * dx + dy * dy);
+        if (initialPinchDistance.current) {
+           const diff = currentDist - initialPinchDistance.current;
+           if (diff > 40) { // Pinch out -> Zoom in
+             window.mobileInputs.isZooming = true;
+           } else if (diff < -40) { // Pinch in -> Zoom out
+             window.mobileInputs.isZooming = false;
+           }
+        }
+        return;
       }
 
       for (let i = 0; i < e.changedTouches.length; i++) {
@@ -259,7 +293,7 @@ export const MobileControlsUI: React.FC<{ game?: any }> = ({ game }) => {
             let normalizedX = dx / maxRadius.current;
             let normalizedY = dy / maxRadius.current;
 
-            let isSprinting = false;
+            let isSprinting = window.mobileInputs.isSprinting;
             if (distance > maxRadius.current) {
               normalizedX = dx / distance;
               normalizedY = dy / distance;
@@ -308,7 +342,7 @@ export const MobileControlsUI: React.FC<{ game?: any }> = ({ game }) => {
             }
           }
 
-          if (lookHasMoved.current) {
+          if (lookHasMoved.current && !isPinching.current) {
             const isLandscape = window.innerWidth > window.innerHeight;
             const scale =
               window.innerWidth >= 768 ? 1.0 : isLandscape ? 2.5 : 1.5;
@@ -321,6 +355,11 @@ export const MobileControlsUI: React.FC<{ game?: any }> = ({ game }) => {
     };
 
     const handleTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) {
+        isPinching.current = false;
+        initialPinchDistance.current = null;
+      }
+
       for (let i = 0; i < e.changedTouches.length; i++) {
         const touch = e.changedTouches[i];
 
@@ -409,58 +448,13 @@ export const MobileControlsUI: React.FC<{ game?: any }> = ({ game }) => {
     <div className="absolute inset-0 pointer-events-none z-[70] overflow-hidden touch-none">
       {/* Top HUD Buttons */}
       <div
-        className="absolute flex gap-2 pointer-events-auto transform origin-top-right scale-[0.8] landscape:scale-[1.0] md:landscape:scale-[1.1]"
+        className="absolute flex gap-2 pointer-events-auto transform origin-top-right scale-[0.8] landscape:scale-[0.6] sm:landscape:scale-[0.7] md:landscape:scale-[1.0] lg:landscape:scale-[1.1] [@media(orientation:landscape)_and_(max-height:500px)]:scale-[0.55]"
         style={{
           top: "calc(0.5rem + env(safe-area-inset-top))",
           right: "calc(0.5rem + env(safe-area-inset-right))",
         }}
         onPointerDown={(e) => e.stopPropagation()}
       >
-        <button
-          className="w-12 h-12 rounded-full bg-black/40 border border-white/20 flex items-center justify-center text-white active:bg-white/40 touch-none mobile-button"
-          onPointerDown={(e) => {
-            e.preventDefault();
-            window.mobileInputs.isZooming = true;
-            lastZoomLookPos.current = { x: e.clientX, y: e.clientY };
-            (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
-          }}
-          onPointerMove={(e) => {
-            if (window.mobileInputs.isZooming && lastZoomLookPos.current) {
-              const dx = e.clientX - lastZoomLookPos.current.x;
-              const dy = e.clientY - lastZoomLookPos.current.y;
-              const maxDist = 40;
-              window.mobileInputs.zoomJoystickX = Math.max(
-                -1,
-                Math.min(1, dx / maxDist),
-              );
-              window.mobileInputs.zoomJoystickY = Math.max(
-                -1,
-                Math.min(1, dy / maxDist),
-              );
-            }
-          }}
-          onPointerUp={(e) => {
-            e.preventDefault();
-            window.mobileInputs.isZooming = false;
-            window.mobileInputs.zoomJoystickX = 0;
-            window.mobileInputs.zoomJoystickY = 0;
-            lastZoomLookPos.current = null;
-            (e.currentTarget as HTMLElement).releasePointerCapture?.(
-              e.pointerId,
-            );
-          }}
-          onPointerCancel={(e) => {
-            window.mobileInputs.isZooming = false;
-            window.mobileInputs.zoomJoystickX = 0;
-            window.mobileInputs.zoomJoystickY = 0;
-            lastZoomLookPos.current = null;
-            (e.currentTarget as HTMLElement).releasePointerCapture?.(
-              e.pointerId,
-            );
-          }}
-        >
-          <ScanEye size={20} className="text-white drop-shadow-md" />
-        </button>
         {hasHose && (
           <button
             className={`hidden landscape:flex w-12 h-12 rounded-full border-[2px] items-center justify-center text-white mobile-button pointer-events-auto shadow-md transition-colors ${isColorPickerOpen ? "shadow-[0_0_15px_rgba(255,255,255,0.5)]" : "bg-black/40 active:bg-white/40"}`}
@@ -567,25 +561,25 @@ export const MobileControlsUI: React.FC<{ game?: any }> = ({ game }) => {
 
       {hasHose && isColorPickerOpen && (
         <div
-          className="hidden landscape:flex absolute pointer-events-auto z-50 animate-in fade-in slide-in-from-top-4 duration-200 bg-black/70 backdrop-blur-xl rounded-3xl p-5 border border-white/20 shadow-2xl flex-row items-center gap-6 no-prevent"
+          className="hidden landscape:flex absolute pointer-events-auto z-50 animate-in fade-in slide-in-from-top-4 duration-200 bg-black/70 backdrop-blur-xl rounded-2xl md:rounded-3xl p-3 md:p-5 border border-white/20 shadow-2xl flex-row items-center gap-3 md:gap-6 no-prevent origin-top-right transform scale-[0.7] sm:scale-[0.8] md:scale-100 [@media(orientation:landscape)_and_(max-height:500px)]:scale-[0.65]"
           style={{
-            top: "calc(4rem + env(safe-area-inset-top))",
+            top: "calc(3.5rem + env(safe-area-inset-top))",
             right: "calc(0.5rem + env(safe-area-inset-right))",
           }}
           onTouchMove={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >
           <div className="flex flex-col items-center">
-            <div className="mb-3 text-xs font-bold text-white/50 uppercase tracking-widest">
+            <div className="mb-2 md:mb-3 text-[10px] md:text-xs font-bold text-white/50 uppercase tracking-widest">
               Fluid Color
             </div>
             <HexColorPicker
               color={fluidColor}
               onChange={setFluidColor}
-              style={{ width: "160px", height: "160px" }}
+              className="w-[120px] h-[120px] md:w-[160px] md:h-[160px]"
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2 md:gap-3">
             {[
               "#3d1c04", // Chocolate
               "#1e90ff", // Water
@@ -598,7 +592,7 @@ export const MobileControlsUI: React.FC<{ game?: any }> = ({ game }) => {
             ].map((preset) => (
               <button
                 key={preset}
-                className="w-12 h-12 rounded-full border-[3px] transition-transform shadow-lg"
+                className="w-10 h-10 md:w-12 md:h-12 rounded-full border-[2px] md:border-[3px] transition-transform shadow-lg"
                 style={{
                   backgroundColor: preset,
                   borderColor:
@@ -625,20 +619,20 @@ export const MobileControlsUI: React.FC<{ game?: any }> = ({ game }) => {
       <div
         ref={joystickRef}
         data-joystick-area="true"
-        className="absolute top-0 bottom-16 landscape:bottom-24 z-50 pointer-events-none touch-none"
+        className="absolute top-20 bottom-16 landscape:bottom-24 z-50 pointer-events-none touch-none"
         style={{
           left: "calc(0px + env(safe-area-inset-left))",
           width: "calc(50% - env(safe-area-inset-left))",
         }}
       >
         {!joystickOrigin && (
-          <div className="absolute w-36 h-36 sm:w-40 sm:h-40 md:w-48 md:h-48 landscape:w-[15vw] landscape:h-[15vw] landscape:min-w-[100px] landscape:min-h-[100px] max-w-[200px] max-h-[200px] bg-white/10 border-2 border-white/30 rounded-full flex items-center justify-center pointer-events-none -translate-x-1/2 -translate-y-1/2 left-[30%] top-[60%] landscape:left-[22%] landscape:top-[65%]">
+          <div className="absolute w-36 h-36 sm:w-40 sm:h-40 md:w-48 md:h-48 landscape:w-[15vw] landscape:h-[15vw] landscape:min-w-[100px] landscape:min-h-[100px] [@media(orientation:landscape)_and_(max-height:500px)]:min-w-[80px] [@media(orientation:landscape)_and_(max-height:500px)]:min-h-[80px] [@media(orientation:landscape)_and_(max-height:500px)]:w-[12vw] [@media(orientation:landscape)_and_(max-height:500px)]:h-[12vw] max-w-[200px] max-h-[200px] bg-white/10 border-2 border-white/30 rounded-full flex items-center justify-center pointer-events-none -translate-x-1/2 -translate-y-1/2 left-[30%] top-[60%] landscape:left-[22%] landscape:top-[65%]">
             <div className="w-[40%] h-[40%] border-2 border-white/40 bg-white/30 rounded-full shadow-lg pointer-events-none" />
           </div>
         )}
         {joystickOrigin && (
           <div
-            className="absolute w-36 h-36 sm:w-40 sm:h-40 md:w-48 md:h-48 landscape:w-[15vw] landscape:h-[15vw] landscape:min-w-[100px] landscape:min-h-[100px] max-w-[200px] max-h-[200px] bg-black/40 border-2 border-white/40 rounded-full flex items-center justify-center p-2 pointer-events-none -translate-x-1/2 -translate-y-1/2"
+            className="absolute w-36 h-36 sm:w-40 sm:h-40 md:w-48 md:h-48 landscape:w-[15vw] landscape:h-[15vw] landscape:min-w-[100px] landscape:min-h-[100px] [@media(orientation:landscape)_and_(max-height:500px)]:min-w-[80px] [@media(orientation:landscape)_and_(max-height:500px)]:min-h-[80px] [@media(orientation:landscape)_and_(max-height:500px)]:w-[12vw] [@media(orientation:landscape)_and_(max-height:500px)]:h-[12vw] max-w-[200px] max-h-[200px] bg-black/40 border-2 border-white/40 rounded-full flex items-center justify-center p-2 pointer-events-none -translate-x-1/2 -translate-y-1/2"
             style={{ left: joystickOrigin.x, top: joystickOrigin.y }}
           >
             <div
@@ -669,7 +663,7 @@ export const MobileControlsUI: React.FC<{ game?: any }> = ({ game }) => {
 
       {/* Action Buttons (Right side - Diamond layout for thumbs) */}
       <div
-        className="absolute pointer-events-none w-64 h-64 transform origin-bottom-right scale-[1.0] sm:scale-[1.2] landscape:scale-[0.9] md:landscape:scale-[1.0] lg:landscape:scale-[1.1]"
+        className="absolute pointer-events-none w-64 h-64 transform origin-bottom-right scale-[1.0] sm:scale-[1.2] landscape:scale-[0.9] md:landscape:scale-[1.0] lg:landscape:scale-[1.1] [@media(orientation:landscape)_and_(max-height:500px)]:scale-[0.65]"
         style={{
           bottom: "calc(3.5rem + env(safe-area-inset-bottom))",
           right: "calc(0.5rem + env(safe-area-inset-right))",

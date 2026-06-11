@@ -10,7 +10,9 @@ export function SummerLabTitleUI() {
        const phaseLength = 10 * 60 * 1000;
        const remaining = phaseLength - (now % phaseLength);
        setTimeLeft(remaining);
-       setIsWaterPark(Math.floor(now / phaseLength) % 2 === 1);
+       
+       const forcedPhase = typeof window !== 'undefined' ? (window as any).__FORCE_WATER_PARK : undefined;
+       setIsWaterPark(forcedPhase !== undefined ? forcedPhase : (Math.floor(now / phaseLength) % 2 === 1));
     };
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
@@ -22,7 +24,7 @@ export function SummerLabTitleUI() {
   const timerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
   return (
-    <div className="absolute top-[2%] left-1/2 -translate-x-1/2 pointer-events-none z-10 w-full flex flex-col justify-center items-center pl-safe pr-safe">
+    <div className="absolute top-[2%] left-1/2 -translate-x-1/2 pointer-events-none z-10 w-full flex flex-col justify-center items-center safe-pl safe-pr origin-top [@media(orientation:landscape)_and_(max-height:500px)]:scale-[0.6] [@media(orientation:landscape)_and_(max-height:500px)]:-mt-2">
       <h1
         className="font-black text-center uppercase flex items-center justify-center gap-1.5 sm:gap-2.5 flex-wrap whitespace-nowrap"
         style={{
@@ -100,14 +102,14 @@ export function SummerLabTitleUI() {
       
       {/* Paint the world text */}
       <div
-        className="mt-2.5 font-semibold uppercase tracking-wider text-xs sm:text-sm md:text-base flex items-center justify-center gap-2 flex-wrap"
+        className="mt-1.5 sm:mt-2.5 font-semibold uppercase tracking-wider text-[10px] sm:text-xs md:text-sm flex items-center justify-center gap-1 sm:gap-2 flex-wrap"
         style={{
            color: '#FFFFFF',
            textShadow: '0 2px 4px rgba(0,0,0,0.8), 0 1px 2px rgba(0,0,0,0.9)',
            fontFamily: "Inter, system-ui, -apple-system, sans-serif"
         }}
       >
-        <span className="opacity-95">Clean up the mess and paint the world with</span>
+        <span className="opacity-95 text-center leading-tight">Clean up the mess and paint the world with</span>
         {(() => {
            const phaseLength = 10 * 60 * 1000;
            const phaseIdx = Math.floor(Date.now() / phaseLength);
