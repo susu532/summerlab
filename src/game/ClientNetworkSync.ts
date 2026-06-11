@@ -415,6 +415,7 @@ export class ClientNetworkSync {
       useUIStore.getState().forceCloseAllMenus();
       useGameStore.getState().setIsMapLoading(true);
       this.game.player.hasReceivedInitialRespawn = false;
+      this.game.player.inputController.setGameActive(false);
       this.game.entityManager.clearEntities();
       this.game.world.reset(this.game.currentMode);
       useGameStore.getState().clearChatMessages();

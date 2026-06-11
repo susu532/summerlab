@@ -46,6 +46,14 @@ export function MapLoadingScreen() {
       // the LoadoutUI selection modal will display immediately.
       // Do not request pointer lock here to avoid immediate exitPointerLock collision.
       const willShowLoadout = currentMode !== "hub" && currentMode !== "dungeondelver";
+      
+      const game = (window as any).game;
+      if (game && game.player && game.player.inputController) {
+        // Mark game as active immediately so keyboard inputs aren't dropped
+        // while the browser handles the async pointer lock request.
+        game.player.inputController.setGameActive(true);
+      }
+
       if (!willShowLoadout) {
         document.body.requestPointerLock?.();
       }

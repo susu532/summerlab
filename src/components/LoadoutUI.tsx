@@ -81,6 +81,10 @@ export function LoadoutUI({ game, isMobile }: { game: Game | null, isMobile?: bo
     setHasPicked(true);
     setIsOpen(false);
 
+    // Mark input as active immediately so key presses aren't dropped while
+    // the browser asynchronously acquires the pointer lock.
+    game.player.inputController.setGameActive(true);
+
     // Request pointer lock synchronously on role selection so they can immediately play
     try {
       if (!isMobile) {

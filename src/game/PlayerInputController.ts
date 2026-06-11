@@ -30,9 +30,19 @@ export class PlayerInputController {
   isRightMouseDown = false;
   lastAttackTime = 0;
   bowChargeStart = 0;
+
+  // When true, keyboard input is accepted even if pointer lock hasn't been
+  // confirmed by the browser yet.  This closes a race condition where the
+  // player presses movement keys between requesting and receiving the lock.
+  private _gameActive = false;
   
   constructor(player: Player) {
     this.player = player;
+  }
+
+  /** Call when the player is ready to play (loading dismissed / role picked). */
+  setGameActive(active: boolean) {
+    this._gameActive = active;
   }
 
   bindEvents() {
@@ -60,6 +70,7 @@ export class PlayerInputController {
   };
 
   resetInput = () => {
+    this._gameActive = false;
     this.moveForward = false;
     this.moveBackward = false;
     this.moveLeft = false;
@@ -277,7 +288,7 @@ export class PlayerInputController {
   }
 
   onKeyDown = (event: KeyboardEvent) => {
-    if (!this.player.controls.isLocked) return;
+    if (!this.player.controls.isLocked && !this._gameActive) return;
     if (this.isInputFocused()) return;
     const { keybinds } = settingsManager.getSettings();
     
@@ -336,7 +347,7 @@ export class PlayerInputController {
   }
 
   onKeyUp = (event: KeyboardEvent) => {
-    if (!this.player.controls.isLocked) return;
+    if (!this.player.controls.isLocked && !this._gameActive) return;
     if (this.isInputFocused()) {
       this.resetInput();
       return;
