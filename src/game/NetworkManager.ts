@@ -873,6 +873,17 @@ export class NetworkManager {
   private chunkRequestQueue: {cx: number, cz: number, resolve: (data: Uint16Array | null) => void}[] = [];
   private chunkRequestBouncing: any = null;
 
+  clearChunkQueue() {
+    for (const req of this.chunkRequestQueue) {
+       req.resolve(null);
+    }
+    this.chunkRequestQueue = [];
+    if (this.chunkRequestBouncing) {
+       clearTimeout(this.chunkRequestBouncing);
+       this.chunkRequestBouncing = null;
+    }
+  }
+
   async requestChunkChanges(cx: number, cz: number): Promise<Uint16Array | null> {
     if (!this.socket) return null;
     return new Promise((resolve) => {

@@ -11,9 +11,11 @@ import { getSummerLabBlock } from "./generation/SummerLabGenerator";
 import { getWaterParkBlock } from "./generation/WaterParkGenerator";
 import { generateSkyIslandTerrain } from "./generation/SkyIslandGenerator";
 import { getHappyIslandBlock, generateHappyIslandColumn } from "./generation/HappyIslandGenerator";
+import { getBackroomsBlock, generateBackroomsColumn } from "./generation/BackroomsGenerator";
 import * as THREE from "three";
 import { skycastlesBakedBlocks } from "./SkycastlesBakedBlocks";
 import { dungeonBakedBlocks } from "./DungeonBakedBlocks";
+import { getSummerLabPhase } from "./PhaseHelper";
 
 export async function generateChunkMethod(
   world: World,
@@ -25,9 +27,7 @@ export async function generateChunkMethod(
   const chunk = new Chunk(cx, cz);
   
   const startEpoch = world.generationEpoch;
-  const summerLabPhase = typeof window !== "undefined" && (window as any).__FORCE_SUMMER_LAB_PHASE !== undefined
-    ? (window as any).__FORCE_SUMMER_LAB_PHASE
-    : Math.floor(Date.now() / 600000) % 3;
+  const summerLabPhase = getSummerLabPhase();
 
   let startTime = performance.now();
   let iterations = 0;
@@ -37,6 +37,10 @@ export async function generateChunkMethod(
       iterations++;
       if (iterations > 64 && performance.now() - startTime > 3) {
         await new Promise((resolve) => setTimeout(resolve, 0));
+        if (world.generationEpoch !== startEpoch) {
+          world.generatingChunks.delete(key);
+          return chunk;
+        }
         startTime = performance.now();
         iterations = 0;
       }
@@ -60,7 +64,9 @@ export async function generateChunkMethod(
       // }
 
       if (world.isSummerLab) {
-        if (summerLabPhase === 2) {
+        if (summerLabPhase === 3) {
+          generateBackroomsColumn(chunk, x, z, worldX, worldZ);
+        } else if (summerLabPhase === 2) {
           generateHappyIslandColumn(chunk, x, z, worldX, worldZ);
         } else {
           for (let y = 0; y < CHUNK_HEIGHT; y++) {

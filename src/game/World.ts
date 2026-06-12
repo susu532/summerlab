@@ -16,6 +16,7 @@ import { settingsManager } from "./Settings";
 import { LightingManager } from "./LightingManager";
 import { networkManager } from "./NetworkManager";
 import { biomes, getTerrainData, noise2D, noise3D } from "./TerrainGenerator";
+import { getSummerLabPhase } from "./PhaseHelper";
 import { skycastlesBakedBlocks } from "./SkycastlesBakedBlocks";
 import { bakedBlocksMap } from "./BakedBlocks";
 
@@ -105,8 +106,10 @@ export class World {
     this.raycaster = new WorldRaycast(this);
 
     
+    const summerLabPhase = getSummerLabPhase();
+
     let texture: THREE.Texture;
-    if (this.isSummerLab) {
+    if (this.isSummerLab && summerLabPhase !== 2 && summerLabPhase !== 3) {
       texture = createSummerLabTextureAtlas();
     } else {
       texture = createTextureAtlas();
@@ -1121,7 +1124,10 @@ export class World {
     const fz = Math.floor(z);
     
     if (this.isSummerLab) {
-      const phaser = (window as any).__FORCE_SUMMER_LAB_PHASE;
+      const summerLabPhase = getSummerLabPhase();
+      if (summerLabPhase === 3) return true;
+
+      const phaser = getSummerLabPhase();
       // We can't rely completely on Date.now() client-side perfectly synced, but we can do our best.
       // Protect all spawn areas from being built on since they are small 5x5 zones.
       if (Math.abs(fx - 0) <= 2 && Math.abs(fz - 35) <= 2) return true; // Water park
@@ -1459,8 +1465,10 @@ export class World {
     this.isBattleRoyale = serverName.startsWith("battleroyale");
     this.isSkyIsland = serverName.startsWith("skyisland");
 
+    const summerLabPhase = getSummerLabPhase();
+
     let texture: THREE.Texture;
-    if (this.isSummerLab && typeof window !== "undefined" && (window as any).__FORCE_SUMMER_LAB_PHASE !== 2) {
+    if (this.isSummerLab && summerLabPhase !== 2 && summerLabPhase !== 3) {
       texture = createSummerLabTextureAtlas();
     } else {
       texture = createTextureAtlas();
@@ -1470,14 +1478,14 @@ export class World {
       this.opaqueMaterial.map = texture;
       this.opaqueMaterial.needsUpdate = true;
       if ((this.opaqueMaterial as any).userData?.uIsSummerLab) {
-        (this.opaqueMaterial as any).userData.uIsSummerLab.value = this.isSummerLab ? 1.0 : 0.0;
+        (this.opaqueMaterial as any).userData.uIsSummerLab.value = this.isSummerLab && summerLabPhase !== 2 && summerLabPhase !== 3 ? 1.0 : 0.0;
       }
     }
     if (this.transparentMaterial) {
       this.transparentMaterial.map = texture;
       this.transparentMaterial.needsUpdate = true;
       if ((this.transparentMaterial as any).userData?.uIsSummerLab) {
-        (this.transparentMaterial as any).userData.uIsSummerLab.value = this.isSummerLab ? 1.0 : 0.0;
+        (this.transparentMaterial as any).userData.uIsSummerLab.value = this.isSummerLab && summerLabPhase !== 2 && summerLabPhase !== 3 ? 1.0 : 0.0;
       }
     }
 

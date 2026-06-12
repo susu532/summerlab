@@ -4,6 +4,7 @@ export { createBreakingTexture } from "./TextureAtlasData";
 export { isTransparent, isCutout, isSlab, isSolidBlock, isLightEmitting, isPlant, isAnyTorch, isFlatItem, isLeaves } from "./TextureAtlasData";
 import { ITEM_COLORS } from './Constants';
 import { createSummerLabTextureAtlas } from './SummerLabTextureAtlas';
+import { getSummerLabPhase } from './PhaseHelper';
 
 import { ItemType, isChest } from './Inventory';
 export const BLOCK = ItemType as any;
@@ -1538,7 +1539,7 @@ export function getTextureAtlasDataUrl(): string {
   const isSummerLab = typeof window !== 'undefined' && 
          (new URLSearchParams(window.location.search).get('server')?.startsWith('summerlab') || 
           window.location.pathname.includes('summerlab'));
-  const useSummerLabAtlas = isSummerLab && (typeof window !== "undefined" && (window as any).__FORCE_SUMMER_LAB_PHASE !== 2);
+  const useSummerLabAtlas = isSummerLab && getSummerLabPhase() !== 2;
 
   if (useSummerLabAtlas) {
     if (cachedSummerLabAtlasDataUrl) return cachedSummerLabAtlasDataUrl;

@@ -16,6 +16,7 @@ import { settingsManager } from "./Settings";
 import { ItemType } from "./Inventory";
 import { audioManager } from "./AudioManager";
 import { useGameStore } from "../store/gameStore";
+import { getSummerLabPhase } from "./PhaseHelper";
 
 const _zeroVec = new THREE.Vector3(0, 0, 0);
 
@@ -821,7 +822,8 @@ export class RemotePlayer {
           const isSummerLab = new URLSearchParams(window.location.search)
             .get("server")
             ?.startsWith("summerlab");
-          const useSummerLabAtlas = isSummerLab && (typeof window !== "undefined" && (window as any).__FORCE_SUMMER_LAB_PHASE !== 2);
+          const summerLabPhase = getSummerLabPhase();
+          const useSummerLabAtlas = isSummerLab && (summerLabPhase !== 2 && summerLabPhase !== 3);
           (mesh.material as THREE.MeshStandardMaterial).map = useSummerLabAtlas
             ? createSummerLabTextureAtlas()
             : createTextureAtlas();

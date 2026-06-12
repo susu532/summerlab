@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 export function SummerLabTitleUI() {
   const [timeLeft, setTimeLeft] = useState(0);
   const [phase, setPhase] = useState(0);
+  const [colorIdx, setColorIdx] = useState(0);
 
   useEffect(() => {
     const updateTimer = () => {
@@ -12,7 +13,8 @@ export function SummerLabTitleUI() {
        setTimeLeft(remaining);
        
        const forcedPhase = typeof window !== 'undefined' ? (window as any).__FORCE_SUMMER_LAB_PHASE : undefined;
-       setPhase(forcedPhase !== undefined ? forcedPhase : (Math.floor(now / phaseLength) % 3));
+       setPhase(forcedPhase !== undefined ? forcedPhase : (Math.floor(now / phaseLength) % 4));
+       setColorIdx(Math.floor(now / phaseLength));
     };
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
@@ -91,6 +93,19 @@ export function SummerLabTitleUI() {
                 </span>
               );
             })
+        ) : phase === 3 ? (
+            <span
+              style={{
+                color: "#ffda55",
+                background: "#ffff88",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                WebkitTextStroke: "1px rgba(100,80,0,0.8)",
+                filter: "drop-shadow(1px 1px 0px #705b00) drop-shadow(2px 2px 0px #3c2a00) drop-shadow(3px 4px 8px rgba(0,0,0,0.8))",
+              }}
+            >
+              The Backrooms
+            </span>
         ) : (
           <span
             style={{
@@ -115,48 +130,48 @@ export function SummerLabTitleUI() {
            textShadow: '2px 2px 0px #000, -2px -2px 0px #000, 2px -2px 0px #000, -2px 2px 0px #000, 4px 4px 8px rgba(0,0,0,0.5)',
         }}
       >
-        NEW MAP IN: <span style={{ color: phase === 1 ? '#ff7bee' : phase === 2 ? '#FFCC00' : '#00ffd0' }}>{timerText}</span>
+        NEW MAP IN: <span style={{ color: phase === 1 ? '#ff7bee' : phase === 2 ? '#FFCC00' : phase === 3 ? '#ffeb3b' : '#00ffd0' }}>{timerText}</span>
       </div>
       
       {/* Paint the world text */}
-      <div
-        className="mt-1.5 sm:mt-2.5 font-semibold uppercase tracking-wider text-[10px] sm:text-xs md:text-sm flex items-center justify-center gap-1 sm:gap-2 flex-wrap"
-        style={{
-           color: '#FFFFFF',
-           textShadow: '0 2px 4px rgba(0,0,0,0.8), 0 1px 2px rgba(0,0,0,0.9)',
-           fontFamily: "Inter, system-ui, -apple-system, sans-serif"
-        }}
-      >
-        <span className="opacity-95 text-center leading-tight">Clean up the mess and paint the world with</span>
-        {(() => {
-           const phaseLength = 10 * 60 * 1000;
-           const phaseIdx = Math.floor(Date.now() / phaseLength);
-           const paintColors = [
-              { name: "RED", hex: "#FF3333", glow: "rgba(255,51,51,0.5)" },
-              { name: "ORANGE", hex: "#FFAA33", glow: "rgba(255,170,51,0.5)" },
-              { name: "YELLOW", hex: "#FFFF33", glow: "rgba(255,255,51,0.5)" },
-              { name: "GREEN", hex: "#33FF33", glow: "rgba(51,255,51,0.5)" },
-              { name: "CYAN", hex: "#33FFFF", glow: "rgba(51,255,255,0.5)" },
-              { name: "BLUE", hex: "#3355FF", glow: "rgba(51,85,255,0.5)" },
-              { name: "PURPLE", hex: "#AA33FF", glow: "rgba(170,51,255,0.5)" },
-              { name: "PINK", hex: "#FF33AA", glow: "rgba(255,51,170,0.5)" },
-              { name: "WHITE", hex: "#FFFFFF", glow: "rgba(255,255,255,0.4)" }
-           ];
-           const colorObj = paintColors[phaseIdx % paintColors.length];
-           return (
-             <span 
-               className="px-2.5 py-0.5 rounded-md bg-stone-900/90 border border-white/20 inline-flex items-center justify-center font-black tracking-widest text-xs sm:text-sm shadow-md"
-               style={{ 
-                 color: colorObj.hex,
-                 boxShadow: `0 0 12px ${colorObj.glow}`
-               }}
-             >
-               {colorObj.name}
-             </span>
-           );
-        })()}
-        <span className="opacity-95">!</span>
-      </div>
+      {true && (
+        <div
+          className="mt-1.5 sm:mt-2.5 font-semibold uppercase tracking-wider text-[10px] sm:text-xs md:text-sm flex items-center justify-center gap-1 sm:gap-2 flex-wrap"
+          style={{
+             color: '#FFFFFF',
+             textShadow: '0 2px 4px rgba(0,0,0,0.8), 0 1px 2px rgba(0,0,0,0.9)',
+             fontFamily: "Inter, system-ui, -apple-system, sans-serif"
+          }}
+        >
+          <span className="opacity-95 text-center leading-tight">Clean up the mess and paint the world with</span>
+          {(() => {
+             const paintColors = [
+                { name: "RED", hex: "#FF3333", glow: "rgba(255,51,51,0.5)" },
+                { name: "ORANGE", hex: "#FFAA33", glow: "rgba(255,170,51,0.5)" },
+                { name: "YELLOW", hex: "#FFFF33", glow: "rgba(255,255,51,0.5)" },
+                { name: "GREEN", hex: "#33FF33", glow: "rgba(51,255,51,0.5)" },
+                { name: "CYAN", hex: "#33FFFF", glow: "rgba(51,255,255,0.5)" },
+                { name: "BLUE", hex: "#3355FF", glow: "rgba(51,85,255,0.5)" },
+                { name: "PURPLE", hex: "#AA33FF", glow: "rgba(170,51,255,0.5)" },
+                { name: "PINK", hex: "#FF33AA", glow: "rgba(255,51,170,0.5)" },
+                { name: "WHITE", hex: "#FFFFFF", glow: "rgba(255,255,255,0.4)" }
+             ];
+             const colorObj = paintColors[colorIdx % paintColors.length];
+             return (
+               <span 
+                 className="px-2.5 py-0.5 rounded-md bg-stone-900/90 border border-white/20 inline-flex items-center justify-center font-black tracking-widest text-xs sm:text-sm shadow-md transition-colors duration-1000"
+                 style={{ 
+                   color: colorObj.hex,
+                   boxShadow: `0 0 12px ${colorObj.glow}`
+                 }}
+               >
+                 {colorObj.name}
+               </span>
+             );
+          })()}
+          <span className="opacity-95">!</span>
+        </div>
+      )}
     </div>
   );
 }

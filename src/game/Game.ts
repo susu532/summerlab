@@ -101,7 +101,8 @@ export class Game {
       canvas, 
       antialias: false,
       powerPreference: "high-performance",
-      precision: "highp" // Force highp to fix point lights on mobile devices
+      precision: "highp", // Force highp to fix point lights on mobile devices
+      logarithmicDepthBuffer: true
     });
     
     this.renderer.setPixelRatio(this.getResolvedDpr(initialSettings.performanceMode));
@@ -413,7 +414,7 @@ export class Game {
     // Process disposals first
     while (this.world.meshesToRemove.length > 0) {
       if (performance.now() - startMeshTime > 1.5) break;
-      const disposing = this.world.meshesToRemove.shift()!;
+      const disposing = this.world.meshesToRemove.pop()!;
       if (disposing.mesh) disposing.mesh.geometry.dispose();
       if (disposing.transparentMesh) disposing.transparentMesh.geometry.dispose();
     }
@@ -422,7 +423,7 @@ export class Game {
       if (performance.now() - startMeshTime > 3) {
         break; // Exceeded budget, finish the rest in subsequent frames
       }
-      const { chunk, mesh, transparentMesh } = this.world.meshesToAdd.shift()!;
+      const { chunk, mesh, transparentMesh } = this.world.meshesToAdd.pop()!;
       if (mesh && !this.scene.children.includes(mesh)) {
         this.scene.add(mesh);
       }

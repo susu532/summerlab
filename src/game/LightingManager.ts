@@ -21,7 +21,8 @@ export class LightingManager {
   }
 
   processLightUpdates() {
-    const MAX_LIGHT_UPDATES = Number.MAX_SAFE_INTEGER; // Ensure queue ALWAYS completes, no lingering lights
+    const MAX_BUDGET_MS = 8; // Time budget per frame
+    const startTime = performance.now();
     let updatesProcessed = 0;
 
     const neighbors = [
@@ -31,7 +32,7 @@ export class LightingManager {
     ];
 
     // Process removals first
-    while (this.lightRemovalsIndex < this.lightRemovals.length && updatesProcessed < MAX_LIGHT_UPDATES) {
+    while (this.lightRemovalsIndex < this.lightRemovals.length && performance.now() - startTime < MAX_BUDGET_MS) {
       const node = this.lightRemovals[this.lightRemovalsIndex++];
       updatesProcessed++;
 
@@ -57,13 +58,12 @@ export class LightingManager {
     }
 
     if (this.lightRemovalsIndex >= this.lightRemovals.length) {
-      // It will always reach here because of MAX_SAFE_INTEGER
       this.lightRemovals = [];
       this.lightRemovalsIndex = 0;
     }
 
     // Process additions
-    while (this.lightUpdatesIndex < this.lightUpdates.length && updatesProcessed < MAX_LIGHT_UPDATES) {
+    while (this.lightUpdatesIndex < this.lightUpdates.length && performance.now() - startTime < MAX_BUDGET_MS) {
       const node = this.lightUpdates[this.lightUpdatesIndex++];
       updatesProcessed++;
 

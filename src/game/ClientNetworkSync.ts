@@ -25,11 +25,27 @@ export class ClientNetworkSync {
           (window as any).__FORCE_SUMMER_LAB_PHASE = data.phase;
       }
       networkManager.blockChanges = {};
+      networkManager.clearChunkQueue();
+      useGameStore.getState().setLoadingProgress(0, "Rotating Maps...");
       useGameStore.getState().setIsMapLoading(true);
+      this.game.player.hasReceivedInitialRespawn = false;
       this.game.world.reset(this.game.currentMode);
       if (this.game.chocolateFluidSystem) {
         this.game.chocolateFluidSystem.clearAllSplats();
       }
+
+      const modeWithoutNum = this.game.currentMode.split("_")[0];
+      if (modeWithoutNum === "skycastles") {
+        this.game.player.setupSkyCastlesInventory();
+      } else if (modeWithoutNum === "dungeondelver") {
+        this.game.player.setupDungeonDelverInventory();
+      } else if (modeWithoutNum === "summerlab") {
+        this.game.player.setupSummerLabInventory();
+      }
+      
+      // Force refresh held items
+      this.game.player.renderer.heldItemType = -1;
+      this.game.player.renderer.offHandItemType = -1;
     };
 
     networkManager.onInit = (data: IGameStateData) => {

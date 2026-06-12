@@ -16,6 +16,7 @@ import { ItemType } from "./Inventory";
 import { createItemModel } from "./ItemModels";
 import { settingsManager } from "./Settings";
 import { audioManager } from "./AudioManager";
+import { getSummerLabPhase } from "./PhaseHelper";
 
 export class PlayerRenderer {
   player: Player;
@@ -691,7 +692,8 @@ export class PlayerRenderer {
     this.fpArmMesh.rotation.set(0.4, -0.2, 0.1);
 
     const blockGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
-    const texture = this.player.world.isSummerLab && (typeof window !== "undefined" && (window as any).__FORCE_SUMMER_LAB_PHASE !== 2)
+    const summerLabPhase = getSummerLabPhase();
+    const texture = this.player.world.isSummerLab && (summerLabPhase !== 2 && summerLabPhase !== 3)
       ? createSummerLabTextureAtlas()
       : createTextureAtlas();
     const blockMat = isPerformance
@@ -740,24 +742,25 @@ export class PlayerRenderer {
     this.fpOffHandArmMesh.position.set(-0.6, -0.6, -0.5);
     this.fpOffHandArmMesh.rotation.set(0.4, 0.2, -0.1);
 
-    const blockGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
-    const texture = this.player.world.isSummerLab && (typeof window !== "undefined" && (window as any).__FORCE_SUMMER_LAB_PHASE !== 2)
+    const blockGeo2 = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+    const summerLabPhase2 = getSummerLabPhase();
+    const texture2 = this.player.world.isSummerLab && (summerLabPhase2 !== 2 && summerLabPhase2 !== 3)
       ? createSummerLabTextureAtlas()
       : createTextureAtlas();
-    const blockMat = isPerformance
+    const blockMat2 = isPerformance
       ? new THREE.MeshBasicMaterial({
-          map: texture,
+          map: texture2,
           transparent: true,
           alphaTest: 0.5,
         })
       : new THREE.MeshStandardMaterial({
-          map: texture,
+          map: texture2,
           transparent: true,
           alphaTest: 0.5,
           roughness: 1.0,
           metalness: 0.0,
         });
-    this.fpOffHandBlockMesh = new THREE.Mesh(blockGeo, blockMat);
+    this.fpOffHandBlockMesh = new THREE.Mesh(blockGeo2, blockMat2);
     this.fpOffHandBlockMesh.castShadow = !isPerformance;
     this.fpOffHandBlockMesh.receiveShadow = !isPerformance; // Disabled in performance mode
     this.fpOffHandBlockMesh.position.set(-0.3, -0.15, -0.8);
@@ -814,6 +817,23 @@ export class PlayerRenderer {
       : this.currentFpModelType;
 
     if (!mesh || !model || !blockMesh || !fpModelGrp) return;
+
+    // Ensure block textures are up to date on rotation
+    if (mesh.material || blockMesh.material) {
+        const isSummerLab = this.player.world.isSummerLab;
+        const summerLabPhase = getSummerLabPhase();
+        const useSummerLabAtlas = isSummerLab && (summerLabPhase !== 2 && summerLabPhase !== 3);
+        const texture = useSummerLabAtlas ? createSummerLabTextureAtlas() : createTextureAtlas();
+        
+        if (mesh.material) {
+           (mesh.material as THREE.MeshStandardMaterial).map = texture;
+           (mesh.material as THREE.Material).needsUpdate = true;
+        }
+        if (blockMesh.material) {
+           (blockMesh.material as THREE.MeshStandardMaterial).map = texture;
+           (blockMesh.material as THREE.Material).needsUpdate = true;
+        }
+    }
 
     if (type === 0) {
       mesh.visible = false;
@@ -1011,7 +1031,8 @@ export class PlayerRenderer {
         uvAttribute.needsUpdate = true;
 
         if (!(mesh.material as THREE.MeshStandardMaterial).map) {
-          (mesh.material as THREE.MeshStandardMaterial).map = (this.player.world.isSummerLab && (typeof window !== "undefined" && (window as any).__FORCE_SUMMER_LAB_PHASE !== 2))
+          const summerLabPhase = getSummerLabPhase();
+          (mesh.material as THREE.MeshStandardMaterial).map = (this.player.world.isSummerLab && (summerLabPhase !== 2 && summerLabPhase !== 3))
             ? createSummerLabTextureAtlas()
             : createTextureAtlas();
         }

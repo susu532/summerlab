@@ -1,9 +1,65 @@
 import { ItemType } from '../Inventory';
-import { noise2D } from '../TerrainGenerator';
+import { noise2D, noise3D } from '../TerrainGenerator';
 import { Chunk, CHUNK_HEIGHT, WORLD_Y_OFFSET } from '../Chunk';
 
 const SEA_LEVEL = 2;
-const ISLAND_RADIUS = 35;
+const ISLAND_RADIUS = 70;
+
+function getVillageBlock(worldX: number, worldY: number, worldZ: number, defaultTerrainY: number): number | null {
+  const houses = [
+    { x: 10, z: 10, w: 7, d: 7, h: 5 },
+    { x: -15, z: 5, w: 6, d: 8, h: 5 },
+    { x: 5, z: -20, w: 9, d: 6, h: 6 },
+    { x: -20, z: -20, w: 7, d: 7, h: 5 },
+    { x: 15, z: -5, w: 5, d: 5, h: 5 }
+  ];
+
+  for (const house of houses) {
+    const hx = house.x;
+    const hz = house.z;
+    if (worldX >= hx && worldX < hx + house.w && worldZ >= hz && worldZ < hz + house.d) {
+      const centerX = hx + house.w / 2;
+      const centerZ = hz + house.d / 2;
+      const cDist = Math.sqrt(centerX*centerX + centerZ*centerZ);
+      const cY = Math.floor(SEA_LEVEL + Math.max(0, ISLAND_RADIUS - cDist) * 0.15 + noise2D(centerX * 0.05, centerZ * 0.05) * 4);
+      
+      const houseBaseY = cY;
+
+      if (worldY < houseBaseY) {
+         if (worldX === hx || worldX === hx + house.w - 1 || worldZ === hz || worldZ === hz + house.d - 1) return ItemType.COBBLESTONE;
+         return ItemType.DIRT;
+      }
+      if (worldY === houseBaseY) return ItemType.PLANKS;
+
+      if (worldY > houseBaseY && worldY < houseBaseY + house.h) {
+        if (worldX > hx && worldX < hx + house.w - 1 && worldZ > hz && worldZ < hz + house.d - 1) {
+          return ItemType.AIR;
+        }
+        if (worldX === hx + Math.floor(house.w/2) && worldZ === hz && worldY <= houseBaseY + 2) {
+          return ItemType.AIR;
+        }
+        if (worldY === houseBaseY + 2 && (worldX === hx + 1 || worldX === hx + house.w - 2 || worldZ === hz + 1 || worldZ === hz + house.d - 2)) {
+          return ItemType.GLASS;
+        }
+        if ((worldX === hx || worldX === hx + house.w - 1) && (worldZ === hz || worldZ === hz + house.d - 1)) {
+          return ItemType.WOOD;
+        }
+        return ItemType.PLANKS;
+      }
+      
+      if (worldY === houseBaseY + house.h) {
+        return ItemType.STONE_BRICKS;
+      }
+    }
+  }
+
+  if (worldY === defaultTerrainY && Math.abs(worldX) < 30 && Math.abs(worldZ) < 30) {
+     const pNoise = noise2D(worldX * 0.1, worldZ * 0.1);
+     if (pNoise > 0.3) return ItemType.DIRT_PATH; 
+  }
+
+  return null;
+}
 
 export function generateHappyIslandColumn(
   chunk: Chunk,
@@ -52,6 +108,14 @@ export function generateHappyIslandColumn(
     if (worldY < -20 || worldY > 100) continue;
 
     const fy = Math.floor(worldY);
+    
+    // Check village first
+    const vBlock = getVillageBlock(worldX, fy, worldZ, blockTerrainY);
+    if (vBlock !== null) {
+        chunk.setBlockFast(x, y, z, vBlock);
+        continue;
+    }
+
     let block = ItemType.AIR;
 
     if (dist < ISLAND_RADIUS + 25 && fy <= blockTerrainY) {
@@ -62,7 +126,16 @@ export function generateHappyIslandColumn(
         if (fy <= SEA_LEVEL + 1) block = ItemType.SAND;
         else block = ItemType.DIRT;
       } else if (fy > -15) {
-        block = ItemType.STONE;
+        const oreNoiseVal = noise3D(worldX * 0.1, fy * 0.1, worldZ * 0.1);
+        if (oreNoiseVal > 0.85) block = ItemType.DIAMOND_ORE;
+        else if (oreNoiseVal > 0.75) block = ItemType.GOLD_ORE;
+        else if (oreNoiseVal > 0.65) block = ItemType.EMERALD_ORE;
+        else if (oreNoiseVal > 0.55) block = ItemType.REDSTONE_ORE;
+        else if (oreNoiseVal > 0.45) block = ItemType.LAPIS_ORE;
+        else if (oreNoiseVal > 0.35) block = ItemType.IRON_ORE;
+        else if (oreNoiseVal > 0.25) block = ItemType.COAL_ORE;
+        else if (oreNoiseVal > 0.15) block = ItemType.COPPER_ORE;
+        else block = ItemType.STONE;
       } else {
         block = ItemType.SAND;
       }
@@ -99,7 +172,7 @@ export function generateHappyIslandColumn(
     }
 
     if (block === ItemType.AIR) {
-      if (dist >= 60 && dist <= 63 && fy >= -20 && fy <= 40) block = ItemType.BARRIER;
+      if (dist >= 110 && dist <= 113 && fy >= -20 && fy <= 40) block = ItemType.BARRIER;
       else if (fy >= -20 && fy <= -15) block = ItemType.SAND;
       else if (fy <= SEA_LEVEL) block = ItemType.WATER;
     }
@@ -125,6 +198,9 @@ export function getHappyIslandBlock(x: number, y: number, z: number): number {
   const finalTerrainHeight = Math.max(-15, terrainHeightBase);
   const blockTerrainY = Math.floor(finalTerrainHeight);
 
+  const vBlock = getVillageBlock(x, fy, z, blockTerrainY);
+  if (vBlock !== null) return vBlock;
+
   if (dist < ISLAND_RADIUS + 25 && fy <= blockTerrainY) {
     if (fy === blockTerrainY) {
       if (fy <= SEA_LEVEL + 1) return ItemType.SAND;
@@ -134,13 +210,22 @@ export function getHappyIslandBlock(x: number, y: number, z: number): number {
       if (fy <= SEA_LEVEL + 1) return ItemType.SAND;
       return ItemType.DIRT;
     } else if (fy > -15) {
+      const oreNoiseVal = noise3D(x * 0.1, fy * 0.1, z * 0.1);
+      if (oreNoiseVal > 0.85) return ItemType.DIAMOND_ORE;
+      if (oreNoiseVal > 0.75) return ItemType.GOLD_ORE;
+      if (oreNoiseVal > 0.65) return ItemType.EMERALD_ORE;
+      if (oreNoiseVal > 0.55) return ItemType.REDSTONE_ORE;
+      if (oreNoiseVal > 0.45) return ItemType.LAPIS_ORE;
+      if (oreNoiseVal > 0.35) return ItemType.IRON_ORE;
+      if (oreNoiseVal > 0.25) return ItemType.COAL_ORE;
+      if (oreNoiseVal > 0.15) return ItemType.COPPER_ORE;
       return ItemType.STONE;
     } else {
       return ItemType.SAND;
     }
   }
 
-  if (dist >= 60 && dist <= 63 && fy >= -20 && fy <= 40) return ItemType.BARRIER;
+  if (dist >= 110 && dist <= 113 && fy >= -20 && fy <= 40) return ItemType.BARRIER;
   if (fy >= -20 && fy <= -15) return ItemType.SAND;
   if (fy <= SEA_LEVEL) return ItemType.WATER;
 

@@ -116,6 +116,13 @@ export const InventoryUI = React.memo<InventoryUIProps>(({ inventory, isOpen, on
   }, [craftingGrid]);
 
   const handleSlotInteraction = useStableCallback((type: 'inv' | 'grid', index: number, isHotbar: boolean = false, button: number, isShift: boolean, isEnter: boolean) => {
+    const actualIndex = isHotbar ? index : index + 9;
+    const target = type === 'inv' ? inventory.slots[actualIndex] : craftingGrid[index];
+
+    if ((target && target.type === ItemType.TORCH) || (heldItem && heldItem.type === ItemType.TORCH)) {
+      return; 
+    }
+
     if (isEnter) {
       audioManager.play('click', 0.3, 0.8 + Math.random() * 0.4);
       if (heldItem) {
@@ -179,8 +186,6 @@ export const InventoryUI = React.memo<InventoryUIProps>(({ inventory, isOpen, on
     }
 
     // Initial click
-    const actualIndex = isHotbar ? index : index + 9;
-    const target = type === 'inv' ? inventory.slots[actualIndex] : craftingGrid[index];
     if (heldItem && (!target || target.type === heldItem.type)) {
       setDragState({ isDragging: true, button, visitedSlots: new Set([`${type}-${actualIndex}`]) });
     } else {

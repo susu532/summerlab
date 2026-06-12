@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Game } from './Game';
 import { networkManager } from './NetworkManager';
+import { ItemType } from './Inventory';
 
 function seededRandom(x: number, y: number, z: number, seed: number) {
     const qx = Math.round(x * 10);
@@ -72,8 +73,8 @@ export class ChocolateFluidSystem {
   constructor(game: Game) {
     this.game = game;
     const isMobile = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
-    this.maxProjectiles = isMobile ? 1500 : 3000;
-    this.maxSplats = isMobile ? 30000 : 200000;
+    this.maxProjectiles = isMobile ? 500 : 1200;
+    this.maxSplats = isMobile ? 10000 : 40000;
     
     this.minProjIdx = this.maxProjectiles;
     this.minSplatIdx = this.maxSplats;
@@ -359,7 +360,17 @@ export class ChocolateFluidSystem {
                     // Prevent zero normal
                     if (_tempHitNorm.lengthSq() < 0.1) _tempHitNorm.set(0, 1, 0);
 
-                    this.spawnSplat(hitInfo.hitPoint, _tempHitNorm, this.projectileColors[i]);
+                    const hitBlock = hitInfo.blockType;
+                    const canSplat = hitBlock !== undefined && 
+                                     hitBlock !== ItemType.TALL_GRASS && 
+                                     hitBlock !== ItemType.WHEAT && 
+                                     hitBlock !== ItemType.FLOWER_RED && 
+                                     hitBlock !== ItemType.FLOWER_YELLOW &&
+                                     hitBlock !== ItemType.WATER;
+
+                    if (canSplat) {
+                        this.spawnSplat(hitInfo.hitPoint, _tempHitNorm, this.projectileColors[i]);
+                    }
                     
                     hideNow = true;
                 } else if (_tempNextPos.y <= -50) { 

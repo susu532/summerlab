@@ -76,9 +76,12 @@ export const MobileControlsUI: React.FC<{ game?: any }> = ({ game }) => {
   const isTyping = useUI((state) => state.isTyping);
   const setTyping = useUI((state) => state.setTyping);
   const setLocked = useUI((state) => state.setLocked);
+  const isLoadoutOpen = useUI((state) => state.isLoadoutOpen);
+  const isChestOpen = useUI((state) => state.isChestOpen);
 
   const showLeaderboard = useGameStore((state) => state.showLeaderboard);
   const setShowLeaderboard = useGameStore((state) => state.setShowLeaderboard);
+  const isMapLoading = useGameStore((state) => state.isMapLoading);
 
   const hotbarIndex = useGameStore((state) => state.hotbarIndex);
   const inventoryVersion = useGameStore((state) => state.inventoryVersion);
@@ -92,11 +95,14 @@ export const MobileControlsUI: React.FC<{ game?: any }> = ({ game }) => {
   const isAnyMenuOpen =
     isInventoryOpen ||
     isShopOpen ||
+    isChestOpen ||
     isSettingsOpen ||
     isPauseMenuOpen ||
     isServerJoinOpen ||
     isLaunchMenuOpen ||
     isTyping ||
+    isLoadoutOpen ||
+    isMapLoading ||
     showLeaderboard;
 
   useEffect(() => {

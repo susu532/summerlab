@@ -16,6 +16,7 @@ import {
 } from "./TextureAtlas";
 import { Inventory, ItemType } from "./Inventory";
 import { ITEM_NAMES } from "./Constants";
+import { getSummerLabPhase } from "./PhaseHelper";
 import { EntityManager } from "./EntityManager";
 import { generateSkin, applySkinUVs } from "./SkinManager";
 import { networkManager } from "./NetworkManager";
@@ -455,6 +456,7 @@ export class Player {
           itemsAdded = true;
         }
       } else if (modeWithoutNum === "summerlab") {
+        const summerLabPhase = getSummerLabPhase();
         if (
           !wasDead &&
           getInventoryCount(ItemType.FLUID_CHOCOLATE_HOSE) === 0 &&
@@ -846,5 +848,52 @@ export class Player {
 
   update(delta: number) {
     updatePlayer(this, delta);
+    
+    if (this.world.isSummerLab) {
+      const summerLabPhase = getSummerLabPhase();
+      let changedInventory = false;
+
+      let hasTorch = false;
+      for (const slot of this.inventory.slots) {
+        if (slot && slot.type === ItemType.TORCH) hasTorch = true;
+      }
+
+      if (summerLabPhase === 3) {
+        // If they enter the backrooms and have no torch anywhere, give them one in off-hand
+        if (!hasTorch) {
+          if (!this.inventory.slots[Inventory.OFF_HAND_SLOT]) {
+             this.inventory.slots[Inventory.OFF_HAND_SLOT] = { type: ItemType.TORCH, count: 1 };
+             changedInventory = true;
+          } else {
+             // Try to find an empty slot or just force it somewhere
+             let placed = false;
+             for (let i = 0; i < this.inventory.slots.length; i++) {
+                 if (!this.inventory.slots[i]) {
+                     this.inventory.slots[i] = { type: ItemType.TORCH, count: 1 };
+                     placed = true;
+                     changedInventory = true;
+                     break;
+                 }
+             }
+             if (!placed) {
+                 this.inventory.slots[Inventory.OFF_HAND_SLOT] = { type: ItemType.TORCH, count: 1 };
+                 changedInventory = true;
+             }
+          }
+        }
+      } else {
+        // Remove ALL torches when NOT in Backrooms, including OFF_HAND
+        for (let i = 0; i < this.inventory.slots.length; i++) {
+          if (this.inventory.slots[i]?.type === ItemType.TORCH) {
+             this.inventory.slots[i] = null;
+             changedInventory = true;
+          }
+        }
+      }
+
+      if (changedInventory) {
+        useGameStore.getState().incrementInventoryVersion();
+      }
+    }
   }
 }

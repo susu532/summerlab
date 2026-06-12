@@ -148,4 +148,5 @@ export interface IGameStateData {
   dayTime?: number;
   gameStartTime?: number;
   isWaterPark?: boolean;
+  phase?: number;
 }
