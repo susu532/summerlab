@@ -34,9 +34,7 @@ export function DungeonDelverTitleUI() {
         </span>
         <span
           style={{
-            background: "linear-gradient(to bottom, #FF5555, #D01111)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
+            color: "#FF5555",
             WebkitTextStroke: "1px rgba(60,0,0,0.8)",
             letterSpacing: "0.12em",
             filter: `

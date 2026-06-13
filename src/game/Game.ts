@@ -23,6 +23,7 @@ import { Inventory, ItemType } from './Inventory';
 import { ParticleSystem } from './ParticleSystem';
 import { GameController } from './GameController';
 import { useUIStore } from '../store/uiStore';
+import { getSummerLabPhase } from './PhaseHelper';
 import { IMobState, IPlayerUpdate, ISpawnParams, IGameStateData } from '../types/shared';
 import { PostProcessingManager } from './PostProcessingManager';
 import { InteractionSystem } from './InteractionSystem';
@@ -65,6 +66,7 @@ export class Game {
   lastRaycast: any = null;
   lastPerformanceMode: boolean = false;
   lastPremiumShaders: boolean = true;
+  lastSummerLabPhase: any = -1;
   private settingsUnsubscribe: (() => void) | null = null;
 
   get currentMode() {
@@ -165,6 +167,8 @@ export class Game {
 
     // Premium Shaders (Shadows, Block Animations, Sky Texture)
     const effectivePremiumShaders = settings.premiumShaders && !settings.performanceMode;
+    let recreatePostProcessing = false;
+
     if (this.lastPremiumShaders !== effectivePremiumShaders) {
       this.lastPremiumShaders = effectivePremiumShaders;
       
@@ -183,11 +187,7 @@ export class Game {
       // Rebuild chunks to apply AO/shadow changes
       this.world.rebuildAllChunks();
 
-      // Refresh post-processing for Ray Tracing effects
-      if (this.postProcessing) {
-        this.postProcessing.dispose();
-      }
-      this.postProcessing = new PostProcessingManager(this);
+      recreatePostProcessing = true;
     }
 
     // Performance Mode optimizations (Extra cuts for speed)
@@ -199,9 +199,23 @@ export class Game {
         this.environmentManager.clouds.visible = !settings.performanceMode;
       }
 
+      recreatePostProcessing = true;
+
       // Reduce pixel ratio for better performance
       this.renderer.setPixelRatio(this.getResolvedDpr(settings.performanceMode));
       this.renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    if (recreatePostProcessing) {
+      // Refresh post-processing for Ray Tracing/Performance effects
+      if (this.postProcessing) {
+        this.postProcessing.dispose();
+      }
+      this.postProcessing = new PostProcessingManager(this);
+      const size = this.renderer.getSize(new THREE.Vector2());
+      if (size.width > 0 && size.height > 0) {
+        this.postProcessing.setSize(size.width, size.height);
+      }
     }
   }
 
@@ -353,6 +367,27 @@ export class Game {
     const delta = Math.min((now - this.lastTickTime) / 1000, 0.1);
     this.lastTickTime = now;
     if (delta <= 0) return;
+
+    const currentPostProcessingState = this.world.isSummerLab ? `summerlab_${getSummerLabPhase()}` : "normal";
+    if (this.lastSummerLabPhase !== currentPostProcessingState as any) {
+      if (this.lastSummerLabPhase !== -1) {
+        if (this.postProcessing) {
+            this.postProcessing.dispose();
+        }
+        this.postProcessing = new PostProcessingManager(this);
+        const size = this.renderer.getSize(new THREE.Vector2());
+        if (size.width > 0 && size.height > 0) {
+            this.postProcessing.setSize(size.width, size.height);
+        }
+        
+        // If we are still in summerlab, we need to reset to rebuild chunks (day/night/backrooms textures change)
+        // If we are not in summerlab anymore, the map rotation already called world.reset and rebuildAllChunks
+        if (this.world.isSummerLab && typeof this.lastSummerLabPhase === 'string' && this.lastSummerLabPhase.startsWith('summerlab_')) {
+            this.world.reset(this.currentMode);
+        }
+      }
+      this.lastSummerLabPhase = currentPostProcessingState as any;
+    }
 
     if (!this.world.isHub) {
       skyBridgeManager.tick(delta, this.player.inventory, this.player.hotbarIndex);

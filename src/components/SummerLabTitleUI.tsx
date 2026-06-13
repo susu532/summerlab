@@ -96,10 +96,7 @@ export function SummerLabTitleUI() {
         ) : phase === 3 ? (
             <span
               style={{
-                color: "#ffda55",
-                background: "#ffff88",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
+                color: "#ffff88",
                 WebkitTextStroke: "1px rgba(100,80,0,0.8)",
                 filter: "drop-shadow(1px 1px 0px #705b00) drop-shadow(2px 2px 0px #3c2a00) drop-shadow(3px 4px 8px rgba(0,0,0,0.8))",
               }}
@@ -109,9 +106,7 @@ export function SummerLabTitleUI() {
         ) : (
           <span
             style={{
-              background: "linear-gradient(to bottom, #f472b6, #a855f7)", 
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
+              color: "#f472b6",
               WebkitTextStroke: "1px rgba(50,0,60,0.8)",
               filter: "drop-shadow(1px 1px 0px #581c87) drop-shadow(1px 2px 0px #3b0764) drop-shadow(3px 4px 8px rgba(0,0,0,0.6))",
             }}
@@ -134,7 +129,7 @@ export function SummerLabTitleUI() {
       </div>
       
       {/* Paint the world text */}
-      {true && (
+      {(phase === 0 || phase === 1) && (
         <div
           className="mt-1.5 sm:mt-2.5 font-semibold uppercase tracking-wider text-[10px] sm:text-xs md:text-sm flex items-center justify-center gap-1 sm:gap-2 flex-wrap"
           style={{

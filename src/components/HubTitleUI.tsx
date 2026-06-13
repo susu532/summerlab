@@ -16,9 +16,7 @@ export function HubTitleUI() {
           style={{
             fontFamily: "'Pixelify Sans', sans-serif",
             fontSize: "clamp(2rem, 6vw, 4.5rem)",
-            background: "linear-gradient(to bottom, #FFF700, #FFB300)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
+            color: "#FFF700",
             WebkitTextStroke: "1px rgba(60,40,0,0.8)",
             filter: `
               drop-shadow(1px 1px 0px #CC8800) 
@@ -30,7 +28,7 @@ export function HubTitleUI() {
             margin: 0,
           }}
         >
-          STARPLEX<span style={{ WebkitTextFillColor: "#ff9900" }}>.IO</span>
+          STARPLEX<span style={{ color: "#ff9900" }}>.IO</span>
         </h1>
       </motion.div>
     </div>
