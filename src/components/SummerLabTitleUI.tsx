@@ -8,7 +8,7 @@ export function SummerLabTitleUI() {
   useEffect(() => {
     const updateTimer = () => {
        const now = Date.now();
-       const phaseLength = 10 * 60 * 1000;
+       const phaseLength = 5 * 60 * 1000;
        const remaining = phaseLength - (now % phaseLength);
        setTimeLeft(remaining);
        
@@ -129,7 +129,7 @@ export function SummerLabTitleUI() {
       </div>
       
       {/* Paint the world text */}
-      {(phase === 0 || phase === 1) && (
+      {true && (
         <div
           className="mt-1.5 sm:mt-2.5 font-semibold uppercase tracking-wider text-[10px] sm:text-xs md:text-sm flex items-center justify-center gap-1 sm:gap-2 flex-wrap"
           style={{
