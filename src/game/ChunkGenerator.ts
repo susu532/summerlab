@@ -38,7 +38,6 @@ export async function generateChunkMethod(
       if (iterations > 64 && performance.now() - startTime > 3) {
         await new Promise((resolve) => setTimeout(resolve, 0));
         if (world.generationEpoch !== startEpoch) {
-          world.generatingChunks.delete(key);
           return chunk;
         }
         startTime = performance.now();
@@ -1254,8 +1253,7 @@ export async function generateChunkMethod(
 
   // If the world reset (e.g. game mode changed) while this chunk was generating asynchronously, discard it completely to prevent interpenetration
   if (world.generationEpoch !== startEpoch) {
-     world.generatingChunks.delete(key);
-     return chunk; // Return chunk but don't add to world.chunks
+     return chunk; // Return chunk but don't add to world.chunks. Note: don't delete from generatingChunks since it might be for a newer epoch!
   }
 
   world.chunks.set(key, chunk);

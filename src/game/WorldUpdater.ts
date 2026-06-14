@@ -72,10 +72,13 @@ export class WorldUpdater {
     });
 
     let activeGenerations = this.world.generatingChunks.size;
+    const isMobileDevice = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+    const maxGenConcurrent = isMobileDevice ? (isMapLoading ? 8 : 2) : (isMapLoading ? 32 : 2);
+    
     for (const { cx, cz } of chunksToGenerate) {
       // Limit concurrent chunk generation to prevent stutter
       if (
-        activeGenerations < (isMapLoading ? 32 : 2) &&
+        activeGenerations < maxGenConcurrent &&
         performance.now() - startTime < maxTimePerFrame
       ) {
         this.world.generateChunk(cx, cz);
@@ -187,7 +190,7 @@ export class WorldUpdater {
 
         const taskId = ++this.world.taskIdCounter;
         const promise = new Promise((resolve, reject) => {
-          this.world.pendingTasks.set(taskId, { resolve, reject, chunk });
+          this.world.pendingTasks.set(taskId, { resolve, reject, chunk, epoch: this.world.generationEpoch });
         });
 
         const worker = this.world.meshWorkers[this.world.nextWorkerIndex];

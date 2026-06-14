@@ -123,9 +123,6 @@ export const MobileControlsUI: React.FC<{ game?: any }> = ({ game }) => {
   const lookHasMoved = useRef<boolean>(false);
 
   const lastZoomLookPos = useRef<{ x: number; y: number } | null>(null);
-
-  const initialPinchDistance = useRef<number | null>(null);
-  const isPinching = useRef<boolean>(false);
   
   const lastJoystickTapTime = useRef<number>(0);
 
@@ -255,14 +252,6 @@ export const MobileControlsUI: React.FC<{ game?: any }> = ({ game }) => {
           });
         }
       }
-
-      // Pinch to zoom logic
-      if (e.touches.length === 2 && !isAnyMenuOpen) {
-        isPinching.current = true;
-        const dx = e.touches[0].clientX - e.touches[1].clientX;
-        const dy = e.touches[0].clientY - e.touches[1].clientY;
-        initialPinchDistance.current = Math.sqrt(dx * dx + dy * dy);
-      }
     };
 
     const handleTouchMove = (e: TouchEvent) => {
@@ -270,21 +259,6 @@ export const MobileControlsUI: React.FC<{ game?: any }> = ({ game }) => {
       const target = e.target as HTMLElement;
       if (!target || !target.closest(".no-prevent")) {
         e.preventDefault();
-      }
-
-      if (e.touches.length === 2 && isPinching.current) {
-        const dx = e.touches[0].clientX - e.touches[1].clientX;
-        const dy = e.touches[0].clientY - e.touches[1].clientY;
-        const currentDist = Math.sqrt(dx * dx + dy * dy);
-        if (initialPinchDistance.current) {
-           const diff = currentDist - initialPinchDistance.current;
-           if (diff > 40) { // Pinch out -> Zoom in
-             window.mobileInputs.isZooming = true;
-           } else if (diff < -40) { // Pinch in -> Zoom out
-             window.mobileInputs.isZooming = false;
-           }
-        }
-        return;
       }
 
       for (let i = 0; i < e.changedTouches.length; i++) {
@@ -348,7 +322,7 @@ export const MobileControlsUI: React.FC<{ game?: any }> = ({ game }) => {
             }
           }
 
-          if (lookHasMoved.current && !isPinching.current) {
+          if (lookHasMoved.current) {
             const isLandscape = window.innerWidth > window.innerHeight;
             const scale =
               window.innerWidth >= 768 ? 1.0 : isLandscape ? 2.5 : 1.5;
@@ -361,11 +335,6 @@ export const MobileControlsUI: React.FC<{ game?: any }> = ({ game }) => {
     };
 
     const handleTouchEnd = (e: TouchEvent) => {
-      if (e.touches.length < 2) {
-        isPinching.current = false;
-        initialPinchDistance.current = null;
-      }
-
       for (let i = 0; i < e.changedTouches.length; i++) {
         const touch = e.changedTouches[i];
 
@@ -752,6 +721,22 @@ export const MobileControlsUI: React.FC<{ game?: any }> = ({ game }) => {
           }}
         >
           <ArrowDown size={26} className="text-white drop-shadow-md" />
+        </button>
+
+        {/* Zoom Button (Top Left of the Diamond) */}
+        <button
+          className="absolute top-0 left-0 -translate-x-4 -translate-y-4 landscape:top-6 landscape:-translate-x-6 mobile-button pass-through-button w-14 h-14 rounded-full bg-white/20 border-[3px] border-white/40 flex items-center justify-center active:bg-white/40 opacity-80 pointer-events-auto shadow-md"
+          onTouchStart={(e) => {
+            window.mobileInputs.isZooming = true;
+          }}
+          onTouchEnd={(e) => {
+            window.mobileInputs.isZooming = false;
+          }}
+          onTouchCancel={(e) => {
+            window.mobileInputs.isZooming = false;
+          }}
+        >
+          <ScanEye size={24} className="text-white drop-shadow-md" />
         </button>
       </div>
     </div>

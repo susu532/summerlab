@@ -59,7 +59,7 @@ export class PostProcessingManager {
     const usePremiumShaders = settingsManager.getSettings().premiumShaders;
     const isPerformanceMode = settingsManager.getSettings().performanceMode;
     const isMobile = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
-    const disableComposer = isPerformanceMode || isMobile;
+    const disableComposer = isPerformanceMode || (isMobile && !usePremiumShaders);
     
     const summerLabPhase = getSummerLabPhase();
     const isBackrooms = this.game.world.isSummerLab && summerLabPhase === 3;

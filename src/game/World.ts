@@ -86,7 +86,7 @@ export class World {
 
   meshWorkers: Worker[] = [];
   nextWorkerIndex = 0;
-  pendingTasks: Map<number, { resolve: any; reject: any; chunk: Chunk }> =
+  pendingTasks: Map<number, { resolve: any; reject: any; chunk: Chunk; epoch: number }> =
     new Map();
   taskIdCounter = 0;
   constructor(scene: THREE.Scene) {
@@ -1404,7 +1404,7 @@ export class World {
     if (!task) return;
     this.pendingTasks.delete(data.taskId);
 
-    const taskEpoch = this.generationEpoch;
+    const taskEpoch = task.epoch;
     
     const processMesh = () => {
       // Prevent race conditions where reset() is called before the queued processMesh executes
