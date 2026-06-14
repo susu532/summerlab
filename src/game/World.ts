@@ -17,6 +17,10 @@ import { LightingManager } from "./LightingManager";
 import { networkManager } from "./NetworkManager";
 import { biomes, getTerrainData, noise2D, noise3D } from "./TerrainGenerator";
 import { getSummerLabPhase } from "./PhaseHelper";
+import { getSummerLabBlock } from "./generation/SummerLabGenerator";
+import { getWaterParkBlock } from "./generation/WaterParkGenerator";
+import { getHappyIslandBlock } from "./generation/HappyIslandGenerator";
+import { getBackroomsBlock } from "./generation/BackroomsGenerator";
 import { skycastlesBakedBlocks } from "./SkycastlesBakedBlocks";
 import { bakedBlocksMap } from "./BakedBlocks";
 
@@ -1127,12 +1131,23 @@ export class World {
       const summerLabPhase = getSummerLabPhase();
       if (summerLabPhase === 3) return true;
 
-      const phaser = getSummerLabPhase();
       // We can't rely completely on Date.now() client-side perfectly synced, but we can do our best.
       // Protect all spawn areas from being built on since they are small 5x5 zones.
-      if (Math.abs(fx - 0) <= 2 && Math.abs(fz - 35) <= 2) return true; // Water park
-      if (Math.abs(fx - 0) <= 2 && Math.abs(fz - 25) <= 2) return true; // Classic
-      if (Math.abs(fx - 0) <= 2 && Math.abs(fz - 0) <= 2) return true;  // Happy Island
+      if (summerLabPhase === 1) {
+          if (Math.abs(fx - 0) <= 2 && Math.abs(fz - 35) <= 2) return true; // Water park
+      } else if (summerLabPhase === 2) {
+          if (Math.abs(fx - 0) <= 2 && Math.abs(fz - 0) <= 2) return true;  // Happy Island
+      } else {
+          if (Math.abs(fx - 0) <= 2 && Math.abs(fz - 25) <= 2) return true; // Classic
+      }
+      
+      let initialBlock = 0;
+      if (summerLabPhase === 1) initialBlock = getWaterParkBlock(fx, Math.floor(y), fz);
+      else if (summerLabPhase === 2) initialBlock = getHappyIslandBlock(fx, Math.floor(y), fz);
+      else if (summerLabPhase === 3) initialBlock = getBackroomsBlock(fx, Math.floor(y), fz);
+      else initialBlock = getSummerLabBlock(fx, Math.floor(y), fz);
+      
+      if (initialBlock !== 0 && initialBlock !== BLOCK.AIR) return true;
     }
 
     const absX = Math.abs(fx);

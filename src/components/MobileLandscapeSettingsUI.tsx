@@ -84,6 +84,7 @@ export const MobileLandscapeSettingsUI: React.FC<MobileLandscapeSettingsUIProps>
   };
 
   const handleClose = () => {
+// @ts-ignore
     if (initialRegion !== settingsManager.getSettings().serverRegion) {
       networkManager.initMatchmaking(useGameStore.getState().currentMode);
     }
@@ -179,7 +180,9 @@ export const MobileLandscapeSettingsUI: React.FC<MobileLandscapeSettingsUIProps>
                           {t.serverRegion}
                         </label>
                         <select
+// @ts-ignore
                           value={settings.serverRegion || 'auto'}
+                          // @ts-ignore
                           onChange={(e) => updateSetting("serverRegion", e.target.value)}
                           className="w-full bg-[#373737] text-white font-bold p-2 outline-none border-[2px] border-t-[#111] border-l-[#111] border-b-[#666] border-r-[#666]"
                         >

@@ -389,7 +389,7 @@ export class ClientNetworkSync {
 
       // 2. Check sunlight exposure (raycast straight up)
       let isExposed = true;
-      const maxHeight = 196; // CHUNK_HEIGHT (256) + WORLD_Y_OFFSET (-60)
+      const maxHeight = 324; // CHUNK_HEIGHT (384) + WORLD_Y_OFFSET (-60)
       for (let y = py + 1; y < maxHeight; y++) {
         const block = this.game.world.getBlock(px, y, pz);
         if (block !== 0 && !isTransparent(block)) {

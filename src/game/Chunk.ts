@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { BLOCK, getBlockUVs, isTransparent, isCutout, isSolidBlock, isSlab, isWater, ATLAS_TILES, isPlant, isLeaves, isAnyTorch } from './TextureAtlas';
 
 export const CHUNK_SIZE = 16;
-export const CHUNK_HEIGHT = 256;
+export const CHUNK_HEIGHT = 384;
 export const WORLD_Y_OFFSET = -60;
 
 export class Chunk {

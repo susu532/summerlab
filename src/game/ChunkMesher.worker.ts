@@ -70,7 +70,7 @@ export function runMesher(data: ChunkMesherRequest): ChunkMesherResponse {
 
   const performanceMode = data.performanceMode;
   const CHUNK_SIZE = 16;
-  const CHUNK_HEIGHT = 256;
+  const CHUNK_HEIGHT = 384;
   const WORLD_Y_OFFSET = -60;
 
 
@@ -162,9 +162,9 @@ class LayerData {
       } else {
         const cdx = Math.floor(lx / 16);
         const cdz = Math.floor(lz / 16);
-        const c = { blocks: data.neighborsBlocks[(cdx + 1) + (cdz + 1) * 3], light: data.neighborsLight[(cdx + 1) + (cdz + 1) * 3] };
-        if (c.blocks) {
-          b = c.blocks[(lx & 15) | ((lz & 15) << 4) | (ly << 8)];
+        const blocks = data.neighborsBlocks[(cdx + 1) + (cdz + 1) * 3];
+        if (blocks) {
+          b = blocks[(lx & 15) | ((lz & 15) << 4) | (ly << 8)];
         } else {
           b = BLOCK.AIR;
         }
@@ -179,9 +179,9 @@ class LayerData {
         } else {
           const cdx = Math.floor(lx / 16);
           const cdz = Math.floor(lz / 16);
-          const c = { blocks: data.neighborsBlocks[(cdx + 1) + (cdz + 1) * 3], light: data.neighborsLight[(cdx + 1) + (cdz + 1) * 3] };
-          if (c.blocks) {
-            above = c.blocks[(lx & 15) | ((lz & 15) << 4) | ((ly + 1) << 8)];
+          const blocks = data.neighborsBlocks[(cdx + 1) + (cdz + 1) * 3];
+          if (blocks) {
+            above = blocks[(lx & 15) | ((lz & 15) << 4) | ((ly + 1) << 8)];
           } else {
             above = BLOCK.AIR;
           }
@@ -339,9 +339,9 @@ class LayerData {
         } else {
           const cdx = nx >> 4;
           const cdz = nz >> 4;
-          const c = { blocks: data.neighborsBlocks[(cdx + 1) + (cdz + 1) * 3], light: data.neighborsLight[(cdx + 1) + (cdz + 1) * 3] };
-          if (c.blocks) {
-            return isSolidBlock(c.blocks[(nx & 15) | ((nz & 15) << 4) | (ny << 8)]);
+          const blocks = data.neighborsBlocks[(cdx + 1) + (cdz + 1) * 3];
+          if (blocks) {
+            return isSolidBlock(blocks[(nx & 15) | ((nz & 15) << 4) | (ny << 8)]);
           }
           return false;
         }
@@ -624,8 +624,8 @@ class LayerData {
       } else {
         const cdx = nx >> 4;
         const cdz = nz >> 4;
-        const c = { blocks: data.neighborsBlocks[(cdx + 1) + (cdz + 1) * 3], light: data.neighborsLight[(cdx + 1) + (cdz + 1) * 3] };
-        if (c.blocks) return isSolidBlock(c.blocks[(nx & 15) | ((nz & 15) << 4) | (ny << 8)]);
+        const blocks = data.neighborsBlocks[(cdx + 1) + (cdz + 1) * 3];
+        if (blocks) return isSolidBlock(blocks[(nx & 15) | ((nz & 15) << 4) | (ny << 8)]);
         return false;
       }
     };
@@ -640,42 +640,54 @@ class LayerData {
       } else {
         const cdx = nx >> 4;
         const cdz = nz >> 4;
-        const c = { blocks: data.neighborsBlocks[(cdx + 1) + (cdz + 1) * 3], light: data.neighborsLight[(cdx + 1) + (cdz + 1) * 3] };
-        if (c.light) return c.light[(nx & 15) | ((nz & 15) << 4) | (ny << 8)];
+        const light = data.neighborsLight[(cdx + 1) + (cdz + 1) * 3];
+        if (light) return light[(nx & 15) | ((nz & 15) << 4) | (ny << 8)];
         return 15;
       }
     };
 
     let startTime = performance.now();
     let iterations = 0;
+    
+    // Find highest non-air block
+    let maxBlockY = 0;
+    for (let i = data.blocks.length - 1; i >= 0; i--) {
+        if (data.blocks[i] !== BLOCK.AIR) {
+            maxBlockY = i >> 8;
+            break;
+        }
+    }
+    
+    const meshingHeight = Math.min(CHUNK_HEIGHT, maxBlockY + 2); // check +1 above max block for faces
+
     for (let x = 0; x < CHUNK_SIZE; x++) {
-      for (let y = 0; y < CHUNK_HEIGHT; y++) {
+      for (let y = 0; y < meshingHeight; y++) {
         for (let z = 0; z < CHUNK_SIZE; z++) {
           const type = data.blocks[x | (z << 4) | (y << 8)];
           if (type === BLOCK.AIR || type === BLOCK.BARRIER) continue;
           
           const isTypeTransparent = isTransparent(type);
-          const isTypeCutout = isCutout(type);
-          const layer = (isTypeTransparent || isTypeCutout) ? transparent : opaque;
-          
-          if (isPlant(type) || isAnyTorch(type)) {
-            addCross(x, y, z, type, layer);
-            continue;
-          }
-
           const typeIsSlab = isSlab(type);
           const typeIsWater = isWater(type);
           const typeIsChest = isChest(type);
           const isFullBlock = !typeIsSlab && !typeIsWater && !isPlant(type) && !isAnyTorch(type) && !typeIsChest;
+
+          const isTypeCutout = isCutout(type);
+          const layer = (isTypeTransparent || (isTypeCutout && !typeIsChest)) ? transparent : opaque;
+
+          if (isPlant(type) || isAnyTorch(type)) {
+            addCross(x, y, z, type, layer);
+            continue;
+          }
           
           // Right (dir 0)
           let nType;
           if (x < 15) {
             nType = data.blocks[(x + 1) | (z << 4) | (y << 8)];
           } else {
-            const c = { blocks: data.neighborsBlocks[2 + 1 * 3], light: data.neighborsLight[2 + 1 * 3] };
-            const isCMeshed = !!(c && c.blocks);
-            nType = isCMeshed ? c.blocks[0 | (z << 4) | (y << 8)] : (typeIsWater ? BLOCK.WATER : BLOCK.AIR);
+            const blocks = data.neighborsBlocks[2 + 1 * 3];
+            const isCMeshed = !!blocks;
+            nType = isCMeshed ? blocks[0 | (z << 4) | (y << 8)] : (typeIsWater ? BLOCK.WATER : BLOCK.AIR);
           }
           if (nType === BLOCK.AIR || (isTransparent(nType) && !(typeIsWater && isWater(nType)) && nType !== type) || (isCutout(nType) && nType !== type) || (!typeIsSlab && isSlab(nType)) || typeIsChest) {
             if (isFullBlock) {
@@ -687,7 +699,7 @@ class LayerData {
                 ao3 = getAO(isSolid(x,y,z,1,1,0), isSolid(x,y,z,1,0,1), isSolid(x,y,z,1,1,1));
               }
               const light = getLightLevel(x,y,z,1,0,0);
-              masks[0][z + y * 16 + x * 4096] = type | (ao0 << 10) | (ao1 << 12) | (ao2 << 14) | (ao3 << 16) | (layer === transparent ? 1 << 18 : 0) | (light << 19);
+              masks[0][z + y * 16 + x * 16 * CHUNK_HEIGHT] = type | (ao0 << 10) | (ao1 << 12) | (ao2 << 14) | (ao3 << 16) | (layer === transparent ? 1 << 18 : 0) | (light << 19);
             } else {
               addFace(x, y, z, 0, type, layer);
             }
@@ -697,9 +709,9 @@ class LayerData {
           if (x > 0) {
             nType = data.blocks[(x - 1) | (z << 4) | (y << 8)];
           } else {
-            const c = { blocks: data.neighborsBlocks[0 + 1 * 3], light: data.neighborsLight[0 + 1 * 3] };
-            const isCMeshed = !!(c && c.blocks);
-            nType = isCMeshed ? c.blocks[15 | (z << 4) | (y << 8)] : (typeIsWater ? BLOCK.WATER : BLOCK.AIR);
+            const blocks = data.neighborsBlocks[0 + 1 * 3];
+            const isCMeshed = !!blocks;
+            nType = isCMeshed ? blocks[15 | (z << 4) | (y << 8)] : (typeIsWater ? BLOCK.WATER : BLOCK.AIR);
           }
           if (nType === BLOCK.AIR || (isTransparent(nType) && !(typeIsWater && isWater(nType)) && nType !== type) || (isCutout(nType) && nType !== type) || (!typeIsSlab && isSlab(nType)) || typeIsChest) {
             if (isFullBlock) {
@@ -711,7 +723,7 @@ class LayerData {
                 ao3 = getAO(isSolid(x,y,z,-1,1,0), isSolid(x,y,z,-1,0,-1), isSolid(x,y,z,-1,1,-1));
               }
               const light = getLightLevel(x,y,z,-1,0,0);
-              masks[1][z + y * 16 + x * 4096] = type | (ao0 << 10) | (ao1 << 12) | (ao2 << 14) | (ao3 << 16) | (layer === transparent ? 1 << 18 : 0) | (light << 19);
+              masks[1][z + y * 16 + x * 16 * CHUNK_HEIGHT] = type | (ao0 << 10) | (ao1 << 12) | (ao2 << 14) | (ao3 << 16) | (layer === transparent ? 1 << 18 : 0) | (light << 19);
             } else {
               addFace(x, y, z, 1, type, layer);
             }
@@ -757,9 +769,9 @@ class LayerData {
           if (z < 15) {
             nType = data.blocks[x | ((z + 1) << 4) | (y << 8)];
           } else {
-            const c = { blocks: data.neighborsBlocks[1 + 2 * 3], light: data.neighborsLight[1 + 2 * 3] };
-            const isCMeshed = !!(c && c.blocks);
-            nType = isCMeshed ? c.blocks[x | (0 << 4) | (y << 8)] : (typeIsWater ? BLOCK.WATER : BLOCK.AIR);
+            const blocks = data.neighborsBlocks[1 + 2 * 3];
+            const isCMeshed = !!blocks;
+            nType = isCMeshed ? blocks[x | (0 << 4) | (y << 8)] : (typeIsWater ? BLOCK.WATER : BLOCK.AIR);
           }
           if (nType === BLOCK.AIR || (isTransparent(nType) && !(typeIsWater && isWater(nType)) && nType !== type) || (isCutout(nType) && nType !== type) || (!typeIsSlab && isSlab(nType)) || typeIsChest) {
             if (isFullBlock) {
@@ -771,7 +783,7 @@ class LayerData {
                 ao3 = getAO(isSolid(x,y,z,-1,0,1), isSolid(x,y,z,0,1,1), isSolid(x,y,z,-1,1,1));
               }
               const light = getLightLevel(x,y,z,0,0,1);
-              masks[4][x + y * 16 + z * 4096] = type | (ao0 << 10) | (ao1 << 12) | (ao2 << 14) | (ao3 << 16) | (layer === transparent ? 1 << 18 : 0) | (light << 19);
+              masks[4][x + y * 16 + z * 16 * CHUNK_HEIGHT] = type | (ao0 << 10) | (ao1 << 12) | (ao2 << 14) | (ao3 << 16) | (layer === transparent ? 1 << 18 : 0) | (light << 19);
             } else {
               addFace(x, y, z, 4, type, layer);
             }
@@ -781,9 +793,9 @@ class LayerData {
           if (z > 0) {
             nType = data.blocks[x | ((z - 1) << 4) | (y << 8)];
           } else {
-            const c = { blocks: data.neighborsBlocks[1 + 0 * 3], light: data.neighborsLight[1 + 0 * 3] };
-            const isCMeshed = !!(c && c.blocks);
-            nType = isCMeshed ? c.blocks[x | (15 << 4) | (y << 8)] : (typeIsWater ? BLOCK.WATER : BLOCK.AIR);
+            const blocks = data.neighborsBlocks[1 + 0 * 3];
+            const isCMeshed = !!blocks;
+            nType = isCMeshed ? blocks[x | (15 << 4) | (y << 8)] : (typeIsWater ? BLOCK.WATER : BLOCK.AIR);
           }
           if (nType === BLOCK.AIR || (isTransparent(nType) && !(typeIsWater && isWater(nType)) && nType !== type) || (isCutout(nType) && nType !== type) || (!typeIsSlab && isSlab(nType)) || typeIsChest) {
             if (isFullBlock) {
@@ -795,7 +807,7 @@ class LayerData {
                 ao3 = getAO(isSolid(x,y,z,1,0,-1), isSolid(x,y,z,0,1,-1), isSolid(x,y,z,1,1,-1));
               }
               const light = getLightLevel(x,y,z,0,0,-1);
-              masks[5][x + y * 16 + z * 4096] = type | (ao0 << 10) | (ao1 << 12) | (ao2 << 14) | (ao3 << 16) | (layer === transparent ? 1 << 18 : 0) | (light << 19);
+              masks[5][x + y * 16 + z * 16 * CHUNK_HEIGHT] = type | (ao0 << 10) | (ao1 << 12) | (ao2 << 14) | (ao3 << 16) | (layer === transparent ? 1 << 18 : 0) | (light << 19);
             } else {
               addFace(x, y, z, 5, type, layer);
             }
@@ -814,25 +826,35 @@ class LayerData {
     for (let dir = 0; dir < 6; dir++) {
       const mask = masks[dir];
       let sliceMax, iMax, jMax;
-      if (dir === 0 || dir === 1) { sliceMax = 16; iMax = CHUNK_HEIGHT; jMax = 16; } // X slices. i=y, j=z
-      else if (dir === 2 || dir === 3) { sliceMax = CHUNK_HEIGHT; iMax = 16; jMax = 16; } // Y slices. i=z, j=x
-      else { sliceMax = 16; iMax = CHUNK_HEIGHT; jMax = 16; } // Z slices. i=y, j=x
+      let strideI, strideSlice;
+      if (dir === 0 || dir === 1) { 
+        sliceMax = 16; iMax = meshingHeight; jMax = 16; 
+        strideI = 16; strideSlice = 16 * CHUNK_HEIGHT; 
+      } // X slices. i=y, j=z
+      else if (dir === 2 || dir === 3) { 
+        sliceMax = meshingHeight; iMax = 16; jMax = 16; 
+        strideI = 16; strideSlice = 256; 
+      } // Y slices. i=z, j=x
+      else { 
+        sliceMax = 16; iMax = meshingHeight; jMax = 16; 
+        strideI = 16; strideSlice = 16 * CHUNK_HEIGHT; 
+      } // Z slices. i=y, j=x
 
       for (let slice = 0; slice < sliceMax; slice++) {
         for (let i = 0; i < iMax; i++) {
           for (let j = 0; j < jMax; ) {
-            const idx = j + i * jMax + slice * jMax * iMax;
+            const idx = j + i * strideI + slice * strideSlice;
             const val = mask[idx];
             if (val !== 0) {
               let w = 1;
-              while (j + w < jMax && mask[j + w + i * jMax + slice * jMax * iMax] === val) {
+              while (j + w < jMax && mask[j + w + i * strideI + slice * strideSlice] === val) {
                 w++;
               }
               let h = 1;
               let done = false;
               while (i + h < iMax) {
                 for (let k = 0; k < w; k++) {
-                  if (mask[j + k + (i + h) * jMax + slice * jMax * iMax] !== val) {
+                  if (mask[j + k + (i + h) * strideI + slice * strideSlice] !== val) {
                     done = true;
                     break;
                   }
@@ -859,7 +881,7 @@ class LayerData {
 
               for (let di = 0; di < h; di++) {
                 for (let dj = 0; dj < w; dj++) {
-                  mask[j + dj + (i + di) * jMax + slice * jMax * iMax] = 0;
+                  mask[j + dj + (i + di) * strideI + slice * strideSlice] = 0;
                 }
               }
               j += w;

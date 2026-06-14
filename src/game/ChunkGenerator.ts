@@ -7,8 +7,8 @@ import { buildHubCastles, generateHubTerrain } from "./generation/HubGenerator";
 import { getCastleBlock } from "./generation/SkyCastlesGenerator";
 import { getVillageBlock } from "./generation/SkyBridgeGenerator";
 import { getGiantMythicalShipBlock } from "./generation/ShipGenerator";
-import { getSummerLabBlock } from "./generation/SummerLabGenerator";
-import { getWaterParkBlock } from "./generation/WaterParkGenerator";
+import { getSummerLabBlock, generateSummerLabColumn } from "./generation/SummerLabGenerator";
+import { generateWaterParkColumn } from "./generation/WaterParkGenerator";
 import { generateSkyIslandTerrain } from "./generation/SkyIslandGenerator";
 import { getHappyIslandBlock, generateHappyIslandColumn } from "./generation/HappyIslandGenerator";
 import { getBackroomsBlock, generateBackroomsColumn } from "./generation/BackroomsGenerator";
@@ -67,12 +67,10 @@ export async function generateChunkMethod(
           generateBackroomsColumn(chunk, x, z, worldX, worldZ);
         } else if (summerLabPhase === 2) {
           generateHappyIslandColumn(chunk, x, z, worldX, worldZ);
+        } else if (summerLabPhase === 1) {
+          generateWaterParkColumn(chunk, x, z, worldX, worldZ);
         } else {
-          for (let y = 0; y < CHUNK_HEIGHT; y++) {
-            const worldY = y + WORLD_Y_OFFSET;
-            const block = summerLabPhase === 1 ? getWaterParkBlock(worldX, worldY, worldZ) : getSummerLabBlock(worldX, worldY, worldZ);
-            if (block !== 0) chunk.setBlockFast(x, y, z, block);
-          }
+          generateSummerLabColumn(chunk, x, z, worldX, worldZ);
         }
         continue;
       }
