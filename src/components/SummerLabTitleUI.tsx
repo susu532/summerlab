@@ -117,16 +117,7 @@ export function SummerLabTitleUI() {
         </span>
       </h1>
       
-      {/* Big Timer */}
-      <div 
-        className="mt-1 font-mono text-xl sm:text-2xl md:text-3xl font-black tracking-wider"
-        style={{
-           color: '#FFF',
-           textShadow: '2px 2px 0px #000, -2px -2px 0px #000, 2px -2px 0px #000, -2px 2px 0px #000, 4px 4px 8px rgba(0,0,0,0.5)',
-        }}
-      >
-        NEW MAP IN: <span style={{ color: phase === 1 ? '#ff7bee' : phase === 2 ? '#FFCC00' : phase === 3 ? '#ffeb3b' : '#00ffd0' }}>{timerText}</span>
-      </div>
+      {/* Big Timer was here but map rotation is disabled */}
       
       {/* Paint the world text */}
       {true && (

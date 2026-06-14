@@ -107,6 +107,8 @@ export class Game {
       logarithmicDepthBuffer: true
     });
     
+    this.renderer.localClippingEnabled = true;
+
     this.renderer.setPixelRatio(this.getResolvedDpr(initialSettings.performanceMode));
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     const effectivePremiumShaders = initialSettings.premiumShaders && !initialSettings.performanceMode;
@@ -396,6 +398,28 @@ export class Game {
     this.player.update(delta);
     this.world.tick(delta);
     this.world.updateMaterials(delta);
+    
+    // Cap vertical view distance to 100 blocks
+    if (!this.world.opaqueMaterial.clippingPlanes || this.world.opaqueMaterial.clippingPlanes.length === 0) {
+      const planes = [
+        new THREE.Plane(new THREE.Vector3(0, -1, 0), 0),
+        new THREE.Plane(new THREE.Vector3(0, 1, 0), 0)
+      ];
+      this.world.opaqueMaterial.clippingPlanes = planes;
+      this.world.transparentMaterial.clippingPlanes = planes;
+      this.world.opaqueDepthMaterial.clippingPlanes = planes;
+      this.world.transparentDepthMaterial.clippingPlanes = planes;
+      this.world.opaqueMaterial.clipShadows = true;
+      this.world.transparentMaterial.clipShadows = true;
+      this.world.opaqueMaterial.needsUpdate = true;
+      this.world.transparentMaterial.needsUpdate = true;
+      this.world.opaqueDepthMaterial.needsUpdate = true;
+      this.world.transparentDepthMaterial.needsUpdate = true;
+    }
+    const capDist = 100;
+    this.world.opaqueMaterial.clippingPlanes[0].constant = this.player.worldPosition.y + capDist;
+    this.world.opaqueMaterial.clippingPlanes[1].constant = -(this.player.worldPosition.y - capDist);
+
     this.world.update(this.player.position, this.camera);
     this.environmentManager.update(delta);
     

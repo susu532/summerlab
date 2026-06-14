@@ -51,7 +51,7 @@ export const LaunchMenuUI: React.FC<LaunchMenuUIProps> = ({ isOpen, onClose, onL
 
             <div className="flex flex-col w-full gap-3 relative z-10">
               <button
-                onClick={onLaunch}
+                onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); onLaunch(); }}
                 className="w-full relative group bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 flex items-center justify-center gap-3 overflow-hidden"
               >
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,transparent,rgba(255,255,255,0.2),transparent)] -translate-x-[150%] skew-x-[-30deg] group-hover:animate-[shimmer_1.5s_infinite]" />

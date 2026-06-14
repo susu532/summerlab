@@ -195,17 +195,19 @@ export const MobileControlsUI: React.FC<{ game?: any }> = ({ game }) => {
           touch.clientX < window.innerWidth * 0.5 &&
           touch.clientY > window.innerHeight * 0.2;
 
-        if (isBottomLeft && joystickTouchId.current === null && !isButton) {
-          joystickTouchId.current = touch.identifier;
-          joystickOriginRef.current = { x: touch.clientX, y: touch.clientY };
-          setJoystickOrigin({ x: touch.clientX, y: touch.clientY });
+        if (isBottomLeft && !isButton) {
+          if (joystickTouchId.current === null) {
+            joystickTouchId.current = touch.identifier;
+            joystickOriginRef.current = { x: touch.clientX, y: touch.clientY };
+            setJoystickOrigin({ x: touch.clientX, y: touch.clientY });
 
-          const now = Date.now();
-          if (now - lastJoystickTapTime.current < 300) {
-              window.mobileInputs.isSprinting = true;
+            const now = Date.now();
+            if (now - lastJoystickTapTime.current < 300) {
+                window.mobileInputs.isSprinting = true;
+            }
+            lastJoystickTapTime.current = now;
           }
-          lastJoystickTapTime.current = now;
-          continue; // Dedicated joystick touch
+          continue; // Prevent joystick area touches from affecting camera if there's already a joystick active
         }
 
         if (isButton && isPassThrough) {
@@ -234,13 +236,20 @@ export const MobileControlsUI: React.FC<{ game?: any }> = ({ game }) => {
         }
 
         if (joystickTouchId.current !== touch.identifier) {
+          const checkType = game?.player?.inventory?.slots[hotbarIndex]?.type;
+          const isHoldingHose = checkType === 521 || checkType === 522; // 521=FLUID_CHOCOLATE_HOSE, 522=WASHING_HOSE
+
           const holdTimeout = setTimeout(() => {
             const tap = activeTaps.current.get(touch.identifier);
-            if (tap && !tap.isSwipe) {
+            if (tap && !tap.isSwipe && !isHoldingHose) {
               window.mobileInputs.isAttacking = true;
               tap.isHolding = true;
             }
           }, 300);
+
+          if (isHoldingHose) {
+             window.mobileInputs.isAttacking = true;
+          }
 
           activeTaps.current.set(touch.identifier, {
             x: touch.clientX,
@@ -248,7 +257,7 @@ export const MobileControlsUI: React.FC<{ game?: any }> = ({ game }) => {
             time: Date.now(),
             isSwipe: false,
             holdTimeout,
-            isHolding: false,
+            isHolding: isHoldingHose,
           });
         }
       }
@@ -725,7 +734,7 @@ export const MobileControlsUI: React.FC<{ game?: any }> = ({ game }) => {
 
         {/* Zoom Button (Top Left of the Diamond) */}
         <button
-          className="absolute top-0 left-0 -translate-x-4 -translate-y-4 landscape:top-6 landscape:-translate-x-6 mobile-button pass-through-button w-14 h-14 rounded-full bg-white/20 border-[3px] border-white/40 flex items-center justify-center active:bg-white/40 opacity-80 pointer-events-auto shadow-md"
+          className="absolute top-0 left-0 -translate-x-4 -translate-y-4 landscape:top-6 landscape:-translate-x-6 mobile-button w-14 h-14 rounded-full bg-white/20 border-[3px] border-white/40 flex items-center justify-center active:bg-white/40 opacity-80 pointer-events-auto shadow-md"
           onTouchStart={(e) => {
             window.mobileInputs.isZooming = true;
           }}

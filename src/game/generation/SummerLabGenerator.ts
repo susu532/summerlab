@@ -1,12 +1,16 @@
 import { ItemType } from '../Inventory';
 
 export function getSummerLabBlock(x: number, y: number, z: number): number {
-  if (y < -20 || y > 100) return ItemType.AIR;
+  if (y < -20 || y > 350) return ItemType.AIR;
   
   const fy = Math.floor(y);
   
   let baseBlock: number = ItemType.AIR;
 
+  if (x === 4 && fy === 301 && z === 62) {
+    return ItemType.CHEST;
+  }
+  
   // Floor / Island
   const distSq = x * x + z * z;
   if (fy <= 0 && fy >= -10) {
@@ -24,7 +28,58 @@ export function getSummerLabBlock(x: number, y: number, z: number): number {
      }
   }
 
+  // Spiral vertical parkour near x=4, z=-62
+  const parkourX = x - 4;
+  const parkourZ = z - 62;
+  const parkourDistSq = parkourX * parkourX + parkourZ * parkourZ;
+
+  // Large water pool next to it, centered at x=30, z=-62
+  const poolX = x - 30;
+  const poolZ = z - 62;
+  const poolDistSq = poolX * poolX + poolZ * poolZ;
+
+  // Large water pool overrides floor
+  if (poolDistSq <= 600 && fy <= 5 && fy >= -10) {
+      if (fy === -10) {
+          baseBlock = ItemType.STONE;
+      } else if (fy <= 0 && poolDistSq >= 500) {
+          baseBlock = ItemType.STONE; // border
+      } else if (fy < 0) {
+          baseBlock = ItemType.WATER;
+      } else if (fy === 0) {
+          baseBlock = ItemType.AIR; // hole top
+      }
+  }
+
   if (baseBlock === ItemType.AIR && fy >= 0) {
+      // Spiral vertical parkour
+      // Central pillar for the parkour
+      if (parkourDistSq <= 4 && fy <= 300) {
+          baseBlock = ItemType.BLUE_STONE;
+      }
+      
+      // Platforms spiraling up the pillar
+      if (baseBlock === ItemType.AIR && fy > 0 && fy <= 300) {
+          // One platform every block vertically so it's jumpable
+          const platformIndex = fy;
+          // To require more jumping, we can space them out or make angle jumps harder
+          // We will use one block every vertical step, but spread the angle slightly.
+          const angle = platformIndex * Math.PI / 4; // 45 degrees rotation per block
+          
+          // Direction of the 2x1 platform
+          const dirX = Math.cos(angle);
+          const dirZ = Math.sin(angle);
+          
+          // Check if block is on the platform (extends outward from pillar)
+          const dot = parkourX * dirX + parkourZ * dirZ;
+          const perpDistSq = parkourDistSq - dot * dot;
+          
+          // Make platforms 1 block wide and 3 blocks long, starting at dist=2
+          if (dot > 2 && dot <= 5 && perpDistSq <= 0.5) {
+              baseBlock = ItemType.WOOD;
+          }
+      }
+      
       // Castle Bounding Box
       if (Math.abs(x) <= 40 && Math.abs(z) <= 40) {
         const inKeep = Math.abs(x) <= 20 && Math.abs(z) <= 20;

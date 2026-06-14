@@ -47,7 +47,7 @@ export const ServerJoinUI: React.FC<ServerJoinUIProps> = ({ isOpen, serverName =
             
             <div className="w-full flex flex-col gap-3 mt-4">
               <button
-                onClick={onJoin}
+                onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); onJoin(); }}
                 className="w-full h-12 bg-white text-black hover:bg-[#FFFF55] font-bold rounded-xl transition-all flex items-center justify-center gap-2 group active:scale-95"
               >
                 <Play className="w-4 h-4 fill-current transition-transform group-hover:scale-110" />

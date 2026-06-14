@@ -61,6 +61,14 @@ export const PauseMenuUI: React.FC<PauseMenuUIProps> = ({
         window.dispatchEvent(new CustomEvent('triggerChooseRole'));
       }
     }] : []),
+    {
+      label: 'Respawn',
+      icon: <RefreshCw className="w-5 h-5" />,
+      onClick: () => {
+        networkManager.requestRespawn();
+        onClose();
+      }
+    },
     { 
       label: 'Settings', 
       icon: <Settings className="w-5 h-5" />, 

@@ -65,7 +65,7 @@ export class PostProcessingManager {
     const isBackrooms = this.game.world.isSummerLab && summerLabPhase === 3;
     const forceComposer = isBackrooms; // Only force for Backrooms which needs the color grading/vignette pass
 
-    if (!disableComposer) {
+    if (!disableComposer || forceComposer) {
       if (usePremiumShaders) {
         this.game.renderer.toneMapping = THREE.ACESFilmicToneMapping;
         this.game.renderer.toneMappingExposure = 1.0;

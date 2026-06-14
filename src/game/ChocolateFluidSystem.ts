@@ -74,7 +74,7 @@ export class ChocolateFluidSystem {
     this.game = game;
     const isMobile = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
  this.maxProjectiles = isMobile ? 1500 : 3000;
-    this.maxSplats = isMobile ? 10000 : 40000;
+this.maxSplats = isMobile ? 30000 : 200000;
     
     this.minProjIdx = this.maxProjectiles;
     this.minSplatIdx = this.maxSplats;

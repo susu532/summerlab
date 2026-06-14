@@ -106,12 +106,12 @@ export function LoadoutUI({ game, isMobile }: { game: Game | null, isMobile?: bo
       className="absolute inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm pointer-events-auto"
       onPointerDown={e => e.stopPropagation()}
     >
-      <div className="mc-panel p-6 flex flex-col items-center gap-6 animate-[slideUpFade_0.3s_ease-out_reverse]">
+      <div className="mc-panel p-4 sm:p-6 flex flex-col items-center gap-4 sm:gap-6 animate-[slideUpFade_0.3s_ease-out_reverse] max-h-screen overflow-y-auto custom-scrollbar transform scale-[0.8] sm:scale-100 [@media(orientation:landscape)_and_(max-height:500px)]:scale-[0.65] [@media(orientation:landscape)_and_(max-height:400px)]:scale-[0.55]">
         <h2 className="text-2xl mc-font text-white mc-text-shadow">Choose Your Role</h2>
         
         <div className="flex flex-wrap items-center justify-center gap-6">
           <button
-            onClick={() => selectLoadout('painter')}
+            onPointerDown={(e) => { e.preventDefault(); selectLoadout('painter'); }}
             className="flex flex-col items-center gap-4 bg-[#7B7B7B] border-[3px] border-t-white border-l-white border-b-[#555555] border-r-[#555555] p-6 hover:brightness-110 active:mc-button-shadow transition-all"
           >
             <div className="w-16 h-16 bg-zinc-800 flex items-center justify-center border-2 border-black/50 shadow-inner">
@@ -122,7 +122,7 @@ export function LoadoutUI({ game, isMobile }: { game: Game | null, isMobile?: bo
           </button>
 
           <button
-            onClick={() => selectLoadout('bow')}
+            onPointerDown={(e) => { e.preventDefault(); selectLoadout('bow'); }}
             className="flex flex-col items-center gap-4 bg-[#7B7B7B] border-[3px] border-t-white border-l-white border-b-[#555555] border-r-[#555555] p-6 hover:brightness-110 active:mc-button-shadow transition-all"
           >
             <div className="w-16 h-16 bg-zinc-800 flex items-center justify-center border-2 border-black/50 shadow-inner">
@@ -132,7 +132,7 @@ export function LoadoutUI({ game, isMobile }: { game: Game | null, isMobile?: bo
             <span className="text-zinc-300 text-sm max-w-[120px] text-center">Starts with a Bow</span>
           </button>
           <button
-            onClick={() => selectLoadout('washer')}
+            onPointerDown={(e) => { e.preventDefault(); selectLoadout('washer'); }}
             className="flex flex-col items-center gap-4 bg-[#7B7B7B] border-[3px] border-t-white border-l-white border-b-[#555555] border-r-[#555555] p-6 hover:brightness-110 active:mc-button-shadow transition-all"
           >
             <div className="w-16 h-16 bg-zinc-800 flex items-center justify-center border-2 border-black/50 shadow-inner">
@@ -142,7 +142,7 @@ export function LoadoutUI({ game, isMobile }: { game: Game | null, isMobile?: bo
             <span className="text-zinc-300 text-sm max-w-[120px] text-center">Starts with a Washer Hose</span>
           </button>
           <button
-            onClick={() => selectLoadout('builder')}
+            onPointerDown={(e) => { e.preventDefault(); selectLoadout('builder'); }}
             className="flex flex-col items-center gap-4 bg-[#7B7B7B] border-[3px] border-t-white border-l-white border-b-[#555555] border-r-[#555555] p-6 hover:brightness-110 active:mc-button-shadow transition-all"
           >
             <div className="w-16 h-16 bg-zinc-800 flex items-center justify-center border-2 border-black/50 shadow-inner">

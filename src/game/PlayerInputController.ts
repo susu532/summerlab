@@ -782,6 +782,26 @@ export class PlayerInputController {
             this.player.chestInventory = this.player.chestInventories.get('ender_chest')!;
           }
 
+          if (this.player.world.isSummerLab && hitResult.blockPos.x === 4 && hitResult.blockPos.y === 301 && hitResult.blockPos.z === 62) {
+            const nowTime = Date.now();
+            const lastLootStr = localStorage.getItem('last_looted_summerlab_parkour');
+            let lastLoot = lastLootStr ? parseInt(lastLootStr) : 0;
+            if (nowTime - lastLoot >= 2 * 60 * 60 * 1000) {
+              localStorage.setItem('last_looted_summerlab_parkour', nowTime.toString());
+              let emptySlot = this.player.chestInventory.slots.findIndex(s => !s);
+              if (emptySlot === -1) emptySlot = 13;
+              this.player.chestInventory.slots[emptySlot] = {
+                type: ItemType.WOODEN_SWORD,
+                count: 1,
+                metadata: {
+                  rarity: Rarity.COMMON,
+                  stats: { damage: 20, strength: 10 },
+                  description: "A wooden sword from the top of the parkour.",
+                }
+              };
+            }
+          }
+
           if (hitResult.blockPos.y === 16 && hitResult.blockPos.x === 0 && Math.abs(hitResult.blockPos.z) <= 12) {
             const hasLootedKey = `looted_mid_chest_${hitResult.blockPos.z > 0 ? 'blue' : 'red'}`;
             if (!(window as any)[hasLootedKey]) {
