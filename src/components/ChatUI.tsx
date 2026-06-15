@@ -191,7 +191,7 @@ export const ChatUI = React.memo(function ChatUI({
             return (
               <div
                 key={msg.id}
-                className="text-[13px] sm:text-[14px] md:text-[15px] lg:text-[16px] text-white drop-shadow-[1px_1px_0_rgba(0,0,0,1)] bg-black/0 px-1 py-0.5 rounded w-fit max-w-full break-words font-sans selection:bg-white/30"
+                className={`text-[13px] sm:text-[14px] md:text-[15px] lg:text-[16px] text-white drop-shadow-[1px_1px_0_rgba(0,0,0,1)] bg-black/0 px-1 py-0.5 rounded w-fit max-w-full break-words font-sans selection:bg-white/30 ${showFullChat ? 'select-text' : 'select-none'}`}
               >
                 <span className={`font-bold ${senderColor}`}>
                   {msg.sender}:{" "}
@@ -204,7 +204,10 @@ export const ChatUI = React.memo(function ChatUI({
       </div>
 
       {isTyping && (
-        <div className="pointer-events-auto bg-black/50 p-1 flex items-center border border-white/10">
+        <div 
+          className="pointer-events-auto bg-black/50 p-1 flex items-center border border-white/10"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
           <input
             ref={inputRef}
             type="text"
@@ -214,10 +217,6 @@ export const ChatUI = React.memo(function ChatUI({
             className="bg-transparent text-white outline-none w-full font-sans text-[13px] sm:text-[14px] md:text-[15px]"
             placeholder=""
             maxLength={100}
-            onBlur={() => {
-              // Small delay to allow Enter key to process before unmounting
-              setTimeout(() => setIsTyping(false), 100);
-            }}
           />
         </div>
       )}

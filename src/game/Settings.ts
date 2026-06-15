@@ -106,7 +106,6 @@ class SettingsManager {
       this.settings.premiumShaders = false;
       this.settings.performanceMode = true;
       this.settings.renderDistance = Math.min(this.settings.renderDistance, 2); // lowering default render distance for mobile
-       this.settings.sensitivity = 0.005; // 50 in UI
     }
 
     try {
@@ -131,6 +130,15 @@ class SettingsManager {
           if (isMobileDevice && !localStorage.getItem("v6_perf_force_true")) {
             this.settings.performanceMode = true;
             localStorage.setItem("v6_perf_force_true", "true");
+            localStorage.setItem(
+              "game_settings_v2",
+              JSON.stringify(this.settings),
+            );
+          }
+
+          if (isMobileDevice && !localStorage.getItem("v7_sens_force_75")) {
+            this.settings.sensitivity = 0.0075;
+            localStorage.setItem("v7_sens_force_75", "true");
             localStorage.setItem(
               "game_settings_v2",
               JSON.stringify(this.settings),
@@ -168,6 +176,20 @@ class SettingsManager {
               ) {
                 this.settings.performanceMode = true;
                 localStorage.setItem("v6_perf_force_true_cg", "true");
+                try {
+                  (window as any).CrazyGames.SDK.data.setItem(
+                    "game_settings_v2",
+                    JSON.stringify(this.settings),
+                  );
+                } catch (e) {}
+              }
+
+              if (
+                isMobileDevice &&
+                !localStorage.getItem("v7_sens_force_75_cg")
+              ) {
+                this.settings.sensitivity = 0.0075;
+                localStorage.setItem("v7_sens_force_75_cg", "true");
                 try {
                   (window as any).CrazyGames.SDK.data.setItem(
                     "game_settings_v2",

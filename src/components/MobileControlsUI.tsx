@@ -309,7 +309,14 @@ export const MobileControlsUI: React.FC<{ game?: any }> = ({ game }) => {
           const dy = touch.clientY - tap.y;
           if (dx * dx + dy * dy > 100) {
             tap.isSwipe = true;
-            if (!tap.isHolding) {
+            if (tap.isHolding) {
+              tap.isHolding = false;
+              let anyHolding = false;
+              activeTaps.current.forEach((t) => {
+                if (t.isHolding && t !== tap) anyHolding = true;
+              });
+              window.mobileInputs.isAttacking = isButtonAttacking.current || anyHolding;
+            } else {
               clearTimeout(tap.holdTimeout);
             }
           }

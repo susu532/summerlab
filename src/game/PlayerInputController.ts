@@ -472,6 +472,7 @@ export class PlayerInputController {
 
   onMouseDown = (event: MouseEvent) => {
     const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (isMobile && event.isTrusted) return; // Prevent native mousedowns from interfering with virtual inputs on mobile
     if (!this.player.controls.isLocked && !isMobile) return;
     if (this.isInputFocused()) return;
     if (this.player.isSpectator || this.player.isDead) return;
@@ -957,6 +958,7 @@ export class PlayerInputController {
   }
 
   onMouseUp = (event: MouseEvent) => {
+    if (('ontouchstart' in window || navigator.maxTouchPoints > 0) && event.isTrusted) return; // Prevent native mouse events on mobile
     if (this.player.isSpectator || this.player.isDead) return;
     if (event.button === 0) {
       this.player.isLeftMouseDown = false;

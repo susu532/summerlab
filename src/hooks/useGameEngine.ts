@@ -255,6 +255,7 @@ export function useGameEngine() {
       if (locked) {
         CrazyGamesManager.gameplayStart();
         useGameStore.getState().setIsFluidColorPickerOpen(false);
+        useUIStore.getState().setTyping(false);
       } else {
         CrazyGamesManager.gameplayStop();
         // Open pause menu when unlocking if not in other specific menus and not suppressed
@@ -374,7 +375,10 @@ export function useGameEngine() {
 
       if (e.code === "Enter") {
         if (locked && !isInputFocused) {
-          // Do not unlock controls here to keep chat completely seamless
+          if (document.pointerLockElement) {
+            suppressPauseMenu.current = true;
+          }
+          newGame.controls.unlock();
           state.setTyping(true);
         }
       }
