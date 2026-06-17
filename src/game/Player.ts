@@ -97,6 +97,7 @@ export class Player {
   baseFOV = 75;
   targetFOV = 75;
   lastAttackTime = 0;
+  grapplePoint: THREE.Vector3 | null = null;
 
   speed = 5.5;
   sprintSpeed = 8.5;

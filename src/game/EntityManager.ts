@@ -572,6 +572,9 @@ export class EntityManager {
       player.isBlocking = !!data.isBlocking;
       player.isShooting = !!(data as any).isShooting;
       player.fluidColor = (data as any).fluidColor;
+      if ((data as any).grapplePoint !== undefined) {
+        player.grapplePoint = (data as any).grapplePoint;
+      }
       if (data.health !== undefined) {
         player.health = data.health;
       }

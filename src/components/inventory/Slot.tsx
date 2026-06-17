@@ -165,6 +165,24 @@ export const ItemIcon = React.memo<{ item: ItemStack }>(({ item }) => {
     );
   }
 
+  if (item.type === ItemType.SPIDER_GLOVES) {
+    return (
+      <div className="relative w-[20px] h-[20px] sm:w-[24px] sm:h-[24px] flex items-center justify-center select-none bg-red-600 rounded-[4px] border-[2px] border-blue-700 shadow-lg overflow-hidden">
+        <div className="absolute inset-0 flex items-center justify-center opacity-50">
+          <div className="w-full h-[1px] bg-black rotate-45"></div>
+          <div className="w-full h-[1px] bg-black -rotate-45 absolute"></div>
+          <div className="w-[1px] h-full bg-black absolute"></div>
+          <div className="w-full h-[1px] bg-black absolute"></div>
+        </div>
+        {item.count > 1 && (
+          <span className="absolute -bottom-1 -right-1 text-[10px] sm:text-[12px] font-bold text-white drop-shadow-[1.5px_1.5px_0_rgba(0,0,0,1)] pointer-events-none z-20">
+            {item.count}
+          </span>
+        )}
+      </div>
+    );
+  }
+
   const flat = isFlatItem(item.type) || isPlant(item.type);
 
   if (!flat) {

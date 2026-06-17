@@ -80,8 +80,96 @@ export function createItemModel(type: ItemType): THREE.Group {
   const isTorch = type === ItemType.TORCH;
   const isChest = type === ItemType.CHEST || type === ItemType.ENDER_CHEST;
   const isHose = type === ItemType.FLUID_CHOCOLATE_HOSE || type === ItemType.WASHING_HOSE;
+  const isSpiderGloves = type === ItemType.SPIDER_GLOVES;
   
-  if (isHose) {
+  if (isSpiderGloves) {
+    const redMat = new THREE.MeshStandardMaterial({ color: 0xe61919, roughness: 0.6 });
+    const blueMat = new THREE.MeshStandardMaterial({ color: 0x192be6, roughness: 0.6 });
+    const silverMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.9, roughness: 0.2 });
+    const darkSilverMat = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.8, roughness: 0.4 });
+    const blackMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
+    
+    // Base hand (fist)
+    // Y is forward (arm length), X is left/right, Z is thickness (top/bottom)
+    const palmGeo = new THREE.BoxGeometry(0.25, 0.25, 0.14);
+    const palm = new THREE.Mesh(palmGeo, redMat);
+    palm.position.set(0, 0.125, 0);
+    group.add(palm);
+
+    // Blue part (underside palm and wrist sides)
+    const bluePalmGeo = new THREE.BoxGeometry(0.20, 0.24, 0.04);
+    const bluePalm = new THREE.Mesh(bluePalmGeo, blueMat);
+    bluePalm.position.set(0, 0.12, -0.065);
+    group.add(bluePalm);
+
+    // Web shooter device (top of wrist, Z+)
+    const shooterDevGeo = new THREE.BoxGeometry(0.14, 0.18, 0.04);
+    const shooterDev = new THREE.Mesh(shooterDevGeo, silverMat);
+    shooterDev.position.set(0, 0.1, 0.08); // Z+ is top of hand
+    group.add(shooterDev);
+
+    // Wrist band holding shooter
+    const wristBandGeo = new THREE.BoxGeometry(0.26, 0.06, 0.16);
+    const wristBand = new THREE.Mesh(wristBandGeo, darkSilverMat);
+    wristBand.position.set(0, 0.05, 0);
+    group.add(wristBand);
+
+    // Web shooter nozzle
+    const nozzleGeo = new THREE.CylinderGeometry(0.015, 0.02, 0.12, 8);
+    const nozzle = new THREE.Mesh(nozzleGeo, silverMat);
+    nozzle.position.set(0, 0.22, 0.08); // Offset used by grapple line (0, 0.22, 0.08)
+    group.add(nozzle);
+
+    // Web shooter trigger (underside palm, Z-)
+    const triggerGeo = new THREE.BoxGeometry(0.08, 0.08, 0.02);
+    const trigger = new THREE.Mesh(triggerGeo, silverMat);
+    trigger.position.set(0, 0.15, -0.085);
+    group.add(trigger);
+
+    // Fingers
+    const fingerGeo = new THREE.BoxGeometry(0.05, 0.14, 0.05);
+    
+    // Index finger (extended Y+)
+    const indexFinger = new THREE.Mesh(fingerGeo, redMat);
+    indexFinger.position.set(0.09, 0.3, 0.0);
+    indexFinger.rotation.x = -0.1; // Slight outward angle
+    group.add(indexFinger);
+
+    // Pinky finger (extended Y+)
+    const pinkyFinger = new THREE.Mesh(fingerGeo, redMat);
+    pinkyFinger.position.set(-0.09, 0.3, 0.0);
+    pinkyFinger.rotation.x = -0.1;
+    group.add(pinkyFinger);
+
+    // Bent middle finger
+    const bentFingerGeo1 = new THREE.BoxGeometry(0.05, 0.08, 0.14);
+    const middleFinger = new THREE.Mesh(bentFingerGeo1, redMat);
+    middleFinger.position.set(0.03, 0.26, -0.03); 
+    group.add(middleFinger);
+
+    // Bent ring finger
+    const bentFingerGeo2 = new THREE.BoxGeometry(0.05, 0.08, 0.14);
+    const ringFinger = new THREE.Mesh(bentFingerGeo2, redMat);
+    ringFinger.position.set(-0.03, 0.26, -0.03); 
+    group.add(ringFinger);
+
+    // Web lines (black simple details)
+    const lineMeshV1 = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.26, 0.15), blackMat);
+    lineMeshV1.position.set(0.06, 0.125, 0);
+    group.add(lineMeshV1);
+
+    const lineMeshV2 = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.26, 0.15), blackMat);
+    lineMeshV2.position.set(-0.06, 0.125, 0);
+    group.add(lineMeshV2);
+    
+    const lineMeshH1 = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.01, 0.15), blackMat);
+    lineMeshH1.position.set(0, 0.12, 0);
+    group.add(lineMeshH1);
+
+    const lineMeshH2 = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.01, 0.15), blackMat);
+    lineMeshH2.position.set(0, 0.20, 0);
+    group.add(lineMeshH2);
+  } else if (isHose) {
     const isPerf = settingsManager.getSettings().performanceMode;
     const MatClass = isPerf ? THREE.MeshBasicMaterial : THREE.MeshStandardMaterial;
 

@@ -115,7 +115,7 @@ export const HotbarUI: React.FC<{ game: Game | null }> = ({ game }) => {
   const sendFeedback = async () => {
     if (!feedbackText.trim()) return;
     try {
-      const baseUrl = getSecureBackendUrl(import.meta.env.VITE_BACKEND_URL as string);
+      const baseUrl = getSecureBackendUrl("https://summerlab-server.onrender.com");
       const resp = await fetch(`${baseUrl}/api/feedback`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

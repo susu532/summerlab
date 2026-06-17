@@ -332,6 +332,7 @@ export class NetworkManager {
       defense: packed[9],
       health: packed[10],
       fluidColor: packed[11] || 0,
+      grapplePoint: packed[12] !== -999999 ? { x: packed[12], y: packed[13], z: packed[14] } : null,
     };
 
     let isNew = false;
@@ -529,8 +530,8 @@ export class NetworkManager {
         }
         offset = floatOffset;
         
-        const packed = new Float32Array(buffer, offset, 12);
-        offset += 12 * 4;
+        const packed = new Float32Array(buffer, offset, 15);
+        offset += 15 * 4;
         
         if (id !== this.id) {
            this.applyPlayerUpdate(id, packed);

@@ -534,6 +534,7 @@ BLOCK_UVS[BLOCK.CONCRETE_RAINBOW_GREEN] = [[23,15], [23,15], [23,15], [23,15], [
 BLOCK_UVS[BLOCK.CONCRETE_RAINBOW_BLUE] = [[24,15], [24,15], [24,15], [24,15], [24,15], [24,15]];
 BLOCK_UVS[BLOCK.CONCRETE_RAINBOW_INDIGO] = [[25,15], [25,15], [25,15], [25,15], [25,15], [25,15]];
 BLOCK_UVS[BLOCK.CONCRETE_RAINBOW_VIOLET] = [[26,15], [26,15], [26,15], [26,15], [26,15], [26,15]];
+BLOCK_UVS[BLOCK.SPIDER_GLOVES] = [[20,15], [20,15], [20,15], [20,15], [20,15], [20,15]]; // Placeholder using red concrete color
 
 let cachedBreakingTexture: THREE.Texture | null = null;
 export function createBreakingTexture(): THREE.Texture {
@@ -610,6 +611,7 @@ IS_TRANSPARENT[BLOCK.SLIME_BLOCK] = true;
 IS_TRANSPARENT[BLOCK.HONEY_BLOCK] = true;
 IS_TRANSPARENT[BLOCK.ACACIA_LEAVES] = true;
 IS_TRANSPARENT[BLOCK.JUNGLE_LEAVES] = true;
+IS_TRANSPARENT[BLOCK.BARRIER] = true;
 
 export const isTransparent = (blockType: number) => {
   return IS_TRANSPARENT[blockType];
@@ -649,6 +651,8 @@ IS_CUTOUT[BLOCK.BUCKET] = true;
 IS_CUTOUT[BLOCK.WATER_BUCKET] = true;
 IS_CUTOUT[BLOCK.LAVA_BUCKET] = true;
 IS_CUTOUT[BLOCK.ENDER_PEARL] = true;
+IS_CUTOUT[BLOCK.SPIDER_GLOVES] = true;
+
 IS_CUTOUT[BLOCK.BONE] = true;
 IS_CUTOUT[BLOCK.GUNPOWDER] = true;
 IS_CUTOUT[BLOCK.STRING] = true;
@@ -760,6 +764,7 @@ IS_PLANT[BLOCK.BUCKET] = true;
 IS_PLANT[BLOCK.WATER_BUCKET] = true;
 IS_PLANT[BLOCK.LAVA_BUCKET] = true;
 IS_PLANT[BLOCK.ENDER_PEARL] = true;
+IS_PLANT[BLOCK.SPIDER_GLOVES] = true;
 IS_PLANT[BLOCK.BONE] = true;
 IS_PLANT[BLOCK.GUNPOWDER] = true;
 IS_PLANT[BLOCK.STRING] = true;
@@ -818,6 +823,7 @@ export const isFlatItem = (blockType: number) => {
     (blockType >= 500 && blockType <= 509) || // Minion, Skycoin, Materials
     blockType === 54 || // ASPECT_OF_THE_END
     blockType === 13 || // STICK
+    blockType === 550 || // SPIDER_GLOVES
     isAnyTorch(blockType) ||
     (blockType >= 317 && blockType <= 322) || // Iron Bars, Chain, Lanterns, Campfires
     blockType === 325 || // Cobweb

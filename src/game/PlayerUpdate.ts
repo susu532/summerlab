@@ -148,29 +148,31 @@ export function updatePlayer(player: Player, delta: number) {
   const isHose =
     activeTool?.type === ItemType.FLUID_CHOCOLATE_HOSE ||
     activeTool?.type === ItemType.WASHING_HOSE;
+  const isSpiderGloves = activeTool?.type === ItemType.SPIDER_GLOVES;
+
+  const direction = _rayDir
+    .set(
+      -Math.sin(player.cameraYaw) * Math.cos(player.cameraPitch),
+      Math.sin(player.cameraPitch),
+      -Math.cos(player.cameraYaw) * Math.cos(player.cameraPitch),
+    )
+    .normalize();
+  const rayOrigin = _rayOrigin.copy(player.playerHeadPos);
+  const hitResult = player.world.raycast(rayOrigin, direction, 5);
 
   // Handle Mining
   if (
     player.isLeftMouseDown &&
     !player.isDead &&
     !player.isSpectator &&
-    !isHose
+    !isHose &&
+    !isSpiderGloves
   ) {
     if (player.currentEmote) player.currentEmote = undefined;
     if (!player.isMining && !player.isFlying) {
       // It should have been started by onMouseDown, if not, wait for another click.
       // In survival we don't auto-start mining immediately on drag unless we are still holding left click after a block breaks.
     }
-
-    const direction = _rayDir
-      .set(
-        -Math.sin(player.cameraYaw) * Math.cos(player.cameraPitch),
-        Math.sin(player.cameraPitch),
-        -Math.cos(player.cameraYaw) * Math.cos(player.cameraPitch),
-      )
-      .normalize();
-    const rayOrigin = _rayOrigin.copy(player.playerHeadPos);
-    const hitResult = player.world.raycast(rayOrigin, direction, 5);
 
     if (hitResult.hit && hitResult.blockPos) {
       const blockType = player.world.getBlock(
@@ -431,7 +433,8 @@ export function updatePlayer(player: Player, delta: number) {
         (itemTypeNum >= 460 && itemTypeNum <= 472) ||
         itemTypeNum === 54 ||
         itemTypeNum === ItemType.FLUID_CHOCOLATE_HOSE ||
-        itemTypeNum === ItemType.WASHING_HOSE;
+        itemTypeNum === ItemType.WASHING_HOSE ||
+        itemTypeNum === ItemType.SPIDER_GLOVES;
       const isFood = itemTypeNum >= 456 && itemTypeNum <= 459;
       const isMaterial =
         itemTypeNum === 13 ||
@@ -493,6 +496,10 @@ export function updatePlayer(player: Player, delta: number) {
           player.fpHeldItemModel.scale.set(0.85, 0.85, 0.85); // Slightly smaller scale
           // Point outward slightly down, slight inward tilt for hose look
           player.fpHeldItemModel.rotation.set(-Math.PI / 2 + 0.3, 0.2, 0.1);
+        } else if (itemTypeNum === ItemType.SPIDER_GLOVES) {
+          player.fpHeldItemModel.position.set(0.3, -0.2, -0.35); // closer to screen
+          player.fpHeldItemModel.scale.set(1.2, 1.2, 1.2);
+          player.fpHeldItemModel.rotation.set(-Math.PI / 2 + 0.2, Math.PI / 16, 0);
         } else {
           // Standard tool position
           player.fpHeldItemModel.position.set(0.55, -0.4, -0.75);
@@ -658,7 +665,6 @@ export function updatePlayer(player: Player, delta: number) {
 
   // Animate character model
   player.renderer.animate(delta);
-  player.renderer.update(delta, player.isGliding);
 
   // Smooth camera step offsets
   if (player.cameraYOffset < 0) {
@@ -792,6 +798,7 @@ export function updatePlayer(player: Player, delta: number) {
 
     const equipItem = player.inventory.slots[player.hotbarIndex];
     const isBow = equipItem?.type === ItemType.BOW;
+    const isGrappling = equipItem?.type === ItemType.SPIDER_GLOVES && player.grapplePoint != null;
 
     if (isBow && player.inputController.bowChargeStart > 0) {
       // Charging animation
@@ -812,6 +819,14 @@ export function updatePlayer(player: Player, delta: number) {
         swingPosX += rumble;
         swingPosY += rumble;
       }
+    } else if (isGrappling) {
+      // Point fixed forward while grappling, rigid arm
+      swingRotX = 0;
+      swingRotY = 0;
+      swingRotZ = 0;
+      swingPosX = 0;
+      swingPosY = 0;
+      swingPosZ = 0;
     } else if (player.isSwinging) {
       // Minecraft-like snappy swing
       const t = player.swingTimer / Math.PI;
@@ -852,9 +867,9 @@ export function updatePlayer(player: Player, delta: number) {
     }
 
     // Idle breathing and walk bobbing (more natural movement)
-    const idleBobY = Math.sin(performance.now() * 0.002) * 0.01;
-    const walkBobX = isMoving ? Math.cos(player.walkCycle) * 0.04 : 0;
-    const walkBobY = isMoving ? Math.sin(player.walkCycle * 2) * 0.04 : 0;
+    const idleBobY = isGrappling ? 0 : Math.sin(performance.now() * 0.002) * 0.01;
+    const walkBobX = (isMoving && !isGrappling) ? Math.cos(player.walkCycle) * 0.04 : 0;
+    const walkBobY = (isMoving && !isGrappling) ? Math.sin(player.walkCycle * 2) * 0.04 : 0;
 
     // Apply rotations
     player.fpArmGroup.rotation.x = THREE.MathUtils.lerp(
@@ -958,6 +973,7 @@ export function updatePlayer(player: Player, delta: number) {
     maxHealth: skyBridgeManager.effectiveStats.maxHealth || 100,
     currentEmoji: player.currentEmoji,
     currentEmote: player.currentEmote,
+    grapplePoint: player.grapplePoint ? { x: player.grapplePoint.x, y: player.grapplePoint.y, z: player.grapplePoint.z } : null,
   };
 
   const stateHash = JSON.stringify(currentState);
@@ -992,4 +1008,10 @@ export function updatePlayer(player: Player, delta: number) {
       player.lastSyncEuler.copy(player.syncEuler);
     }
   }
+
+  // Ensure matrices are updated so world positions like grapple offset don't lag behind the camera/arms
+  player.camera.updateMatrixWorld(true);
+  player.modelGroup.updateMatrixWorld(true);
+  player.renderer.update(delta, player.isGliding);
+  player.renderer.updateGrappleLine();
 }

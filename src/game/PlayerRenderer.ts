@@ -47,6 +47,8 @@ export class PlayerRenderer {
   gliderRightWing: THREE.Mesh | null = null;
   gliderOpenAmount: number = 0;
 
+  grappleLine: THREE.Mesh | null = null;
+
   heldItemMesh: THREE.Mesh | null = null;
   heldItemModel: THREE.Group | null = null;
   offHandItemMesh: THREE.Mesh | null = null;
@@ -873,7 +875,8 @@ export class PlayerRenderer {
       (type >= 460 && type <= 472) ||
       type === 54 ||
       type === ItemType.FLUID_CHOCOLATE_HOSE ||
-      type === ItemType.WASHING_HOSE;
+      type === ItemType.WASHING_HOSE ||
+      type === ItemType.SPIDER_GLOVES;
     const isFood = type >= 456 && type <= 459;
     const isMaterial =
       type === 13 ||
@@ -983,6 +986,15 @@ export class PlayerRenderer {
         fpModelGrp.position.set(0.55 * side, -0.35, -0.65);
         fpModelGrp.scale.set(0.9, 0.9, 0.9);
         fpModelGrp.rotation.set(-Math.PI / 2 + 0.2, 0, 0.2 * side);
+      } else if (type === ItemType.SPIDER_GLOVES) {
+        model.position.set(0, -0.4, -0.1);
+        model.scale.set(1.1, 1.1, 1.1);
+        model.rotation.set(-Math.PI / 4, (Math.PI / 8) * side, (Math.PI / 16) * side);
+
+        // closer to screen
+        fpModelGrp.position.set(0.35 * side, -0.25, -0.4);
+        fpModelGrp.scale.set(1.1, 1.1, 1.1);
+        fpModelGrp.rotation.set(0.4, (-Math.PI / 8) * side, -0.1 * side);
       } else {
         model.position.set(0, -0.4, -0.1);
         model.scale.set(1.1, 1.1, 1.1);
@@ -1554,6 +1566,10 @@ export class PlayerRenderer {
           }
         }
       } else {
+        if (this.heldItemModel) {
+            this.heldItemModel.position.set(0, 0, 0); // Reset for normal items
+            this.heldItemModel.rotation.set(0, 0, 0);
+        }
         if (this.heldItemType === ItemType.BOW && this.heldItemModel) {
           this.heldItemModel.rotation.set(
             -Math.PI / 4,
@@ -1566,6 +1582,10 @@ export class PlayerRenderer {
             arrowMesh.visible = false;
             stringMesh.position.set(0.24, 0, 0);
           }
+        } else if (this.heldItemType === ItemType.SPIDER_GLOVES && this.heldItemModel) {
+          // Snap gloves to hand position and point forward
+          this.heldItemModel.position.set(0, -0.65, 0.1);
+          this.heldItemModel.rotation.set(-Math.PI / 2, 0, 0);
         }
       }
 
@@ -1696,5 +1716,40 @@ export class PlayerRenderer {
           Math.min(limitUp, this.player.headMesh.rotation.x),
         ) + headPitchOffset;
     }
+
+  }
+
+  public updateGrappleLine() {
+    if (this.player.grapplePoint) {
+      if (!this.grappleLine) {
+        const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const geometry = new THREE.CylinderGeometry(0.02, 0.02, 1, 8); // Thinner line
+        geometry.rotateX(Math.PI / 2);
+        this.grappleLine = new THREE.Mesh(geometry, material);
+        this.player.world.scene.add(this.grappleLine);
+      }
+      
+      let startPos = this.player.playerHeadPos.clone();
+      const nozzleOffset = new THREE.Vector3(0, 0.22, 0.08); // Offset to glove nozzle
+      
+      if (this.player.perspective === 0 && this.fpArmGroup && this.fpHeldItemModel) {
+            startPos.copy(nozzleOffset);
+            this.fpHeldItemModel.localToWorld(startPos);
+      } else if (this.heldItemModel) {
+            startPos.copy(nozzleOffset);
+            this.heldItemModel.localToWorld(startPos);
+      }
+      
+      const distance = startPos.distanceTo(this.player.grapplePoint);
+      this.grappleLine.position.copy(startPos).lerp(this.player.grapplePoint, 0.5);
+      this.grappleLine.scale.set(1, 1, distance);
+      this.grappleLine.lookAt(this.player.grapplePoint);
+    } else if (this.grappleLine) {
+      this.player.world.scene.remove(this.grappleLine);
+      this.grappleLine.geometry.dispose();
+      (this.grappleLine.material as THREE.Material).dispose();
+      this.grappleLine = null;
+    }
   }
 }
+

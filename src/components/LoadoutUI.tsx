@@ -40,7 +40,7 @@ export function LoadoutUI({ game, isMobile }: { game: Game | null, isMobile?: bo
     };
   }, [game, setIsOpen]);
 
-  const selectLoadout = (type: 'bow' | 'painter' | 'washer' | 'builder') => {
+  const selectLoadout = (type: 'bow' | 'painter' | 'washer' | 'builder' | 'spiderman') => {
     if (!game) return;
     
     // Clear inventory entirely to guarantee they ONLY receive the chosen item
@@ -53,6 +53,8 @@ export function LoadoutUI({ game, isMobile }: { game: Game | null, isMobile?: bo
       game.player.inventory.addItem(ItemType.FLUID_CHOCOLATE_HOSE, 1);
     } else if (type === 'washer') {
       game.player.inventory.addItem(ItemType.WASHING_HOSE, 1);
+    } else if (type === 'spiderman') {
+      game.player.inventory.addItem(ItemType.SPIDER_GLOVES, 1);
     } else if (type === 'builder') {
       game.player.inventory.isBuilder = true;
       // Add a variety of colored blocks
@@ -150,6 +152,16 @@ export function LoadoutUI({ game, isMobile }: { game: Game | null, isMobile?: bo
             </div>
             <span className="text-white font-bold mc-text-shadow text-lg">Builder</span>
             <span className="text-zinc-300 text-sm max-w-[120px] text-center">Starts with infinite blocks</span>
+          </button>
+          <button
+            onPointerDown={(e) => { e.preventDefault(); selectLoadout('spiderman'); }}
+            className="flex flex-col items-center gap-4 bg-[#7B7B7B] border-[3px] border-t-white border-l-white border-b-[#555555] border-r-[#555555] p-6 hover:brightness-110 active:mc-button-shadow transition-all"
+          >
+            <div className="w-16 h-16 bg-zinc-800 flex items-center justify-center border-2 border-black/50 shadow-inner">
+               <span className="text-4xl text-red-500">🕷️</span>
+            </div>
+            <span className="text-white font-bold mc-text-shadow text-lg">Spiderman</span>
+            <span className="text-zinc-300 text-sm max-w-[120px] text-center">Starts with Spider Gloves</span>
           </button>
         </div>
       </div>

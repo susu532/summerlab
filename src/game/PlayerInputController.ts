@@ -309,6 +309,7 @@ export class PlayerInputController {
     this.bowChargeStart = 0;
     this.isBlocking = false;
     this.player.isBlocking = false;
+    this.player.grapplePoint = null;
   }
 
   onKeyDown = (event: KeyboardEvent) => {
@@ -349,7 +350,9 @@ export class PlayerInputController {
       case keybinds.jump: 
         this.moveUp = true;
         this.keyUp = true;
-        if (!this.player.isFlying && !this.player.isSwimming && this.player.canJump) {
+        if (this.player.grapplePoint) {
+          this.player.grapplePoint = null;
+        } else if (!this.player.isFlying && !this.player.isSwimming && this.player.canJump) {
           this.player.velocity.y += this.player.jumpForce;
           
           if (this.isSprinting && (this.moveForward || this.moveBackward || this.moveLeft || this.moveRight)) {
@@ -493,6 +496,7 @@ export class PlayerInputController {
 
     const initialStack = this.player.inventory.slots[this.player.hotbarIndex];
     const isHose = initialStack?.type === ItemType.FLUID_CHOCOLATE_HOSE || initialStack?.type === ItemType.WASHING_HOSE;
+    const isSpiderGloves = initialStack?.type === ItemType.SPIDER_GLOVES;
 
     if (event.button === 0 && isHose) {
       this.player.isLeftMouseDown = true;
@@ -504,7 +508,7 @@ export class PlayerInputController {
       return;
     }
     
-    if (!(event.button === 2 && initialStack?.type === ItemType.BOW) && !isHose) {
+    if (!(event.button === 2 && initialStack?.type === ItemType.BOW) && !isHose && !isSpiderGloves) {
       this.player.isSwinging = true;
       this.player.swingTimer = 0;
     }
@@ -605,6 +609,23 @@ export class PlayerInputController {
         } else {
           useGameStore.getState().addMessage("Not enough mana!", "#55FFFF");
         }
+      }
+
+      if (selectedStack?.type === ItemType.SPIDER_GLOVES) {
+        // Do not change the grapple point while we are actively grappling
+        if (this.player.grapplePoint) return;
+
+        const hitResult = this.player.world.raycast(rayOrigin, direction, 100);
+        if (hitResult && hitResult.blockPos) {
+          this.player.grapplePoint = new THREE.Vector3(
+            hitResult.blockPos.x + 0.5,
+            hitResult.blockPos.y + 0.5,
+            hitResult.blockPos.z + 0.5
+          );
+          audioManager.playThwip();
+          audioManager.playWhoosh();
+        }
+        return; 
       }
     } else if (event.button === 0) { // Left click
       this.player.isLeftMouseDown = true;
@@ -1044,6 +1065,7 @@ export class PlayerInputController {
       this.player.isBlocking = false;
       this.isBlocking = false;
       this.isRightMouseDown = false;
+      this.player.grapplePoint = null;
     }
   }
 

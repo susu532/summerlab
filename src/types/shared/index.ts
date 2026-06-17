@@ -64,6 +64,7 @@ export interface IPlayerUpdate {
   skills?: any;
   currentEmoji?: string;
   currentEmote?: string;
+  grapplePoint?: { x: number; y: number; z: number } | null;
 }
 
 export interface IServerPlayer extends IPlayerUpdate {

@@ -2,6 +2,7 @@ import { useGameStore } from '../store/gameStore';
 import * as THREE from 'three';
 import { Player } from './Player';
 import { BLOCK, isSolidBlock, isSlab } from './TextureAtlas';
+import { ItemType } from './Inventory';
 import { audioManager } from './AudioManager';
 
 const _moveEuler = new THREE.Euler(0, 0, 0, 'YXZ');
@@ -126,14 +127,41 @@ export class PlayerPhysics {
     }
     
     // Track highest Y for fall damage
-    if (p.canJump || p.isFlying || p.isSwimming) {
+    if (p.canJump || p.isFlying || p.isSwimming || p.grapplePoint) {
       p.highestY = p.worldPosition.y;
     } else {
       p.highestY = Math.max(p.highestY, p.worldPosition.y);
     }
 
-    p.velocity.x *= Math.exp(-10.0 * delta);
-    p.velocity.z *= Math.exp(-10.0 * delta);
+    if (p.grapplePoint) {
+      const diff = p.grapplePoint.clone().sub(p.worldPosition);
+      const dist = diff.length();
+      const grappleDir = diff.clone().normalize();
+      
+      if (!(p as any).grappleLength) (p as any).grappleLength = dist;
+
+      // Reel in force
+      const pullForce = 45.0 + Math.max(0, dist - 5) * 2.0; 
+      p.velocity.add(grappleDir.multiplyScalar(pullForce * delta));
+      
+      // Artificial lift to counteract gravity slightly for a smoother swing curve
+      p.velocity.y += 18.0 * delta;
+
+      // Small drag for smooth swinging instead of rigid walking drag
+      p.velocity.x *= Math.exp(-2.0 * delta);
+      p.velocity.z *= Math.exp(-2.0 * delta);
+
+      // Release grapple if we get too close
+      if (dist < 2.5) {
+        p.grapplePoint = null;
+        (p as any).grappleLength = 0;
+      }
+    } else {
+      (p as any).grappleLength = 0;
+      // Normal walking/falling drag
+      p.velocity.x *= Math.exp(-10.0 * delta);
+      p.velocity.z *= Math.exp(-10.0 * delta);
+    }
     
     const horizontalVelocity = Math.sqrt(p.velocity.x * p.velocity.x + p.velocity.z * p.velocity.z);
     const isMoving = horizontalVelocity > 0.1;
@@ -350,8 +378,9 @@ export class PlayerPhysics {
         }
         
         // Fall damage calculation
+        const isSpiderMan = p.inventory.slots[p.hotbarIndex]?.type === ItemType.SPIDER_GLOVES;
         const fallDistance = p.highestY - currentPos.y;
-        if (fallDistance > 3.5 && !p.isFlying && !p.isSwimming && !p.world.isHub && !p.isGliding && (Date.now() - p.lastRespawnTime > 5000)) {
+        if (fallDistance > 3.5 && !p.isFlying && !p.isSwimming && !p.world.isHub && !p.isGliding && !isSpiderMan && (Date.now() - p.lastRespawnTime > 5000)) {
           const damage = Math.floor(fallDistance - 3);
           if (damage > 0) {
             p.takeDamage(damage * 5, undefined, false, "died of fall damage"); // 5 damage per block fallen (20 health max usually)

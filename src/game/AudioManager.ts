@@ -8,7 +8,6 @@ class AudioManager {
   private audioLoader: THREE.AudioLoader;
   private initialized: boolean = false;
   private ambientSounds: Map<string, THREE.Audio> = new Map();
-  private canPlayOgg: boolean = true;
 
   // Background Music (BGM) management
   private currentMusic: HTMLAudioElement | null = null;
@@ -19,17 +18,6 @@ class AudioManager {
 
   constructor() {
     this.audioLoader = new THREE.AudioLoader();
-    
-    // Detect Ogg Vorbis support — iOS Safari cannot decode .ogg at all
-    try {
-      const testAudio = new Audio();
-      this.canPlayOgg = testAudio.canPlayType('audio/ogg; codecs="vorbis"') !== '';
-    } catch {
-      this.canPlayOgg = false;
-    }
-    if (!this.canPlayOgg) {
-      console.warn('[AudioManager] Ogg Vorbis not supported (iOS Safari). All .ogg sounds will be skipped. Host .mp3 alternatives for full audio support.');
-    }
     
     if (typeof window !== 'undefined') {
       this.listener = new THREE.AudioListener();
@@ -151,8 +139,6 @@ class AudioManager {
   public playMusic(key: keyof typeof SOUND_URLS) {
     const url = SOUND_URLS[key];
     if (!url) return;
-    // Skip .ogg music on browsers that don't support it
-    if (!this.canPlayOgg && url.endsWith('.ogg')) return;
 
     if (this.currentMusic) {
       if (this.currentMusic.src === url) return; // Already playing
@@ -175,9 +161,6 @@ class AudioManager {
   }
 
   private loadSound(name: string, url: string) {
-    // Skip .ogg files on browsers that don't support them (iOS Safari)
-    if (!this.canPlayOgg && url.endsWith('.ogg')) return;
-    
     const sound = new THREE.Audio(this.listener);
     this.audioLoader.load(url, (buffer) => {
       sound.setBuffer(buffer);
@@ -189,9 +172,6 @@ class AudioManager {
   }
 
   private loadAmbient(name: string, url: string, volume: number = 0.1) {
-    // Skip .ogg files on browsers that don't support them (iOS Safari)
-    if (!this.canPlayOgg && url.endsWith('.ogg')) return;
-    
     const sound = new THREE.Audio(this.listener);
     this.audioLoader.load(url, (buffer) => {
       sound.setBuffer(buffer);
@@ -306,6 +286,79 @@ class AudioManager {
       case 'wood': this.playPositional('step_wood', position, 0.3, pitch); break;
       default: this.playPositional('step_grass', position, 0.3, pitch);
     }
+  }
+
+  public playThwip() {
+    if (!this.listener) return;
+    const ctx = this.listener.context;
+    if (ctx.state === 'suspended') ctx.resume();
+
+    const t = ctx.currentTime;
+    const vol = settingsManager.getSettings().volume;
+    
+    const bufferSize = ctx.sampleRate * 0.25; 
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+    
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+    
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(6000, t);
+    filter.frequency.exponentialRampToValueAtTime(300, t + 0.15);
+    filter.Q.value = 1.0;
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(vol * 0.8, t + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    
+    noise.start(t);
+  }
+
+  public playWhoosh() {
+    if (!this.listener) return;
+    const ctx = this.listener.context;
+    if (ctx.state === 'suspended') ctx.resume();
+
+    const t = ctx.currentTime;
+    const vol = settingsManager.getSettings().volume;
+    
+    const dur = 1.0;
+    const bufferSize = ctx.sampleRate * dur;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * 0.5;
+    }
+    
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+    
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(200, t);
+    filter.frequency.exponentialRampToValueAtTime(2000, t + dur * 0.4);
+    filter.frequency.exponentialRampToValueAtTime(200, t + dur);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(vol * 0.4, t + dur * 0.4);
+    gain.gain.linearRampToValueAtTime(0.01, t + dur);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    
+    noise.start(t);
   }
 }
 
