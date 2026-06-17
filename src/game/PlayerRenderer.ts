@@ -796,6 +796,20 @@ export class PlayerRenderer {
     }
   }
 
+  private disposeGroup(group: THREE.Group) {
+    while (group.children.length > 0) {
+      const child = group.children[0];
+      group.remove(child);
+      child.traverse((c: any) => {
+        if (c.geometry) c.geometry.dispose();
+        if (c.material) {
+          if (Array.isArray(c.material)) c.material.forEach((m: any) => m.dispose());
+          else c.material.dispose();
+        }
+      });
+    }
+  }
+
   private updateItemHand(type: number, isOffHand: boolean) {
     if (isOffHand && this.offHandItemType === type) return;
     if (!isOffHand && this.heldItemType === type) return;
@@ -885,7 +899,7 @@ export class PlayerRenderer {
       fpModelGrp.visible = true;
 
       if (currentModelType !== type) {
-        model.clear();
+        this.disposeGroup(model);
         const itemModel = createItemModel(type as ItemType);
         model.add(itemModel);
         if (isOffHand) this.currentOffHandModelType = type;
@@ -893,7 +907,7 @@ export class PlayerRenderer {
       }
 
       if (currentFpModelType !== type) {
-        fpModelGrp.clear();
+        this.disposeGroup(fpModelGrp);
         const fpHeldModel = createItemModel(type as ItemType);
         const isPerformance = settingsManager.getSettings().performanceMode;
         // Enable receiveShadow for all first-person sub-models

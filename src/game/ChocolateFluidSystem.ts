@@ -32,6 +32,7 @@ export class ChocolateFluidSystem {
   projectileAges: number[] = [];
   projectileInitialScales: number[] = [];
   projectileColors: THREE.Color[] = [];
+  projectileIsLocal: boolean[] = [];
   projectileWriteIdx = 0;
   
   // Splats (painted decays)
@@ -51,7 +52,7 @@ export class ChocolateFluidSystem {
   minProjIdx = 0; // Will be set to maxProjectiles in constructor
   maxProjIdx = -1;
 
-  emitRequests: { origin: THREE.Vector3, dir: THREE.Vector3, isSpray: boolean, color: THREE.Color, velocity: THREE.Vector3, lastOrigin?: THREE.Vector3 }[] = [];
+  emitRequests: { origin: THREE.Vector3, dir: THREE.Vector3, isSpray: boolean, color: THREE.Color, velocity: THREE.Vector3, lastOrigin?: THREE.Vector3, isLocal?: boolean }[] = [];
 
   splatGrid = new Map<string, { idx: number, timestamp: number, colorHex: number }>();
   splatKeys: string[] = [];
@@ -137,6 +138,7 @@ this.maxSplats = isMobile ? 30000 : 200000;
       this.projectileAges.push(0);
       this.projectileInitialScales.push(1.35);
       this.projectileColors.push(defaultColor.clone());
+      this.projectileIsLocal.push(false);
     }
     this.projectileMesh.instanceMatrix.needsUpdate = true;
     this.projectileMesh.instanceColor.needsUpdate = true;
@@ -281,6 +283,7 @@ this.maxSplats = isMobile ? 30000 : 200000;
         this.projectileInitialScales[idx] = spawnThickness; // Store thickness at spawn time
         this.projectileMesh.setColorAt(idx, req.color);
         this.projectileColors[idx].copy(req.color);
+        this.projectileIsLocal[idx] = req.isLocal || false;
         
         const alpha = req.color.getHex() === 0x3889f0 ? 0.25 : 1.0;
         this.projectileMesh.geometry.attributes.instanceAlpha.setX(idx, alpha);
@@ -368,8 +371,8 @@ this.maxSplats = isMobile ? 30000 : 200000;
                                      hitBlock !== ItemType.FLOWER_YELLOW &&
                                      hitBlock !== ItemType.WATER;
 
-                    if (canSplat) {
-                        this.spawnSplat(hitInfo.hitPoint, _tempHitNorm, this.projectileColors[i]);
+                    if (canSplat && this.projectileIsLocal[i]) {
+                        this.spawnSplat(hitInfo.hitPoint, _tempHitNorm, this.projectileColors[i], false);
                     }
                     
                     hideNow = true;
@@ -620,7 +623,7 @@ this.maxSplats = isMobile ? 30000 : 200000;
      }
   }
 
-  emit(origin: THREE.Vector3, direction: THREE.Vector3, isSpray: boolean = false, color?: THREE.Color, velocity?: THREE.Vector3) {
+  emit(origin: THREE.Vector3, direction: THREE.Vector3, isSpray: boolean = false, color?: THREE.Color, velocity?: THREE.Vector3, isLocal: boolean = false) {
     // Find if this specific emitter (like local player) is already emitting so we can interpolate origin
     // For simplicity, we just use a basic distance check to link origins, or let callers pass their lastOrigin.
     // To make it fully robust for multiple emitters, we should let them pass their ID, but this is a lightweight approach.
@@ -630,6 +633,7 @@ this.maxSplats = isMobile ? 30000 : 200000;
         isSpray: isSpray,
         color: color ? color.clone() : new THREE.Color('#3d1c04'),
         velocity: velocity ? velocity.clone() : new THREE.Vector3(),
+        isLocal: isLocal
     });
   }
 

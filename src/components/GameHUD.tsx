@@ -83,7 +83,7 @@ function CrosshairTargetInfo({
     return () => cancelAnimationFrame(afId);
   }, [game]);
 
-  if (!targetInfo.type || currentMode === "summerlab") return null;
+  if (!targetInfo.type) return null;
 
   return (
     <div className="absolute top-6 px-2 py-1 bg-black/80 text-[12px] text-white font-sans drop-shadow-[1px_1px_0_rgba(0,0,0,1)] whitespace-nowrap">
@@ -144,6 +144,8 @@ export function GameHUD({ game, isMobile, showDebug, setPauseMenuOpen }: any) {
   const isTyping = useUI((state) => state.isTyping);
   const setTyping = useUI((state) => state.setTyping);
   const currentMode = useGameStore((state) => state.currentMode);
+
+  const isInventoryOpen = useUI((state) => state.isInventoryOpen);
 
   return (
     <>
@@ -264,7 +266,7 @@ export function GameHUD({ game, isMobile, showDebug, setPauseMenuOpen }: any) {
       )}
 
       {/* Toolbar */}
-      {isHUDVisible && currentMode !== "hub" && <HotbarUI game={game} />}
+      {isHUDVisible && currentMode !== "hub" && !isInventoryOpen && <HotbarUI game={game} />}
     </>
   );
 }

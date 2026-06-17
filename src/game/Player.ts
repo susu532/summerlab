@@ -601,11 +601,13 @@ export class Player {
     }
 
     skyBridgeManager.stats.health -= actualDamage;
+    if (skyBridgeManager.stats.health < 0) skyBridgeManager.stats.health = 0;
+    this.health = skyBridgeManager.stats.health;
+    
     if (actualDamage > 0) {
       skyBridgeManager.lastDamageTime = performance.now();
     }
-    if (skyBridgeManager.stats.health < 0) skyBridgeManager.stats.health = 0;
-    this.health = skyBridgeManager.stats.health;
+    
     audioManager.play("hurt", 0.6, 0.9 + Math.random() * 0.2);
 
     if (this.health <= 0) {

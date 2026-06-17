@@ -186,6 +186,7 @@ export class InteractionSystem implements ISystem {
             isSpray,
             fluidColor,
             this.game.player.velocity,
+            true
           );
         }
       }

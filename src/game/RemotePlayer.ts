@@ -664,6 +664,20 @@ export class RemotePlayer {
     this.updateItem(renderOffHandType, true);
   }
 
+  private disposeGroup(group: THREE.Group) {
+    while (group.children.length > 0) {
+      const child = group.children[0];
+      group.remove(child);
+      child.traverse((c: any) => {
+        if (c.geometry) c.geometry.dispose();
+        if (c.material) {
+          if (Array.isArray(c.material)) c.material.forEach((m: any) => m.dispose());
+          else c.material.dispose();
+        }
+      });
+    }
+  }
+
   private updateItem(type: number, isOffHand: boolean) {
     const currentType = isOffHand
       ? this.renderedOffHandItemType
@@ -727,7 +741,7 @@ export class RemotePlayer {
       model.visible = true;
 
       if (currentModelType !== type) {
-        model.clear();
+        this.disposeGroup(model);
         const itemModel = createItemModel(type as ItemType);
         model.add(itemModel);
         if (isOffHand) this.currentOffHandModelType = type;

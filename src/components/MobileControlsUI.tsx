@@ -144,6 +144,7 @@ export const MobileControlsUI: React.FC<{ game?: any }> = ({ game }) => {
   const isButtonAttacking = useRef(false);
 
   const [joystick, setJoystick] = useState({ x: 0, y: 0 });
+  const [isCrouched, setIsCrouched] = useState(false);
   const joystickRef = useRef<HTMLDivElement>(null);
   const joystickPointerId = useRef<number | null>(null);
   const joystickOriginRef = useRef<{ x: number; y: number } | null>(null);
@@ -725,15 +726,11 @@ export const MobileControlsUI: React.FC<{ game?: any }> = ({ game }) => {
 
         {/* Crouch Button (Bottom) */}
         <button
-          className="absolute bottom-0 landscape:bottom-6 left-1/2 -translate-x-1/2 mobile-button pass-through-button w-16 h-16 rounded-full bg-white/20 border-[3px] border-white/40 flex items-center justify-center active:bg-white/40 opacity-80 pointer-events-auto shadow-md"
+          className={`absolute bottom-0 landscape:bottom-6 left-1/2 -translate-x-1/2 mobile-button pass-through-button w-16 h-16 rounded-full border-[3px] border-white/40 flex items-center justify-center opacity-80 pointer-events-auto shadow-md ${isCrouched ? 'bg-white/50' : 'bg-white/20'}`}
           onTouchStart={(e) => {
-            window.mobileInputs.isCrouching = true;
-          }}
-          onTouchEnd={(e) => {
-            window.mobileInputs.isCrouching = false;
-          }}
-          onTouchCancel={(e) => {
-            window.mobileInputs.isCrouching = false;
+            const next = !isCrouched;
+            setIsCrouched(next);
+            window.mobileInputs.isCrouching = next;
           }}
         >
           <ArrowDown size={26} className="text-white drop-shadow-md" />

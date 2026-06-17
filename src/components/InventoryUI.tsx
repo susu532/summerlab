@@ -26,10 +26,11 @@ interface InventoryUIProps {
   isOpen: boolean;
   onClose: () => void;
   onDropItem?: (type: ItemType, count: number) => void;
+  isWorkbench?: boolean;
 }
 
-export const InventoryUI = React.memo<InventoryUIProps>(({ inventory, isOpen, onClose, onDropItem }) => {
-  const [craftingGrid, setCraftingGrid] = useState<(ItemStack | null)[]>(new Array(4).fill(null));
+export const InventoryUI = React.memo<InventoryUIProps>(({ inventory, isOpen, onClose, onDropItem, isWorkbench = false }) => {
+  const [craftingGrid, setCraftingGrid] = useState<(ItemStack | null)[]>(new Array(isWorkbench ? 9 : 4).fill(null));
   const [craftingResult, setCraftingResult] = useState<ItemStack | null>(null);
   const [heldItem, setHeldItem] = useState<ItemStack | null>(null);
   const [hoveredItem, setHoveredItem] = useState<ItemStack | null>(null);
@@ -73,6 +74,7 @@ export const InventoryUI = React.memo<InventoryUIProps>(({ inventory, isOpen, on
         if (item) itemsToReturn.push({ ...item });
       });
       
+      let changedAny = false;
       itemsToReturn.forEach(item => {
         const remaining = inventory.addItem(item.type, item.count, item.metadata);
         
@@ -80,9 +82,14 @@ export const InventoryUI = React.memo<InventoryUIProps>(({ inventory, isOpen, on
         if (remaining > 0 && onDropItem) {
           onDropItem(item.type, remaining);
         }
+        changedAny = true;
       });
 
-      setCraftingGrid(new Array(4).fill(null));
+      if (changedAny) {
+        useGameStore.getState().incrementInventoryVersion();
+      }
+
+      setCraftingGrid(new Array(isWorkbench ? 9 : 4).fill(null));
       setHeldItem(null);
       setHoveredItem(null);
     }
@@ -111,9 +118,9 @@ export const InventoryUI = React.memo<InventoryUIProps>(({ inventory, isOpen, on
 
   useEffect(() => {
     const inputTypes = craftingGrid.map(s => s?.type ?? null);
-    const result = checkRecipe(inputTypes, false);
+    const result = checkRecipe(inputTypes, isWorkbench);
     setCraftingResult(result);
-  }, [craftingGrid]);
+  }, [craftingGrid, isWorkbench]);
 
   const handleSlotInteraction = useStableCallback((type: 'inv' | 'grid', index: number, isHotbar: boolean = false, button: number, isShift: boolean, isEnter: boolean) => {
     const actualIndex = isHotbar ? index : index + 9;
@@ -135,11 +142,11 @@ export const InventoryUI = React.memo<InventoryUIProps>(({ inventory, isOpen, on
             
             if (!target) {
               if (type === 'inv') {
-                inventory.slots[actualIndex] = { type: heldItem.type, count: 1 };
+                inventory.slots[actualIndex] = { ...heldItem, count: 1 };
               } else {
                 setCraftingGrid(prev => {
                   const next = [...prev];
-                  next[index] = { type: heldItem.type, count: 1 };
+                  next[index] = { ...heldItem, count: 1 };
                   return next;
                 });
               }
@@ -157,7 +164,7 @@ export const InventoryUI = React.memo<InventoryUIProps>(({ inventory, isOpen, on
             if (!target || target.type === heldItem.type) {
               if (type === 'inv') {
                 if (!inventory.slots[actualIndex]) {
-                  inventory.slots[actualIndex] = { type: heldItem.type, count: 1 };
+                  inventory.slots[actualIndex] = { ...heldItem, count: 1 };
                 } else if (inventory.slots[actualIndex]!.count < getMaxStack(heldItem.type)) {
                   inventory.slots[actualIndex] = { ...inventory.slots[actualIndex]!, count: inventory.slots[actualIndex]!.count + 1 };
                 } else {
@@ -167,7 +174,7 @@ export const InventoryUI = React.memo<InventoryUIProps>(({ inventory, isOpen, on
                 setCraftingGrid(prev => {
                   const next = [...prev];
                   if (!next[index]) {
-                    next[index] = { type: heldItem.type, count: 1 };
+                    next[index] = { ...heldItem, count: 1 };
                   } else if (next[index]!.count < getMaxStack(heldItem.type)) {
                     next[index] = { ...next[index]!, count: next[index]!.count + 1 };
                   }
@@ -222,7 +229,7 @@ export const InventoryUI = React.memo<InventoryUIProps>(({ inventory, isOpen, on
         if (remaining > 0) {
           for (let i = targetRange[0]; i <= targetRange[1]; i++) {
             if (!inventory.slots[i]) {
-              inventory.slots[i] = { type: slotItem.type, count: remaining };
+              inventory.slots[i] = { ...slotItem, count: remaining };
               remaining = 0;
               break;
             }
@@ -282,7 +289,7 @@ export const InventoryUI = React.memo<InventoryUIProps>(({ inventory, isOpen, on
       if (!heldItem && slotItem) {
         // Split stack
         const half = Math.ceil(slotItem.count / 2);
-        setHeldItem({ type: slotItem.type, count: half });
+        setHeldItem({ ...slotItem, count: half });
         setCraftingGrid(prev => {
           const next = [...prev];
           const remaining = slotItem.count - half;
@@ -298,7 +305,7 @@ export const InventoryUI = React.memo<InventoryUIProps>(({ inventory, isOpen, on
               next[index] = { ...next[index]!, count: next[index]!.count + 1 };
             }
           } else {
-            next[index] = { type: heldItem.type, count: 1 };
+            next[index] = { ...heldItem, count: 1 };
           }
           return next;
         });
@@ -309,11 +316,10 @@ export const InventoryUI = React.memo<InventoryUIProps>(({ inventory, isOpen, on
       if (heldItem && !slotItem) {
         setCraftingGrid(prev => {
           const next = [...prev];
-          next[index] = { ...heldItem, count: 1 };
+          next[index] = { ...heldItem };
           return next;
         });
-        const newHeld = { ...heldItem, count: heldItem.count - 1 };
-        setHeldItem(newHeld.count > 0 ? newHeld : null);
+        setHeldItem(null);
       } else if (!heldItem && slotItem) {
         setHeldItem({ ...slotItem });
         setCraftingGrid(prev => {
@@ -355,7 +361,7 @@ export const InventoryUI = React.memo<InventoryUIProps>(({ inventory, isOpen, on
       
       while (true) {
         const inputTypes = currentGrid.map(s => s?.type ?? null);
-        const result = checkRecipe(inputTypes, false);
+        const result = checkRecipe(inputTypes, isWorkbench);
         if (!result) break;
 
         // Check if we can fit it in inventory
@@ -395,7 +401,7 @@ export const InventoryUI = React.memo<InventoryUIProps>(({ inventory, isOpen, on
         if (toAdd > 0) {
           for (let i = 0; i < 36; i++) {
             if (!inventory.slots[i]) {
-              inventory.slots[i] = { type: result.type, count: toAdd };
+              inventory.slots[i] = { ...result, count: toAdd };
               toAdd = 0;
               break;
             }
@@ -446,7 +452,7 @@ export const InventoryUI = React.memo<InventoryUIProps>(({ inventory, isOpen, on
     if (gathered < needed) {
       const nextGrid = [...craftingGrid];
       let gridChanged = false;
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < (isWorkbench ? 9 : 4); i++) {
         const slot = nextGrid[i];
         if (slot && slot.type === heldItem.type) {
           const take = Math.min(needed - gathered, slot.count);
@@ -544,35 +550,34 @@ export const InventoryUI = React.memo<InventoryUIProps>(({ inventory, isOpen, on
             >
           <div className="flex flex-wrap items-center gap-2 md:gap-4 mb-4 border-b-2 border-[#373737]/30 pb-2">
           <span className="font-bold text-sm md:text-lg px-2 md:px-3 py-1 text-[#373737]">
-            Survival Inventory
+            {isWorkbench ? "Crafting Table" : "Survival Inventory"}
           </span>
           
-          <div className="flex items-center gap-2 ml-4 px-3 py-1 bg-yellow-400/20 border border-yellow-400/40 rounded-sm text-yellow-600 font-bold">
-            <span className="text-sm uppercase tracking-wider opacity-60">Balance:</span>
-            <span>{skycoins.toLocaleString()} Skycoins</span>
-          </div>
+    
 
           <button onClick={onClose} className="ml-auto text-[#373737] hover:text-red-600 font-bold px-2 text-xl">✕</button>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 mb-4 sm:mb-8">
-          <div className="flex sm:flex-col gap-4">
-            <PlayerPreview />
-            <div className="flex flex-col items-center gap-1 justify-center">
-                  <span className="text-[8px] sm:text-[10px] uppercase opacity-60 font-bold">Off-hand</span>
-                  <Slot 
-                    item={inventory.slots[Inventory.OFF_HAND_SLOT]}
-                    onClick={(item, button, isShift) => handleSlotInteraction('inv', Inventory.OFF_HAND_SLOT, true, button, isShift, false)}
-                    onDoubleClick={() => handleDoubleClick()}
-                    onHover={setHoveredItem}
-                    isDragging={dragState.isDragging}
-                    dragButton={dragState.button}
-                  />
-                </div>
+        <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 mb-4 sm:mb-8 justify-center">
+          {!isWorkbench && (
+            <div className="flex sm:flex-col gap-4">
+              <PlayerPreview />
+              <div className="flex flex-col items-center gap-1 justify-center">
+                    <span className="text-[8px] sm:text-[10px] uppercase opacity-60 font-bold">Off-hand</span>
+                    <Slot 
+                      item={inventory.slots[Inventory.OFF_HAND_SLOT]}
+                      onClick={(item, button, isShift) => handleSlotInteraction('inv', Inventory.OFF_HAND_SLOT, true, button, isShift, false)}
+                      onDoubleClick={() => handleDoubleClick()}
+                      onHover={setHoveredItem}
+                      isDragging={dragState.isDragging}
+                      dragButton={dragState.button}
+                    />
               </div>
+            </div>
+          )}
 
-              <div className="flex flex-col items-center justify-center">
-                <CraftingGrid 
+          <div className="flex flex-col items-center justify-center">
+            <CraftingGrid 
                   craftingGrid={craftingGrid}
                   craftingResult={craftingResult}
                   handleSlotInteraction={handleSlotInteraction}

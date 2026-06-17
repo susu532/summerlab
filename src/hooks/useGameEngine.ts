@@ -223,7 +223,10 @@ export function useGameEngine() {
   }, []);
 
   const [showDebug, setShowDebug] = useState(false);
-  const pointerLockSM = useRef(new PointerLockStateMachine());
+  const pointerLockSM = useRef<PointerLockStateMachine | null>(null);
+  if (!pointerLockSM.current) {
+    pointerLockSM.current = new PointerLockStateMachine();
+  }
   const suppressPauseMenu = useRef(false);
 
   const [gameKey, setGameKey] = useState(0);
@@ -665,7 +668,7 @@ export function useGameEngine() {
         else if (serverName.startsWith("voidtrail")) displayName = "Void Trail";
         networkManager.receiveLocalMessage(
           "System",
-          `§bWelcome to ${displayName}!`,
+          `§bWelcome to Summer Lab!`,
         );
       }, 2000);
     }

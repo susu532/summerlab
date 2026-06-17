@@ -60,6 +60,7 @@ export class PlayerInputController {
     document.addEventListener('mousedown', this.onMouseDown);
     document.addEventListener('mouseup', this.onMouseUp);
     document.addEventListener('mousemove', this.onMouseMove);
+    window.addEventListener('wheel', this.onWheel, { passive: false });
     
     // Add listeners to reset input when focus is lost or cursor is unlocked
     window.addEventListener('blur', this.resetInput);
@@ -71,6 +72,12 @@ export class PlayerInputController {
   onPointerLockChange = () => {
     if (document.pointerLockElement !== this.player.controls.domElement) {
       this.resetInput();
+    }
+  };
+
+  onWheel = (e: WheelEvent) => {
+    if (e.ctrlKey) {
+      e.preventDefault();
     }
   };
 
@@ -309,6 +316,10 @@ export class PlayerInputController {
     if (this.isInputFocused()) return;
     const { keybinds } = settingsManager.getSettings();
     
+    if (Object.values(keybinds).includes(event.code as any)) {
+      event.preventDefault();
+    }
+
     switch (event.code) {
       case keybinds.forward: this.moveForward = true; this.keyForward = true; break;
       case keybinds.left: this.moveLeft = true; this.keyLeft = true; break;
@@ -342,10 +353,13 @@ export class PlayerInputController {
           this.player.velocity.y += this.player.jumpForce;
           
           if (this.isSprinting && (this.moveForward || this.moveBackward || this.moveLeft || this.moveRight)) {
-            const sprintBoost = new THREE.Vector3(0, 0, -2.5);
-            sprintBoost.applyEuler(new THREE.Euler(0, this.player.cameraYaw, 0, 'YXZ'));
-            this.player.velocity.x += sprintBoost.x;
-            this.player.velocity.z += sprintBoost.z;
+            const sprintBoost = 2.5;
+            const boostDirX = Number(this.moveRight) - Number(this.moveLeft);
+            const boostDirZ = Number(this.moveForward) - Number(this.moveBackward);
+            const dirLength = Math.hypot(boostDirX, boostDirZ) || 1;
+            
+            this.player.velocity.x += (boostDirX / dirLength) * sprintBoost;
+            this.player.velocity.z -= (boostDirZ / dirLength) * sprintBoost;
           }
           
           this.player.canJump = false;
@@ -753,6 +767,12 @@ export class PlayerInputController {
       } else if (event.button === 2) { // Right click: place block
         const blockType = this.player.world.getBlock(hitResult.blockPos.x, hitResult.blockPos.y, hitResult.blockPos.z);
         
+        if (blockType === ItemType.CRAFTING_TABLE) {
+          window.dispatchEvent(new CustomEvent('openWorkbench'));
+          this.player.controls.unlock();
+          return;
+        }
+
         if (blockType === ItemType.CHEST || blockType === ItemType.ENDER_CHEST || blockType === ItemType.CHEST_REVERSED) {
           const chestId = `${hitResult.blockPos.x},${hitResult.blockPos.y},${hitResult.blockPos.z}`;
           if (blockType !== ItemType.CHEST && blockType !== ItemType.CHEST_REVERSED && blockType !== ItemType.ENDER_CHEST) {
@@ -924,9 +944,17 @@ export class PlayerInputController {
           return;
         }
 
-        // Disable building at spawn (5 block radius)
-        if (Math.abs(hitResult.prevPos.x) <= 5 && Math.abs(hitResult.prevPos.z) <= 5) {
+        // Disable building at spawn (5 block radius) for SkyCastles or other modes if needed, but not SummerLab
+        if (!this.player.world.isSummerLab && Math.abs(hitResult.prevPos.x) <= 5 && Math.abs(hitResult.prevPos.z) <= 5) {
           return;
+        }
+
+        if (this.player.world.isSummerLab) {
+          const targetBlock = this.player.world.getBlock(hitResult.blockPos.x, hitResult.blockPos.y, hitResult.blockPos.z);
+          // Block type 2 is GRASS. Only prevent placing on top (prevPos.y > blockPos.y)
+          if (targetBlock === 2 && hitResult.prevPos.y > hitResult.blockPos.y) {
+            return;
+          }
         }
 
         const success = this.player.world.setBlock(hitResult.prevPos.x, hitResult.prevPos.y, hitResult.prevPos.z, placeType, true, this.player.isFlying);

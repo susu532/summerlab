@@ -254,16 +254,7 @@ export function updatePlayer(player: Player, delta: number) {
       player.miningTarget = null;
       if (player.breakingMesh) player.breakingMesh.visible = false;
     } else {
-      const direction = _rayDir
-        .set(
-          -Math.sin(player.cameraYaw) * Math.cos(player.cameraPitch),
-          Math.sin(player.cameraPitch),
-          -Math.cos(player.cameraYaw) * Math.cos(player.cameraPitch),
-        )
-        .normalize();
-      const rayOrigin = _rayOrigin.copy(player.playerHeadPos);
-      const hitResult = player.world.raycast(rayOrigin, direction, 5);
-
+      // Use the hitResult calculated earlier in the function
       if (
         hitResult.hit &&
         hitResult.blockPos &&
