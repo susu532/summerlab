@@ -460,7 +460,7 @@ this.maxSplats = isMobile ? 30000 : 200000;
     }
     
     if (this.pendingSplats.length > 0) {
-        if (!this.lastSplatEmitTime || Date.now() - this.lastSplatEmitTime > 100) {
+        if (!this.lastSplatEmitTime || Date.now() - this.lastSplatEmitTime > 33) {
            networkManager.socket.emit("splats", this.pendingSplats);
            this.pendingSplats = [];
            this.lastSplatEmitTime = Date.now();
@@ -468,7 +468,7 @@ this.maxSplats = isMobile ? 30000 : 200000;
     }
     
     if (this.pendingCleanSplats.length > 0) {
-        if (!this.lastCleanEmitTime || Date.now() - this.lastCleanEmitTime > 100) {
+        if (!this.lastCleanEmitTime || Date.now() - this.lastCleanEmitTime > 33) {
            networkManager.socket.emit("cleanSplats", this.pendingCleanSplats);
            this.pendingCleanSplats = [];
            this.lastCleanEmitTime = Date.now();
