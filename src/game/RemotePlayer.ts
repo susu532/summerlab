@@ -1937,7 +1937,7 @@ export class RemotePlayer {
     if (this.grapplePoint && this.group.parent) {
       if (!this.grappleLine) {
         const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
-        const geometry = new THREE.CylinderGeometry(0.02, 0.02, 1, 8); // Thinner line
+        const geometry = new THREE.CylinderGeometry(0.005, 0.005, 1, 8); // Thinner line
         geometry.rotateX(Math.PI / 2);
         this.grappleLine = new THREE.Mesh(geometry, material);
         this.group.parent.add(this.grappleLine);
@@ -1948,7 +1948,17 @@ export class RemotePlayer {
       
       this.group.updateMatrixWorld(true);
 
+      let nozzle = null;
       if (this.heldItemModel) {
+        nozzle = this.heldItemModel.getObjectByName('spider_nozzle');
+      }
+
+      if (nozzle) {
+        nozzle.getWorldPosition(startPos);
+      } else if (this.heldItemModel && this.heldItemModel.children.length > 0) {
+        startPos.copy(nozzleOffset);
+        this.heldItemModel.children[0].localToWorld(startPos);
+      } else if (this.heldItemModel) {
         startPos.copy(nozzleOffset);
         this.heldItemModel.localToWorld(startPos);
       } else {

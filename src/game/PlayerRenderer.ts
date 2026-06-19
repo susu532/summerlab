@@ -1723,7 +1723,7 @@ export class PlayerRenderer {
     if (this.player.grapplePoint) {
       if (!this.grappleLine) {
         const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
-        const geometry = new THREE.CylinderGeometry(0.02, 0.02, 1, 8); // Thinner line
+        const geometry = new THREE.CylinderGeometry(0.005, 0.005, 1, 8); // Thinner line
         geometry.rotateX(Math.PI / 2);
         this.grappleLine = new THREE.Mesh(geometry, material);
         this.player.world.scene.add(this.grappleLine);
@@ -1732,9 +1732,21 @@ export class PlayerRenderer {
       let startPos = this.player.playerHeadPos.clone();
       const nozzleOffset = new THREE.Vector3(0, 0.22, 0.08); // Offset to glove nozzle
       
-      if (this.player.perspective === 0 && this.fpArmGroup && this.fpHeldItemModel) {
+      let nozzle = null;
+      if (this.player.perspective === 0 && this.fpHeldItemModel) {
+        nozzle = this.fpHeldItemModel.getObjectByName('spider_nozzle');
+      } else if (this.heldItemModel) {
+        nozzle = this.heldItemModel.getObjectByName('spider_nozzle');
+      }
+
+      if (nozzle) {
+        nozzle.getWorldPosition(startPos);
+      } else if (this.player.perspective === 0 && this.fpArmGroup && this.fpHeldItemModel && this.fpHeldItemModel.children.length > 0) {
             startPos.copy(nozzleOffset);
-            this.fpHeldItemModel.localToWorld(startPos);
+            this.fpHeldItemModel.children[0].localToWorld(startPos);
+      } else if (this.heldItemModel && this.heldItemModel.children.length > 0) {
+            startPos.copy(nozzleOffset);
+            this.heldItemModel.children[0].localToWorld(startPos);
       } else if (this.heldItemModel) {
             startPos.copy(nozzleOffset);
             this.heldItemModel.localToWorld(startPos);

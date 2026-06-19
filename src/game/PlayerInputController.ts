@@ -615,7 +615,7 @@ export class PlayerInputController {
         // Do not change the grapple point while we are actively grappling
         if (this.player.grapplePoint) return;
 
-        const hitResult = this.player.world.raycast(rayOrigin, direction, 100);
+        const hitResult = this.player.world.raycast(rayOrigin, direction, 40);
         if (hitResult && hitResult.blockPos) {
           this.player.grapplePoint = new THREE.Vector3(
             hitResult.blockPos.x + 0.5,

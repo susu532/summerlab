@@ -119,6 +119,11 @@ export function createItemModel(type: ItemType): THREE.Group {
     const nozzle = new THREE.Mesh(nozzleGeo, silverMat);
     nozzle.position.set(0, 0.22, 0.08); // Offset used by grapple line (0, 0.22, 0.08)
     group.add(nozzle);
+    
+    const nozzleTip = new THREE.Object3D();
+    nozzleTip.position.set(0, 0.28, 0.08);
+    nozzleTip.name = 'spider_nozzle';
+    group.add(nozzleTip);
 
     // Web shooter trigger (underside palm, Z-)
     const triggerGeo = new THREE.BoxGeometry(0.08, 0.08, 0.02);
@@ -154,19 +159,19 @@ export function createItemModel(type: ItemType): THREE.Group {
     group.add(ringFinger);
 
     // Web lines (black simple details)
-    const lineMeshV1 = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.26, 0.15), blackMat);
+    const lineMeshV1 = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.26, 0.16), blackMat);
     lineMeshV1.position.set(0.06, 0.125, 0);
     group.add(lineMeshV1);
 
-    const lineMeshV2 = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.26, 0.15), blackMat);
+    const lineMeshV2 = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.26, 0.16), blackMat);
     lineMeshV2.position.set(-0.06, 0.125, 0);
     group.add(lineMeshV2);
     
-    const lineMeshH1 = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.01, 0.15), blackMat);
+    const lineMeshH1 = new THREE.Mesh(new THREE.BoxGeometry(0.255, 0.01, 0.16), blackMat);
     lineMeshH1.position.set(0, 0.12, 0);
     group.add(lineMeshH1);
 
-    const lineMeshH2 = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.01, 0.15), blackMat);
+    const lineMeshH2 = new THREE.Mesh(new THREE.BoxGeometry(0.255, 0.01, 0.16), blackMat);
     lineMeshH2.position.set(0, 0.20, 0);
     group.add(lineMeshH2);
   } else if (isHose) {

@@ -497,8 +497,8 @@ export function updatePlayer(player: Player, delta: number) {
           // Point outward slightly down, slight inward tilt for hose look
           player.fpHeldItemModel.rotation.set(-Math.PI / 2 + 0.3, 0.2, 0.1);
         } else if (itemTypeNum === ItemType.SPIDER_GLOVES) {
-          player.fpHeldItemModel.position.set(0.3, -0.2, -0.35); // closer to screen
-          player.fpHeldItemModel.scale.set(1.2, 1.2, 1.2);
+          player.fpHeldItemModel.position.set(0.1, -0.1, -0.1); // closer to screen, moved down a bit
+          player.fpHeldItemModel.scale.set(0.2, 0.2, 0.2);
           player.fpHeldItemModel.rotation.set(-Math.PI / 2 + 0.2, Math.PI / 16, 0);
         } else {
           // Standard tool position
@@ -866,10 +866,12 @@ export function updatePlayer(player: Player, delta: number) {
       }
     }
 
+    const isSpiderGloves = equipItem?.type === ItemType.SPIDER_GLOVES;
+    
     // Idle breathing and walk bobbing (more natural movement)
-    const idleBobY = isGrappling ? 0 : Math.sin(performance.now() * 0.002) * 0.01;
-    const walkBobX = (isMoving && !isGrappling) ? Math.cos(player.walkCycle) * 0.04 : 0;
-    const walkBobY = (isMoving && !isGrappling) ? Math.sin(player.walkCycle * 2) * 0.04 : 0;
+    const idleBobY = isSpiderGloves ? 0 : Math.sin(performance.now() * 0.002) * 0.01;
+    const walkBobX = (isMoving && !isSpiderGloves) ? Math.cos(player.walkCycle) * 0.04 : 0;
+    const walkBobY = (isMoving && !isSpiderGloves) ? Math.sin(player.walkCycle * 2) * 0.04 : 0;
 
     // Apply rotations
     player.fpArmGroup.rotation.x = THREE.MathUtils.lerp(
@@ -877,26 +879,29 @@ export function updatePlayer(player: Player, delta: number) {
       swingRotX,
       0.25,
     );
+    const swayX = isSpiderGloves ? 0 : player.lookSwayX;
+    const swayY = isSpiderGloves ? 0 : player.lookSwayY;
+
     player.fpArmGroup.rotation.y = THREE.MathUtils.lerp(
       player.fpArmGroup.rotation.y,
-      swingRotY + player.lookSwayX * 0.8,
+      swingRotY + swayX * 0.8,
       0.25,
     );
     player.fpArmGroup.rotation.z = THREE.MathUtils.lerp(
       player.fpArmGroup.rotation.z,
-      swingRotZ + player.lookSwayX * 0.3,
+      swingRotZ + swayX * 0.3,
       0.25,
     );
 
     // Apply positions (including sway and bob)
     player.fpArmGroup.position.x = THREE.MathUtils.lerp(
       player.fpArmGroup.position.x,
-      swingPosX - player.lookSwayX * 2.0 + walkBobX,
+      swingPosX - swayX * 2.0 + walkBobX,
       0.2,
     );
     player.fpArmGroup.position.y = THREE.MathUtils.lerp(
       player.fpArmGroup.position.y,
-      swingPosY + player.lookSwayY * 1.5 + walkBobY + idleBobY,
+      swingPosY + swayY * 1.5 + walkBobY + idleBobY,
       0.2,
     );
     player.fpArmGroup.position.z = THREE.MathUtils.lerp(
